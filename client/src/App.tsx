@@ -11,6 +11,7 @@ import SectionPage from "./pages/SectionPage";
 import RunwayPage from "./pages/RunwayPage";
 import BrandPage from "./pages/BrandPage";
 import ScrollAnimations from "./components/ScrollAnimations";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/sobre-moda" component={() => <InfoPage kind="sobre-moda" />} />
       <Route path="/contacto" component={() => <InfoPage kind="contacto" />} />
       <Route path="/historias/vestirse-de-futuro" component={ArticlePage} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

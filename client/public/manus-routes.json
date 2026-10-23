@@ -12,6 +12,7 @@
     {"path":"/sobre-moda","title":"Sobre MODA"},
     {"path":"/contacto","title":"Contacto — MODA"},
     {"path":"/historias/vestirse-de-futuro","title":"Vestirse de futuro — MODA"},
+    {"path":"/admin","title":"MODA Studio"},
     {"path":"/404","title":"Página no encontrada"}
   ]
 }

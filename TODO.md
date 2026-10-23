@@ -50,3 +50,10 @@
 
 - [x] **Paleta editorial refinada**
   - El acento rojo/naranja fue reemplazado por azul tinta `#365a7a`, combinado con marfil, negro tinta, gris humo y los acentos propios de cada sección.
+
+- [x] **CMS editorial experimental**
+  - El buscador permite navegar contenido y activar el acceso oculto escribiendo `Snow`, `Songbird`, `Moonglow` o `Bianca` y presionando Enter.
+  - El acceso muestra una ventana de contraseña y abre `/admin` con roles Owner, Admin y Staff Writer.
+  - El dashboard permite ver métricas de demostración, crear historias, editar títulos, bajadas y cuerpo, cargar una imagen local, guardar borradores y publicar solo para Owner/Admin.
+  - Las historias publicadas aparecen en la portada del navegador actual.
+  - La estructura de Supabase queda preparada en `supabase/schema.sql`, con perfiles, roles, artículos, estados, Storage y políticas RLS.
