@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -12,6 +12,8 @@ import {
   Youtube,
 } from "lucide-react";
 import { Link } from "wouter";
+import SiteSearch from "@/components/SiteSearch";
+import { getArticles, type EditorialArticle } from "@/lib/editorial";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90",
@@ -77,6 +79,15 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("Todo");
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
+
+  useEffect(() => {
+    const refresh = () => setPublishedArticles(getArticles().filter((article) => article.status === "published"));
+    refresh();
+    window.addEventListener("storage", refresh);
+    return () => window.removeEventListener("storage", refresh);
+  }, []);
 
   const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -92,7 +103,7 @@ export default function Home() {
             <span>Menú</span>
           </button>
           <p>La conversación de estilo, sin concesiones.</p>
-          <button className="header-action" type="button" aria-label="Buscar">
+          <button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
             <Search size={19} strokeWidth={1.4} />
             <span>Buscar</span>
           </button>
@@ -136,6 +147,8 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {searchOpen && <SiteSearch onClose={() => setSearchOpen(false)} />}
 
       <main id="top">
         <section className="hero-section">
@@ -188,6 +201,12 @@ export default function Home() {
             <Link className="all-link" href="/archivo">Ver archivo <ArrowUpRight size={16} strokeWidth={1.4} /></Link>
           </div>
           <div className="story-grid">
+            {publishedArticles.map((article) => (
+              <article className="story-card story-card--published" key={article.id}>
+                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">MODA</div>}<span className="story-card__index">NEW</span></div>
+                <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3>{article.title}</h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href="/archivo">Leer historia</StoryLink></div>
+              </article>
+            ))}
             <StoryCard image={images.portrait} category="Sociedad" title="El gesto propio" excerpt="Cinco creadoras hablan de la intuición como una forma de poder." />
             <StoryCard image={images.beauty} category="Belleza" title="Piel real, luz propia" excerpt="El nuevo lenguaje del cuidado empieza por escuchar." tone="dark" />
             <StoryCard image={images.culture} category="Cultura" title="Arquitecturas íntimas" excerpt="Los espacios que habitamos también cuentan quiénes somos." />
