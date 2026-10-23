@@ -1,0 +1,17 @@
+{
+  "routes": [
+    {"path":"/","title":"MODA — Revista de estilo"},
+    {"path":"/moda","title":"Moda — MODA"},
+    {"path":"/belleza","title":"Belleza — MODA"},
+    {"path":"/cultura","title":"Cultura — MODA"},
+    {"path":"/sociedad","title":"Sociedad — MODA"},
+    {"path":"/runway","title":"Runway — MODA"},
+    {"path":"/runway/:brand","title":"Marca de pasarela — MODA"},
+    {"path":"/archivo","title":"Archivo — MODA"},
+    {"path":"/newsletter","title":"Newsletter — MODA"},
+    {"path":"/sobre-moda","title":"Sobre MODA"},
+    {"path":"/contacto","title":"Contacto — MODA"},
+    {"path":"/historias/vestirse-de-futuro","title":"Vestirse de futuro — MODA"},
+    {"path":"/404","title":"Página no encontrada"}
+  ]
+}

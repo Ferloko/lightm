@@ -1,0 +1,52 @@
+# MODA — resultados del sitio
+
+- [x] **Portada editorial con un artículo principal destacado**
+  - La página debe incluir una portada con un artículo principal destacado, imagen protagonista, titular, entradilla y llamada a la lectura.
+
+- [x] **Navegación por categorías**
+  - La navegación principal debe cubrir Moda, Belleza, Cultura y Sociedad, y adaptarse a escritorio y móvil.
+
+- [x] **Módulos editoriales secundarios**
+  - La portada debe presentar una selección curada de artículos con distintas jerarquías visuales.
+
+- [x] **Sección de tendencias**
+  - Debe existir una sección de tendencias con contenidos destacados y un tratamiento visual diferenciado.
+
+- [x] **Tarjetas de contenido en español**
+  - Las tarjetas deben mostrar imágenes de moda, etiquetas de categoría, titulares y textos de ejemplo en español.
+
+- [x] **Diseño responsive**
+  - La experiencia debe estar optimizada para escritorio y móvil, conservando la jerarquía y el ritmo editorial.
+
+- [x] **Microinteracciones premium**
+  - Enlaces, navegación, imágenes y tarjetas deben tener estados hover/focus y transiciones elegantes.
+
+- [x] **Pie de página tipo revista**
+  - El footer debe incluir identidad de MODA, enlaces editoriales, categorías, información legal y canales sociales.
+
+- [x] **Subpáginas navegables**
+  - Las categorías Moda, Belleza, Cultura y Sociedad cuentan con rutas independientes, además de Archivo, Newsletter, Sobre MODA, Contacto y una página de artículo destacada.
+  - La navegación principal, el menú móvil, las tarjetas y el footer enlazan a páginas reales en lugar de depender únicamente de anclas `#`.
+
+- [x] **Dirección visual diferenciada por sección**
+  - Moda usa una composición gráfica angular y acentos naranja.
+  - Belleza usa una atmósfera suave, formas orgánicas y tonos lavanda.
+  - Cultura usa tratamiento arquitectónico, monocromo y azul cobalto.
+  - Sociedad usa una atmósfera nocturna, humana y verde mineral.
+
+- [x] **Sección RUNWAY**
+  - Existe una pestaña RUNWAY independiente con temporada destacada, buscador de marcas, índice alfabético y cuadrícula de desfiles.
+  - La sección tiene navegación propia, tarjetas interactivas y comportamiento responsive para escritorio y móvil.
+
+- [x] **Directorio de marcas y subpáginas RUNWAY**
+  - RUNWAY usa el término “Marcas” en lugar de “Diseñadores”.
+  - Los filtros de búsqueda y letra incluyen una acción visible “Ver todas las marcas” para regresar al estado inicial.
+  - Cada tarjeta de marca abre una subpágina editorial propia en `/runway/:brand` con ciudad, temporada, tags y texto de contexto.
+  - La cuadrícula incorpora animaciones de entrada, hover y transición visual sin bloquear la navegación.
+
+- [x] **Animaciones globales**
+  - El header, hero, secciones editoriales, tarjetas, imágenes, botones, formularios, menú y footer tienen movimiento sutil y coherente.
+  - Se respetan las preferencias de `prefers-reduced-motion` para reducir o desactivar las transiciones.
+
+- [x] **Paleta editorial refinada**
+  - El acento rojo/naranja fue reemplazado por azul tinta `#365a7a`, combinado con marfil, negro tinta, gris humo y los acentos propios de cada sección.
