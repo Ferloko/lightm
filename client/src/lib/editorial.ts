@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { starterBlocks, type PageBlock } from "./pageBlocks";
 
 export type EditorialRole = "Owner" | "Admin" | "Staff Writer";
 
@@ -12,11 +13,18 @@ export type EditorialUser = {
 
 export type EditorialArticle = {
   id: string;
+  slug: string;
+  eyebrow: string;
   title: string;
   category: string;
   excerpt: string;
+  lead: string;
+  readingTime: string;
+  date: string;
   body: string;
+  blocks: PageBlock[];
   image: string;
+  imageCaption: string;
   status: "draft" | "published";
   author: string;
   updatedAt: string;
@@ -52,7 +60,7 @@ export function setSession(user: EditorialUser | null) {
 }
 
 export function createArticle(author: string): EditorialArticle {
-  return { id: crypto.randomUUID(), title: "", category: "Moda", excerpt: "", body: "", image: "", status: "draft", author, updatedAt: new Date().toISOString() };
+  return { id: crypto.randomUUID(), slug: "", eyebrow: "MODA / PORTADA", title: "", category: "Moda", excerpt: "", lead: "", readingTime: "8 min de lectura", date: new Date().toISOString().slice(0, 10), body: "", blocks: starterBlocks(), image: "", imageCaption: "", status: "draft", author, updatedAt: new Date().toISOString() };
 }
 
 // Supabase-ready contract: replace these local functions with supabase.from("articles") calls.
@@ -60,9 +68,9 @@ export const editorialRepository = { getArticles, saveArticles };
 
 export async function fetchRemoteArticles(): Promise<EditorialArticle[]> {
   if (!supabase) return getArticles();
-  const { data, error } = await supabase.from("articles").select("id,title,category,excerpt,body,cover_image_path,status,updated_at,profiles(display_name)").order("updated_at", { ascending: false });
+  const { data, error } = await supabase.from("articles").select("id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,updated_at,profiles(display_name)").order("updated_at", { ascending: false });
   if (error || !data) { console.warn("[MODA] Supabase articles unavailable; using local demo data", error?.message); return getArticles(); }
-  return data.map((row: any) => ({ id: row.id, title: row.title, category: row.category, excerpt: row.excerpt, body: row.body, image: row.cover_image_path || "", status: row.status, author: row.profiles?.display_name || "MODA", updatedAt: row.updated_at }));
+  return data.map((row: any) => ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body, blocks: row.page_blocks || starterBlocks(), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, author: row.profiles?.display_name || "MODA", updatedAt: row.updated_at }));
 }
 
 export async function uploadRemoteImage(file: File, articleId: string): Promise<string | null> {
@@ -79,7 +87,7 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<bool
   if (!supabase) return false;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  const { error } = await supabase.from("articles").upsert({ id: article.id, author_id: user.id, title: article.title, category: article.category, excerpt: article.excerpt, body: article.body, cover_image_path: article.image || null, status: article.status, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt });
-  if (error) throw error;
+  const { error } = await supabase.from("articles").upsert({ id: article.id, author_id: user.id, slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt });
+  if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
   return true;
 }

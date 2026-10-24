@@ -32,6 +32,10 @@ No usar esta contraseña en producción. Actualmente el prototipo guarda sesión
 - Staff Writer puede crear y editar borradores, pero no publicar.
 - Las historias publicadas aparecen en la portada dentro de la selección editorial del navegador actual.
 
+## Editor editorial
+
+Cada historia se crea como una página editorial con slug propio. El borrador se abre como la maqueta completa del artículo, no como un formulario aislado: kicker, título, bajada, autor, fecha, tiempo de lectura, portada por URL de Imgur, pie de imagen, frase de inicio y bloques verticales de texto, citas, separadores e imágenes. La sección Páginas permite ver el borrador, abrir la página publicada o volver a editarla. Los bloques se guardan en `articles.page_blocks` como JSONB y una página publicada se renderiza en `/historias/:slug`.
+
 ## Migración a Supabase
 
 1. Crear un proyecto Supabase.

@@ -57,3 +57,10 @@
   - El dashboard permite ver métricas de demostración, crear historias, editar títulos, bajadas y cuerpo, cargar una imagen local, guardar borradores y publicar solo para Owner/Admin.
   - Las historias publicadas aparecen en la portada del navegador actual.
   - La estructura de Supabase queda preparada en `supabase/schema.sql`, con perfiles, roles, artículos, estados, Storage y políticas RLS.
+
+- [x] **Editor editorial vertical de páginas**
+  - Cada historia creada desde Studio se modela como una página con slug propio y ruta pública `/historias/:slug`.
+  - El borrador se abre como una maqueta completa del artículo: kicker, título, bajada, autor, tiempo de lectura, fecha, imagen de portada por URL de Imgur, pie de imagen, frase de inicio y bloques de contenido.
+  - La vista Páginas muestra el listado con acciones separadas para “Ver borrador”, “Ver página” y “Editar”. Crear página abre directamente el borrador completo.
+  - Staff Writer puede guardar páginas en edición; Owner/Admin pueden publicarlas y hacerlas visibles por su URL.
+  - Supabase guarda `page_blocks` y metadatos editoriales como JSONB/columnas, mientras el estado `draft`/`published` mantiene el flujo de revisión.

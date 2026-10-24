@@ -32,7 +32,7 @@ export default function SiteSearch({ onClose }: { onClose?: () => void }) {
 
   const unlock = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (password !== TEMPORARY_PASSWORD) { setError("Contraseña temporal incorrecta."); return; }
+    if (!supabase && password !== TEMPORARY_PASSWORD) { setError("Contraseña temporal incorrecta."); return; }
     if (candidate && supabase) {
       const { error: authError } = await supabase.auth.signInWithPassword({ email: candidate.email, password });
       if (authError) { setError("Este perfil todavía no existe en Supabase Auth. Créalo con el correo indicado en EDITORIAL-CMS.md."); return; }
