@@ -72,6 +72,7 @@ create table public.campaigns (
   constraint campaigns_valid_range check (end_date >= start_date)
 );
 
+
 -- Safe migration for projects that already created the first version of articles.
 alter table public.articles add column if not exists slug text;
 alter table public.articles add column if not exists eyebrow text not null default 'MODA / PORTADA';

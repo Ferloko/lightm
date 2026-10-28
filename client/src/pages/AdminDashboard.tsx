@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUpRight, CalendarDays, Check, ExternalLink, FileText, LayoutDashboard, LayoutList, LogOut, Mail, Megaphone, PanelLeftClose, PanelLeftOpen, Plus, Save, Target, Trash2 } from "lucide-react";
+﻿import { ArrowLeft, ArrowUpRight, CalendarDays, Check, ExternalLink, FileText, LayoutDashboard, LayoutList, LogOut, Mail, Megaphone, PanelLeftClose, PanelLeftOpen, Plus, Save, Target, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import ArticleDraftEditor from "@/components/ArticleDraftEditor";

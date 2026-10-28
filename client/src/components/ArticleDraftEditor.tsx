@@ -1,4 +1,4 @@
-import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Image, LayoutGrid, Minus, Quote, Save, Trash2, Type, X } from "lucide-react";
+﻿import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Image, LayoutGrid, Minus, Quote, Save, Trash2, Type, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, DragEvent, PointerEvent, TextareaHTMLAttributes } from "react";
 import type { EditorialArticle } from "@/lib/editorial";

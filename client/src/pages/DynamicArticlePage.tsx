@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUpRight, ChevronRight, Instagram, Mail, Menu, Search, X, Youtube } from "lucide-react";
+﻿import { ArrowLeft, ArrowUpRight, ChevronRight, Instagram, Mail, Menu, Search, X, Youtube } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useRoute } from "wouter";
