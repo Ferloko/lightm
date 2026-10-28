@@ -10,6 +10,7 @@ const selectors = [
   ".brand-editorial",
   ".brand-next",
   ".article-body",
+  ".public-block",
 ];
 
 export default function ScrollAnimations() {
@@ -38,9 +39,34 @@ export default function ScrollAnimations() {
     const mutationObserver = new MutationObserver(() => prepare());
     mutationObserver.observe(document.body, { childList: true, subtree: true });
 
+    let lastScrollY = window.scrollY;
+    let compactNav = lastScrollY > 180;
+    let ticking = false;
+    const updateScrollDirection = () => {
+      const currentScrollY = window.scrollY;
+      if (!reduceMotion && Math.abs(currentScrollY - lastScrollY) > 8) {
+        // Hysteresis prevents tiny touch/trackpad rebounds from flashing the logo.
+        if (currentScrollY > 180) compactNav = true;
+        if (currentScrollY < 120) compactNav = false;
+        document.body.classList.toggle("is-scrolling-down", compactNav);
+        document.body.classList.toggle("is-scrolling-up", !compactNav);
+        lastScrollY = currentScrollY;
+      }
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateScrollDirection);
+        ticking = true;
+      }
+    };
+    if (!reduceMotion) window.addEventListener("scroll", onScroll, { passive: true });
+
     return () => {
       mutationObserver.disconnect();
       observer?.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      document.body.classList.remove("is-scrolling-down", "is-scrolling-up");
     };
   }, []);
 

@@ -1,4 +1,4 @@
-# MODA Studio — CMS editorial
+# LIGHT Studio — CMS editorial
 
 Esta rama experimental incluye un CMS privado activado desde el buscador. Es una demo funcional para probar la experiencia antes de conectar autenticación y persistencia real.
 
@@ -32,6 +32,10 @@ No usar esta contraseña en producción. Actualmente el prototipo guarda sesión
 - Staff Writer puede crear y editar borradores, pero no publicar.
 - Las historias publicadas aparecen en la portada dentro de la selección editorial del navegador actual.
 
+## Editor editorial
+
+Cada historia se crea como una página editorial con slug propio. El borrador se abre como la maqueta completa del artículo, no como un formulario aislado: kicker, título, bajada, autor, fecha, tiempo de lectura, portada por URL de Imgur, pie de imagen, frase de inicio y bloques verticales de texto, citas, separadores e imágenes. La sección Páginas permite ver el borrador, abrir la página publicada o volver a editarla. Los bloques se guardan en `articles.page_blocks` como JSONB y una página publicada se renderiza en `/historias/:slug`.
+
 ## Migración a Supabase
 
 1. Crear un proyecto Supabase.
@@ -44,6 +48,6 @@ No usar esta contraseña en producción. Actualmente el prototipo guarda sesión
 
 ### Sobre el prompt que entrega Supabase
 
-El prompt recibido usa `page.tsx`, `next/headers`, `NextRequest` y `@supabase/ssr`. Es correcto para Next.js, pero MODA usa Vite + React + Express. Por eso aquí no se deben copiar esos archivos ni usar `NEXT_PUBLIC_*`. En esta aplicación se utiliza `@supabase/supabase-js`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+El prompt recibido usa `page.tsx`, `next/headers`, `NextRequest` y `@supabase/ssr`. Es correcto para Next.js, pero LIGHT usa Vite + React + Express. Por eso aquí no se deben copiar esos archivos ni usar `NEXT_PUBLIC_*`. En esta aplicación se utiliza `@supabase/supabase-js`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 El buscador oculto es una forma cómoda de descubrir el acceso, no el mecanismo de seguridad. En producción, Supabase Auth, RLS y las políticas de publicación deben ser la autoridad real.
