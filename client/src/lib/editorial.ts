@@ -33,17 +33,7 @@ export type EditorialArticle = {
   updatedAt: string;
 };
 
-// Temporary development credentials. Replace with Supabase Auth before production.
-export const editorialUsers: Record<string, EditorialUser> = {
-  snow: { trigger: "Snow", email: "snow@moda.studio", role: "Owner", displayName: "Snow", canPublish: true },
-  songbird: { trigger: "Songbird", email: "songbird@moda.studio", role: "Admin", displayName: "Songbird", canPublish: true },
-  moonglow: { trigger: "Moonglow", email: "moonglow@moda.studio", role: "Staff Writer", displayName: "Moonglow", canPublish: false },
-  bianca: { trigger: "Bianca", email: "bianca@moda.studio", role: "Staff Writer", displayName: "Bianca", canPublish: false },
-};
-
-export const TEMPORARY_PASSWORD = "MODA-DEMO-2026";
 const ARTICLE_KEY = "moda.editorial.articles";
-const SESSION_KEY = "moda.editorial.session";
 
 export function getArticles(): EditorialArticle[] {
   try { return JSON.parse(localStorage.getItem(ARTICLE_KEY) || "[]") as EditorialArticle[]; } catch { return []; }
@@ -53,13 +43,21 @@ export function saveArticles(articles: EditorialArticle[]) {
   localStorage.setItem(ARTICLE_KEY, JSON.stringify(articles));
 }
 
-export function getSession(): EditorialUser | null {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null") as EditorialUser | null; } catch { return null; }
-}
-
-export function setSession(user: EditorialUser | null) {
-  if (user) sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-  else sessionStorage.removeItem(SESSION_KEY);
+export async function getEditorialUser(): Promise<EditorialUser | null> {
+  if (!supabase) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("display_name, role")
+    .eq("id", user.id)
+    .single();
+  if (error || !profile) {
+    console.warn("[LIGHT] Editorial profile unavailable", error?.message);
+    return null;
+  }
+  const role = profile.role === "owner" ? "Owner" : profile.role === "admin" ? "Admin" : "Staff Writer";
+  return { trigger: profile.display_name, email: user.email || "", role, displayName: profile.display_name, canPublish: profile.role === "owner" || profile.role === "admin" };
 }
 
 export function createArticle(author: string): EditorialArticle {
