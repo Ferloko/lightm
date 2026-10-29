@@ -1,6 +1,7 @@
-import { ArrowUpRight, ChevronRight, Instagram, Mail, X, Youtube } from "lucide-react";
+import { ArrowUpRight, Instagram, Mail, Youtube } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
+import { editions } from "@/lib/magazines";
 
 type InfoKind = "archivo" | "newsletter" | "sobre-moda" | "contacto" | "privacidad" | "terminos" | "cookies";
 
@@ -24,14 +25,8 @@ function Footer() {
   return <footer className="site-footer"><div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div><div className="site-footer__columns"><div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/sociedad">Sociedad</Link></div><div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/contacto">Contacto</Link></div><div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/contacto"><Mail size={15} /> Correo</Link></div><div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div></div><div className="site-footer__bottom"><Link href="/privacidad">Privacidad</Link><Link href="/terminos">Términos</Link><Link href="/cookies">Cookies</Link><span className="footer-bottom__right">Madrid · Ciudad de México · Buenos Aires</span></div></footer>;
 }
 
-const editions = [
-  { number: "01", title: "Edición inaugural", date: "Archivo digital", src: "https://heyzine.com/flip-book/6a853c2672.html", tone: "dark" },
-  { number: "02", title: "La conversación de estilo", date: "Edición actual", src: "https://heyzine.com/flip-book/cfb0eadb91.html", tone: "light" },
-];
-
 function MagazineCatalog() {
-  const [selected, setSelected] = useState<(typeof editions)[number] | null>(null);
-  return <div className="magazine-catalog"><div className="magazine-catalog__heading"><p className="eyebrow">Ediciones digitales</p><span>Lectura abierta · Sin compra</span></div><div className="magazine-catalog__grid">{editions.map((edition) => <article className={`magazine-card magazine-card--${edition.tone}`} key={edition.src}><div className="magazine-card__cover"><span>LIGHT</span><strong>{edition.number}</strong><small>{edition.title}</small></div><div className="magazine-card__body"><div><p className="eyebrow">{edition.date}</p><h3>{edition.title}</h3></div><button type="button" onClick={() => setSelected(edition)}>Ver edición <ArrowUpRight size={15} /></button></div></article>)}</div>{selected && <div className="magazine-reader" role="dialog" aria-modal="true" aria-label={`Leer ${selected.title}`}><div className="magazine-reader__top"><div><p className="eyebrow">LIGHT / Edición {selected.number}</p><strong>{selected.title}</strong></div><button type="button" onClick={() => setSelected(null)} aria-label="Cerrar edición"><X size={20} /></button></div><iframe title={selected.title} src={selected.src} allowFullScreen allow="autoplay; fullscreen; clipboard-write" scrolling="no" /></div>}</div>;
+  return <div className="magazine-catalog"><div className="magazine-catalog__heading"><p className="eyebrow">Ediciones digitales</p><span>Explora cada número antes de abrirlo</span></div><div className="magazine-catalog__grid">{editions.map((edition) => <article className={`magazine-card magazine-card--${edition.tone}`} key={edition.src}><Link href={`/revista/${edition.number}`} className="magazine-card__cover"><span>LIGHT</span><strong>{edition.number}</strong><small>{edition.title}</small></Link><div className="magazine-card__body"><div><p className="eyebrow">{edition.date}</p><h3>{edition.title}</h3></div><Link href={`/revista/${edition.number}`}>Ver edición <ArrowUpRight size={15} /></Link></div></article>)}</div></div>;
 }
 
 export default function InfoPage({ kind }: { kind: InfoKind }) {
