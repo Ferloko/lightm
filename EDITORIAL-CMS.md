@@ -1,4 +1,4 @@
-# MODA Studio — CMS editorial
+# LIGHT Studio — CMS editorial
 
 Esta rama experimental incluye un CMS privado activado desde el buscador. Es una demo funcional para probar la experiencia antes de conectar autenticación y persistencia real.
 
@@ -48,6 +48,6 @@ Cada historia se crea como una página editorial con slug propio. El borrador se
 
 ### Sobre el prompt que entrega Supabase
 
-El prompt recibido usa `page.tsx`, `next/headers`, `NextRequest` y `@supabase/ssr`. Es correcto para Next.js, pero MODA usa Vite + React + Express. Por eso aquí no se deben copiar esos archivos ni usar `NEXT_PUBLIC_*`. En esta aplicación se utiliza `@supabase/supabase-js`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+El prompt recibido usa `page.tsx`, `next/headers`, `NextRequest` y `@supabase/ssr`. Es correcto para Next.js, pero LIGHT usa Vite + React + Express. Por eso aquí no se deben copiar esos archivos ni usar `NEXT_PUBLIC_*`. En esta aplicación se utiliza `@supabase/supabase-js`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 El buscador oculto es una forma cómoda de descubrir el acceso, no el mecanismo de seguridad. En producción, Supabase Auth, RLS y las políticas de publicación deben ser la autoridad real.

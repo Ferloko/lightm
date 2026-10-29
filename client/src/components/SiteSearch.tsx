@@ -7,11 +7,11 @@ import { supabase } from "@/lib/supabase";
 const searchable = [
   ["Vestirse de futuro", "/historias/vestirse-de-futuro", "Moda"],
   ["Runway", "/runway", "Pasarelas y marcas"],
-  ["Archivo", "/archivo", "Historias MODA"],
+  ["Archivo", "/archivo", "Historias LIGHT"],
   ["Belleza", "/belleza", "Cuidado y belleza"],
   ["Cultura", "/cultura", "Ideas y espacios"],
   ["Sociedad", "/sociedad", "Voces y personas"],
-  ["Newsletter", "/newsletter", "Correspondencia MODA"],
+  ["Newsletter", "/newsletter", "Correspondencia LIGHT"],
 ] as const;
 
 export default function SiteSearch({ onClose }: { onClose?: () => void }) {
@@ -40,12 +40,12 @@ export default function SiteSearch({ onClose }: { onClose?: () => void }) {
     if (candidate) { setSession(candidate); setPasswordOpen(false); onClose?.(); navigate("/admin"); }
   };
 
-  return <div className="search-panel" role="dialog" aria-modal="true" aria-label="Buscar en MODA">
-    <div className="search-panel__bar"><span className="search-panel__edition">MODA / BUSCAR</span><button className="close-button" type="button" onClick={onClose} aria-label="Cerrar búsqueda"><X size={22} /></button></div>
+  return <div className="search-panel" role="dialog" aria-modal="true" aria-label="Buscar en LIGHT">
+    <div className="search-panel__bar"><span className="search-panel__edition">LIGHT / BUSCAR</span><button className="close-button" type="button" onClick={onClose} aria-label="Cerrar búsqueda"><X size={22} /></button></div>
     <div className="search-panel__inner">
       <form onSubmit={submit} className="search-panel__form"><Search size={24} /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar historias, marcas, palabras clave..." aria-label="Buscar" /><span>Enter ↵</span></form>
       <div className="search-results">{results.map(([title, href, meta]) => <Link href={href} key={href} onClick={onClose}><span>{meta}</span><strong>{title}</strong><ArrowUpRight size={20} /></Link>)}{query.trim() && results.length === 0 && !editorialUsers[query.trim().toLowerCase()] && <p className="search-empty">No encontramos resultados. Prueba con otra palabra.</p>}</div>
     </div>
-    {passwordOpen && <div className="secret-modal"><div className="secret-modal__card"><p className="eyebrow">Acceso editorial / {candidate?.role}</p><h2>Identidad confirmada.</h2><p>Introduce la contraseña temporal para abrir el dashboard de MODA.</p><form onSubmit={unlock}><label htmlFor="secret-password">Contraseña</label><input id="secret-password" type="password" autoFocus value={password} onChange={(event) => setPassword(event.target.value)} /><button type="submit">Entrar <ArrowUpRight size={17} /></button>{error && <small>{error}</small>}</form><button type="button" className="secret-modal__cancel" onClick={() => setPasswordOpen(false)}>Cancelar</button></div></div>}
+    {passwordOpen && <div className="secret-modal"><div className="secret-modal__card"><p className="eyebrow">Acceso editorial / {candidate?.role}</p><h2>Identidad confirmada.</h2><p>Introduce la contraseña temporal para abrir el dashboard de LIGHT.</p><form onSubmit={unlock}><label htmlFor="secret-password">Contraseña</label><input id="secret-password" type="password" autoFocus value={password} onChange={(event) => setPassword(event.target.value)} /><button type="submit">Entrar <ArrowUpRight size={17} /></button>{error && <small>{error}</small>}</form><button type="button" className="secret-modal__cancel" onClick={() => setPasswordOpen(false)}>Cancelar</button></div></div>}
   </div>;
 }

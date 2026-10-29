@@ -1,0 +1,27 @@
+import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { deleteCalendarEvent, fetchCalendarEvents, saveCalendarEvent, type CalendarEvent } from "@/lib/calendar";
+
+const weekdays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const colors = ["acid", "blue", "soft"];
+
+function dateKey(date: Date) { return date.toISOString().slice(0, 10); }
+function localDateTime(date: Date) { return `${dateKey(date)}T10:00`; }
+function monthLabel(date: Date) { return new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date); }
+function buildDays(month: Date) { const first = new Date(month.getFullYear(), month.getMonth(), 1); const start = (first.getDay() + 6) % 7; return Array.from({ length: 42 }, (_, index) => new Date(month.getFullYear(), month.getMonth(), index - start + 1)); }
+
+export default function CalendarBoard() {
+  const [month, setMonth] = useState(new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [draft, setDraft] = useState<Partial<CalendarEvent> | null>(null);
+  const [saving, setSaving] = useState(false);
+  const days = useMemo(() => buildDays(month), [month]);
+
+  useEffect(() => { let active = true; fetchCalendarEvents().then((items) => { if (active) setEvents(items); }); return () => { active = false; }; }, []);
+  const openNew = (date = new Date()) => setDraft({ title: "", description: "", startAt: localDateTime(date), endAt: null, allDay: true, color: "acid" });
+  const openEdit = (event: CalendarEvent) => setDraft(event);
+  const save = async () => { if (!draft?.title?.trim() || !draft.startAt) return; setSaving(true); const saved = await saveCalendarEvent({ id: draft.id, title: draft.title.trim(), description: draft.description || "", startAt: draft.startAt, endAt: draft.endAt || null, allDay: draft.allDay ?? true, color: draft.color || "acid" }); setEvents((current) => [...current.filter((item) => item.id !== saved.id), saved].sort((a, b) => a.startAt.localeCompare(b.startAt))); setDraft(null); setSaving(false); };
+  const remove = async () => { if (!draft?.id) return; await deleteCalendarEvent(draft.id); setEvents((current) => current.filter((item) => item.id !== draft.id)); setDraft(null); };
+
+  return <section className="calendar-board"><div className="calendar-heading"><div><p className="eyebrow">LIGHT / Equipo editorial</p><h2>Calendario.</h2><p>Eventos, cierres y fechas futuras compartidos con Snow, Songbird, Moonglow y Bianca.</p></div><button className="admin-primary" type="button" onClick={() => openNew()}><Plus size={15} /> Nuevo evento</button></div><div className="calendar-toolbar"><button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft size={16} /></button><strong>{monthLabel(month)}</strong><button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight size={16} /></button><button className="calendar-today" type="button" onClick={() => setMonth(new Date())}>Hoy</button></div><div className="calendar-grid">{weekdays.map((day) => <div className="calendar-weekday" key={day}>{day}</div>)}{days.map((day) => { const key = dateKey(day); const dayEvents = events.filter((event) => event.startAt.slice(0, 10) === key); const outside = day.getMonth() !== month.getMonth(); return <div className={`calendar-day ${outside ? "is-outside" : ""}`} key={key}><button className="calendar-day__number" type="button" onClick={() => openNew(day)}>{day.getDate()}</button><div className="calendar-day__events">{dayEvents.map((event) => <button className={`calendar-event calendar-event--${event.color}`} type="button" key={event.id} onClick={() => openEdit(event)}>{event.title}</button>)}</div></div>; })}</div>{draft && <div className="calendar-modal-backdrop"><form className="calendar-modal" onSubmit={(event) => { event.preventDefault(); void save(); }}><button className="calendar-modal__close" type="button" onClick={() => setDraft(null)} aria-label="Cerrar"><X size={18} /></button><p className="eyebrow">Evento compartido</p><h3>{draft.id ? "Editar evento" : "Nuevo evento"}</h3><label>Título<input autoFocus value={draft.title || ""} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Cierre de edición, lanzamiento..." required /></label><label>Fecha y hora<input type="datetime-local" value={(draft.startAt || "").slice(0, 16)} onChange={(event) => setDraft({ ...draft, startAt: event.target.value })} required /></label><label>Descripción<textarea value={draft.description || ""} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Notas para el equipo..." rows={4} /></label><div className="calendar-modal__colors"><span>Color</span>{colors.map((color) => <button type="button" key={color} className={`calendar-color calendar-color--${color} ${draft.color === color ? "is-active" : ""}`} onClick={() => setDraft({ ...draft, color })} aria-label={`Color ${color}`} />)}</div><div className="calendar-modal__actions">{draft.id && <button className="admin-secondary calendar-delete" type="button" onClick={() => void remove()}><Trash2 size={14} /> Eliminar</button>}<button className="admin-secondary" type="button" onClick={() => setDraft(null)}>Cancelar</button><button className="admin-primary" type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar evento"}</button></div></form></div>}</section>;
+}

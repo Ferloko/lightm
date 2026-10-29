@@ -1,7 +1,10 @@
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
+import { useEffect } from "react";
+import { trackPageView } from "@/lib/analytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -13,6 +16,15 @@ import BrandPage from "./pages/BrandPage";
 import ScrollAnimations from "./components/ScrollAnimations";
 import AdminDashboard from "./pages/AdminDashboard";
 import DynamicArticlePage from "./pages/DynamicArticlePage";
+
+function PageViewTracker() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    void trackPageView(location);
+  }, [location]);
+  return null;
+}
 
 function Router() {
   return (
@@ -28,6 +40,9 @@ function Router() {
       <Route path="/newsletter" component={() => <InfoPage kind="newsletter" />} />
       <Route path="/sobre-moda" component={() => <InfoPage kind="sobre-moda" />} />
       <Route path="/contacto" component={() => <InfoPage kind="contacto" />} />
+      <Route path="/privacidad" component={() => <InfoPage kind="privacidad" />} />
+      <Route path="/terminos" component={() => <InfoPage kind="terminos" />} />
+      <Route path="/cookies" component={() => <InfoPage kind="cookies" />} />
       <Route path="/historias/vestirse-de-futuro" component={ArticlePage} />
       <Route path="/historias/:slug" component={DynamicArticlePage} />
       <Route path="/admin" component={AdminDashboard} />
@@ -42,7 +57,9 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
+          <Analytics mode="production" />
           <Toaster />
+          <PageViewTracker />
           <ScrollAnimations />
           <Router />
         </TooltipProvider>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   ArrowDownRight,
+  ArrowUp,
   ArrowUpRight,
-  ChevronDown,
   ChevronRight,
   Instagram,
   Mail,
@@ -14,6 +14,7 @@ import {
 import { Link } from "wouter";
 import SiteSearch from "@/components/SiteSearch";
 import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
+import { subscribeToNewsletter } from "@/lib/newsletter";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90",
@@ -26,6 +27,12 @@ const images = {
 };
 
 const navItems = ["Moda", "Belleza", "Cultura", "Sociedad", "Runway"];
+
+const archiveItems = [
+  { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
+  { date: "05.18", category: "Belleza", image: images.beauty, title: "La piel como paisaje" },
+  { date: "04.02", category: "Cultura", image: images.culture, title: "Materia y memoria" },
+];
 
 function SectionLabel({ children, light = false }: { children: React.ReactNode; light?: boolean }) {
   return (
@@ -79,26 +86,45 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("Todo");
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterError, setNewsletterError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
-    const refresh = () => { fetchRemoteArticles().then((articles) => setPublishedArticles(articles.filter((article) => article.status === "published"))); };
+    const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const featured = visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setPublishedArticles(featured.length ? featured : visible); }); };
     refresh();
     window.addEventListener("storage", refresh);
     return () => window.removeEventListener("storage", refresh);
   }, []);
 
-  const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 300);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
+
+  const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (email.trim()) setSubscribed(true);
+    if (!email.trim() || newsletterSubmitting) return;
+    setNewsletterSubmitting(true);
+    setNewsletterError("");
+    const result = await subscribeToNewsletter(email);
+    if (result.ok) setSubscribed(true);
+    else setNewsletterError("No pudimos guardar tu correo. Inténtalo de nuevo.");
+    setNewsletterSubmitting(false);
   };
 
   return (
-    <div className="site-shell">
+    <div className="site-shell home-page">
       <header className="site-header">
         <div className="topline">
-          <button className="header-action header-action--menu" type="button" onClick={() => setMenuOpen(true)}>
+          <button className="header-action header-action--menu" type="button" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}>
             <Menu size={20} strokeWidth={1.4} />
             <span>Menú</span>
           </button>
@@ -109,27 +135,22 @@ export default function Home() {
           </button>
         </div>
         <div className="brand-row">
-          <Link href="/" className="wordmark" aria-label="MODA inicio">MODA</Link>
-          <div className="brand-meta">
-            <span>Edición 06</span>
-            <span>Octubre 2026</span>
-          </div>
+          <Link href="/" className="wordmark" aria-label="LIGHT inicio">LIGHT</Link>
         </div>
         <nav className="main-nav" aria-label="Navegación principal">
-              {navItems.map((item, index) => (
-            <Link href={`/${item.toLowerCase()}`} key={item}>
-              {item}
-              {index === 0 && <span className="nav-new">Nuevo</span>}
-            </Link>
-          ))}
-          <Link href="/sobre-moda">La revista <ChevronDown size={14} strokeWidth={1.4} /></Link>
+              {navItems.map((item) => (
+                <Link href={`/${item.toLowerCase()}`} key={item}>
+                  {item}
+                </Link>
+              ))}
+          <Link href="/sobre-moda">La revista</Link>
         </nav>
       </header>
 
       {menuOpen && (
         <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="Menú de navegación">
           <div className="menu-overlay__top">
-            <span className="menu-overlay__edition">MODA / 06</span>
+            <span className="menu-overlay__edition">LIGHT</span>
             <button className="close-button" type="button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú">
               <X size={22} strokeWidth={1.3} />
             </button>
@@ -137,8 +158,8 @@ export default function Home() {
           <div className="menu-overlay__inner">
             <p className="eyebrow">Explora la revista</p>
             <div className="menu-overlay__links">
-              {["Inicio", ...navItems, "Archivo", "Newsletter"].map((item, index) => (
-                <Link href={index === 0 ? "/" : item === "Archivo" ? "/archivo" : item === "Newsletter" ? "/newsletter" : `/${item.toLowerCase()}`} key={item} onClick={() => setMenuOpen(false)}>
+              {["Inicio", ...navItems, "La revista", "Archivo", "Newsletter"].map((item, index) => (
+                <Link href={index === 0 ? "/" : item === "La revista" ? "/sobre-moda" : item === "Archivo" ? "/archivo" : item === "Newsletter" ? "/newsletter" : `/${item.toLowerCase()}`} key={item} onClick={() => setMenuOpen(false)}>
                   <span>{String(index + 1).padStart(2, "0")}</span>{item}<ArrowUpRight size={22} strokeWidth={1.2} />
                 </Link>
               ))}
@@ -150,18 +171,28 @@ export default function Home() {
 
       {searchOpen && <SiteSearch onClose={() => setSearchOpen(false)} />}
 
+      <button
+        className={`home-back-to-top ${showBackToTop ? "is-visible" : ""}`}
+        type="button"
+        onClick={handleBackToTop}
+        aria-label="Volver arriba"
+        tabIndex={showBackToTop ? 0 : -1}
+      >
+        <ArrowUp size={16} strokeWidth={1.4} />
+        <span>Volver arriba</span>
+      </button>
+
       <main id="top">
         <section className="hero-section">
           <div className="hero-copy">
-            <SectionLabel>Portada / Octubre 2026</SectionLabel>
+            <SectionLabel>Portada / </SectionLabel>
             <h1>La nueva<br /><em>sensibilidad</em><br />del vestir.</h1>
             <p className="hero-dek">Una exploración de las formas, texturas y gestos que están redefiniendo el lujo para una generación que elige con intención.</p>
             <StoryLink href="/historias/vestirse-de-futuro">Descubrir la portada</StoryLink>
           </div>
           <div className="hero-visual">
             <img src={images.hero} alt="Editorial de moda con prendas en tonos neutros" />
-            <div className="hero-stamp"><span>MODA</span><span>VOL. 06</span></div>
-            <div className="hero-caption"><span>01 — 04</span><span>Fotografía: Estudio MODA</span></div>
+            <div className="hero-caption"><span>01 — 04</span><span>Fotografía: Estudio LIGHT</span></div>
           </div>
         </section>
 
@@ -195,7 +226,7 @@ export default function Home() {
         <section className="editorial-section" id="cultura">
           <div className="section-heading">
             <div>
-              <SectionLabel>Selección MODA</SectionLabel>
+              <SectionLabel>Selección LIGHT</SectionLabel>
               <h2>Historias para<br /><em>quedarse.</em></h2>
             </div>
             <Link className="all-link" href="/archivo">Ver archivo <ArrowUpRight size={16} strokeWidth={1.4} /></Link>
@@ -203,13 +234,11 @@ export default function Home() {
           <div className="story-grid">
             {publishedArticles.map((article) => (
               <article className="story-card story-card--published" key={article.id}>
-                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">MODA</div>}<span className="story-card__index">NEW</span></div>
+                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span></div>
                 <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3>{article.title}</h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
               </article>
             ))}
-            <StoryCard image={images.portrait} category="Sociedad" title="El gesto propio" excerpt="Cinco creadoras hablan de la intuición como una forma de poder." />
-            <StoryCard image={images.beauty} category="Belleza" title="Piel real, luz propia" excerpt="El nuevo lenguaje del cuidado empieza por escuchar." tone="dark" />
-            <StoryCard image={images.culture} category="Cultura" title="Arquitecturas íntimas" excerpt="Los espacios que habitamos también cuentan quiénes somos." />
+            {!publishedArticles.length && <><StoryCard image={images.portrait} category="Sociedad" title="El gesto propio" excerpt="Cinco creadoras hablan de la intuición como una forma de poder." /><StoryCard image={images.beauty} category="Belleza" title="Piel real, luz propia" excerpt="El nuevo lenguaje del cuidado empieza por escuchar." tone="dark" /><StoryCard image={images.culture} category="Cultura" title="Arquitecturas íntimas" excerpt="Los espacios que habitamos también cuentan quiénes somos." /></>}
           </div>
         </section>
 
@@ -234,7 +263,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div className="trend-section__image"><img src={images.detail} alt="Detalle de joyería contemporánea" /></div>
         </section>
 
         <section className="voices-section" id="revista">
@@ -255,15 +283,16 @@ export default function Home() {
         </section>
 
         <section className="newsletter-section" id="newsletter">
-          <div className="newsletter-section__copy"><SectionLabel>Correspondencia MODA</SectionLabel><h2>Lo mejor de la semana,<br /><em>en tu bandeja.</em></h2></div>
+          <div className="newsletter-section__copy"><SectionLabel>Correspondencia LIGHT</SectionLabel><h2>Lo mejor de la semana,<br /><em>en tu bandeja.</em></h2></div>
           <div className="newsletter-section__form-wrap">
             {subscribed ? (
               <div className="newsletter-success"><span>Gracias por estar aquí.</span><small>Revisa tu bandeja para confirmar la suscripción.</small></div>
             ) : (
               <form onSubmit={handleSubscribe} className="newsletter-form">
                 <label htmlFor="email">Tu correo electrónico</label>
-                <div><input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@correo.com" required /><button type="submit" aria-label="Suscribirme"><ArrowUpRight size={20} strokeWidth={1.4} /></button></div>
+                <div><input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@correo.com" required /><button type="submit" aria-label="Suscribirme" disabled={newsletterSubmitting}><ArrowUpRight size={20} strokeWidth={1.4} /></button></div>
                 <p>Una carta editorial. Sin ruido. Puedes salir cuando quieras.</p>
+                {newsletterError && <small className="newsletter-form__error">{newsletterError}</small>}
               </form>
             )}
           </div>
@@ -271,23 +300,22 @@ export default function Home() {
 
         <section className="archive-section" id="archivo">
           <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Cultura"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
-          <div className="archive-strip">
-            <div className="archive-card"><span>06.01</span><img src={images.hero} alt="" /><strong>El nuevo uniforme</strong></div>
-            <div className="archive-card archive-card--offset"><span>05.18</span><img src={images.beauty} alt="" /><strong>La piel como paisaje</strong></div>
-            <div className="archive-card"><span>04.02</span><img src={images.culture} alt="" /><strong>Materia y memoria</strong></div>
+          <div className={`archive-strip archive-strip--${activeCategory.toLowerCase()}`}>
+            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><img src={item.image} alt="" /><strong>{item.title}</strong></div>)}
+            {!visibleArchiveItems.length && <p className="archive-empty">Todavía no hay piezas en esta sección.</p>}
           </div>
         </section>
       </main>
 
       <footer className="site-footer">
-        <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">MODA</Link><p>Una revista sobre lo que nos mueve.</p><Link className="back-top" href="/">Volver arriba <ChevronRight size={16} /></Link></div>
+        <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div>
         <div className="site-footer__columns">
           <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/sociedad">Sociedad</Link></div>
-          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre MODA</Link><Link href="/contacto">Contacto</Link></div>
+          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/contacto">Contacto</Link></div>
           <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/contacto"><Mail size={15} /> Correo</Link></div>
-          <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© MODA 2026</span></div>
+          <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>
         </div>
-        <div className="site-footer__bottom"><span>Privacidad</span><span>Términos</span><span>Cookies</span><span className="footer-bottom__right">Madrid · Ciudad de México · Buenos Aires</span></div>
+        <div className="site-footer__bottom"><Link href="/privacidad">Privacidad</Link><Link href="/terminos">Términos</Link><Link href="/cookies">Cookies</Link><span className="footer-bottom__right">Madrid · Ciudad de México · Buenos Aires</span></div>
       </footer>
     </div>
   );

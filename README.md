@@ -1,4 +1,4 @@
-# MODA — Revista de estilo
+# LIGHT — Revista de estilo
 
 React / Express / tRPC / Drizzle starter, adapted from the Sandbox web-db-user template.
 

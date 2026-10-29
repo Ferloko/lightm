@@ -1,4 +1,6 @@
-export type PageBlockType = "heading" | "paragraph" | "image" | "quote" | "divider" | "button";
+export type PageBlockType = "heading" | "paragraph" | "image" | "quote" | "divider" | "button" | "grid";
+
+export type GridLayout = "left" | "right";
 
 export type PageBlock = {
   id: string;
@@ -9,6 +11,10 @@ export type PageBlock = {
   height: number;
   content: string;
   caption?: string;
+  imageAlign?: "full" | "left" | "right";
+  gridLayout?: GridLayout;
+  gridSplit?: number;
+  gridColumns?: { left: string[]; right: string[] };
   color?: string;
   fontSize?: number;
 };
@@ -23,6 +29,7 @@ export function makeBlock(type: PageBlockType, index = 0): PageBlock {
     quote: { width: 500, height: 130, content: "Una frase que merece espacio.", fontSize: 30 },
     divider: { width: 620, height: 2, content: "", fontSize: 16 },
     button: { width: 180, height: 44, content: "Leer más", fontSize: 12 },
+    grid: { width: 780, height: 360, content: "Distribución editorial", fontSize: 16 },
   };
   const preset = defaults[type];
   return { id: `${type}-${Date.now()}-${index}`, type, x: 80 + (index % 2) * 40, y: 70 + index * 150, color: "#171717", ...preset };
