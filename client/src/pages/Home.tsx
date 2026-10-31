@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUp,
@@ -27,6 +27,45 @@ const images = {
 };
 
 const navItems = ["Moda", "Belleza", "Cultura", "Sociedad", "Runway"];
+
+const heroSlides = [
+  {
+    eyebrow: "Portada / Moda",
+    title: <>La nueva<br /><em>sensibilidad</em><br />del vestir.</>,
+    dek: "Una exploración de las formas, texturas y gestos que están redefiniendo el lujo para una generación que elige con intención.",
+    image: images.hero,
+    alt: "Editorial de moda con prendas en tonos neutros",
+    credit: "Fotografía: Estudio LIGHT",
+    href: "/historias/vestirse-de-futuro",
+  },
+  {
+    eyebrow: "Portada / Sociedad",
+    title: <>El gesto<br /><em>propio</em><br />también viste.</>,
+    dek: "Cinco creadoras hablan de intuición, presencia y de la libertad de construir una imagen que no pide permiso.",
+    image: images.portrait,
+    alt: "Retrato editorial de una mujer",
+    credit: "Retrato: Archivo LIGHT",
+    href: "/historias/el-gesto-propio",
+  },
+  {
+    eyebrow: "Portada / Belleza",
+    title: <>Piel real,<br /><em>luz</em><br />propia.</>,
+    dek: "El nuevo lenguaje del cuidado empieza por escuchar el cuerpo y dejar que la belleza tenga su propio ritmo.",
+    image: images.beauty,
+    alt: "Editorial de belleza con luz suave",
+    credit: "Belleza: Estudio LIGHT",
+    href: "/historias/piel-real-luz-propia",
+  },
+  {
+    eyebrow: "Portada / Cultura",
+    title: <>Materia<br /><em>y</em><br />memoria.</>,
+    dek: "Los espacios que habitamos también cuentan quiénes somos: una mirada a los objetos, lugares y gestos que permanecen.",
+    image: images.culture,
+    alt: "Espacio arquitectónico editorial",
+    credit: "Cultura: Archivo LIGHT",
+    href: "/historias/arquitecturas-intimas",
+  },
+];
 
 const archiveItems = [
   { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
@@ -70,6 +109,7 @@ function StoryCard({
       <div className="story-card__image-wrap">
         <img className="story-card__image" src={image} alt="" />
         <span className="story-card__index">01</span>
+        <span className="image-hover-overlay"><strong>{title}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span>
       </div>
       <div className="story-card__body">
         <p className="eyebrow">{category}</p>
@@ -91,6 +131,51 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [activeHero, setActiveHero] = useState(0);
+  const heroSectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = heroSectionRef.current;
+    if (!section) return;
+    let frame = 0;
+    const updateScrollParallax = () => {
+      frame = 0;
+      const bounds = section.getBoundingClientRect();
+      const distance = window.innerHeight / 2 - (bounds.top + bounds.height / 2);
+      const offset = Math.max(-28, Math.min(28, distance * 0.075));
+      section.style.setProperty("--hero-parallax", `${offset}px`);
+      section.style.setProperty("--hero-copy-parallax", `${offset * -0.28}px`);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateScrollParallax);
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      const bounds = section.getBoundingClientRect();
+      const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
+      const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
+      section.style.setProperty("--hero-pointer-x", `${Math.max(-1, Math.min(1, x)) * 8}px`);
+      section.style.setProperty("--hero-pointer-y", `${Math.max(-1, Math.min(1, y)) * 6}px`);
+    };
+    const resetPointer = () => {
+      section.style.setProperty("--hero-pointer-x", "0px");
+      section.style.setProperty("--hero-pointer-y", "0px");
+    };
+    updateScrollParallax();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    section.addEventListener("pointermove", onPointerMove);
+    section.addEventListener("pointerleave", resetPointer);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      section.removeEventListener("pointermove", onPointerMove);
+      section.removeEventListener("pointerleave", resetPointer);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setActiveHero((current) => (current + 1) % heroSlides.length), 7000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const featured = visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setPublishedArticles(featured.length ? featured : visible); }); };
@@ -107,6 +192,7 @@ export default function Home() {
   }, []);
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const hero = heroSlides[activeHero];
   const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -183,16 +269,20 @@ export default function Home() {
       </button>
 
       <main id="top">
-        <section className="hero-section">
-          <div className="hero-copy">
-            <SectionLabel>Portada / </SectionLabel>
-            <h1>La nueva<br /><em>sensibilidad</em><br />del vestir.</h1>
-            <p className="hero-dek">Una exploración de las formas, texturas y gestos que están redefiniendo el lujo para una generación que elige con intención.</p>
-            <StoryLink href="/historias/vestirse-de-futuro">Descubrir la portada</StoryLink>
+        <section className="hero-section" ref={heroSectionRef} aria-label="Portadas destacadas">
+          <div className="hero-copy hero-slide" key={`hero-copy-${activeHero}`}>
+            <SectionLabel>{hero.eyebrow} / </SectionLabel>
+            <h1>{hero.title}</h1>
+            <p className="hero-dek">{hero.dek}</p>
+            <StoryLink href={hero.href}>Descubrir la portada</StoryLink>
           </div>
-          <div className="hero-visual">
-            <img src={images.hero} alt="Editorial de moda con prendas en tonos neutros" />
-            <div className="hero-caption"><span>01 — 04</span><span>Fotografía: Estudio LIGHT</span></div>
+          <div className="hero-visual hero-slide" key={`hero-visual-${activeHero}`}>
+            <img src={hero.image} alt={hero.alt} />
+            <div className="hero-caption"><span>{String(activeHero + 1).padStart(2, "0")} — {String(heroSlides.length).padStart(2, "0")}</span><span>{hero.credit}</span></div>
+            <div className="hero-controls" aria-label="Cambiar portada">
+              {heroSlides.map((slide, index) => <button type="button" key={slide.eyebrow} className={index === activeHero ? "is-active" : ""} onClick={() => setActiveHero(index)} aria-label={`Ver ${slide.eyebrow}`} aria-pressed={index === activeHero}><span /></button>)}
+              <button type="button" className="hero-next" onClick={() => setActiveHero((activeHero + 1) % heroSlides.length)} aria-label="Siguiente portada"><ChevronRight size={18} strokeWidth={1.3} /></button>
+            </div>
           </div>
         </section>
 
@@ -207,7 +297,7 @@ export default function Home() {
 
         <section className="feature-grid" id="belleza">
           <div className="feature-grid__lead">
-            <img src={images.silhouette} alt="Silueta contemporánea en un editorial de moda" />
+            <div className="feature-grid__image-wrap"><img src={images.silhouette} alt="Silueta contemporánea en un editorial de moda" /><span className="image-hover-overlay"><strong>La forma de lo nuevo</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
             <div className="feature-grid__lead-caption"><span>02</span><span>La forma de lo nuevo</span></div>
           </div>
           <article className="feature-grid__story">
@@ -234,7 +324,7 @@ export default function Home() {
           <div className="story-grid">
             {publishedArticles.map((article) => (
               <article className="story-card story-card--published" key={article.id}>
-                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span></div>
+                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span><span className="image-hover-overlay"><strong>{article.title || "Sin título"}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span></div>
                 <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3>{article.title}</h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
               </article>
             ))}
@@ -301,7 +391,7 @@ export default function Home() {
         <section className="archive-section" id="archivo">
           <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Cultura"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
           <div className={`archive-strip archive-strip--${activeCategory.toLowerCase()}`}>
-            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><img src={item.image} alt="" /><strong>{item.title}</strong></div>)}
+            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><div className="archive-card__image-wrap"><img src={item.image} alt="" /><span className="image-hover-overlay"><strong>{item.title}</strong><small>Explorar historia <ArrowUpRight size={14} /></small></span></div><strong>{item.title}</strong></div>)}
             {!visibleArchiveItems.length && <p className="archive-empty">Todavía no hay piezas en esta sección.</p>}
           </div>
         </section>

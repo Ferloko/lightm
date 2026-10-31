@@ -10,6 +10,7 @@ export type MagazineEdition = {
   title: string;
   date: string;
   src: string;
+  iframe: string;
   tone: "dark" | "light";
   dek: string;
   coverKicker: string;
@@ -34,6 +35,7 @@ export const editions: MagazineEdition[] = [
     title: "Edición inaugural",
     date: "Archivo digital",
     src: "https://heyzine.com/flip-book/6a853c2672.html",
+    iframe: "https://heyzine.com/flip-book/6a853c2672.html",
     tone: "dark",
     dek: "El primer gesto de LIGHT: una mirada abierta al estilo, la imagen y las conversaciones que permanecen.",
     coverKicker: "LIGHT / ARCHIVO",
@@ -54,6 +56,7 @@ export const editions: MagazineEdition[] = [
     title: "La conversación de estilo",
     date: "Edición actual",
     src: "https://heyzine.com/flip-book/cfb0eadb91.html",
+    iframe: "https://heyzine.com/flip-book/cfb0eadb91.html",
     tone: "light",
     dek: "Una edición sobre la identidad visual, los cambios de temporada y aquello que nos permite reconocernos.",
     coverKicker: "LIGHT / EDICIÓN 02",

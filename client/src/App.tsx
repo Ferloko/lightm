@@ -17,6 +17,7 @@ import ScrollAnimations from "./components/ScrollAnimations";
 import AdminDashboard from "./pages/AdminDashboard";
 import DynamicArticlePage from "./pages/DynamicArticlePage";
 import MagazineEditionPage from "./pages/MagazineEditionPage";
+import ArchivePage from "./pages/ArchivePage";
 
 function PageViewTracker() {
   const [location] = useLocation();
@@ -38,7 +39,7 @@ function Router() {
       <Route path="/runway" component={RunwayPage} />
       <Route path="/runway/:brand" component={BrandPage} />
       <Route path="/revista/:number" component={MagazineEditionPage} />
-      <Route path="/archivo" component={() => <InfoPage kind="archivo" />} />
+      <Route path="/archivo" component={ArchivePage} />
       <Route path="/newsletter" component={() => <InfoPage kind="newsletter" />} />
       <Route path="/sobre-moda" component={() => <InfoPage kind="sobre-moda" />} />
       <Route path="/contacto" component={() => <InfoPage kind="contacto" />} />

@@ -44,7 +44,14 @@ export function saveArticles(articles: EditorialArticle[]) {
 }
 
 export async function getEditorialUser(): Promise<EditorialUser | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    try {
+      if (localStorage.getItem("light.demo.editorial-auth") === "1") return { trigger: "LIGHT Editor", email: "editor@light.studio", role: "Owner", displayName: "LIGHT Editor", canPublish: true };
+    } catch {
+      // localStorage unavailable
+    }
+    return null;
+  }
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data: profile, error } = await supabase

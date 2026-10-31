@@ -51,7 +51,15 @@ export default function SiteSearch({ onClose }: { onClose?: () => void }) {
   const login = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-    if (!supabase) { setError("La autenticación de Supabase todavía no está configurada."); return; }
+    if (!supabase) {
+      if (password.trim().length < 4) { setError("En preview demo, usa una contraseña de al menos 4 caracteres."); return; }
+      localStorage.setItem("light.demo.editorial-auth", "1");
+      setLoginOpen(false);
+      setPassword("");
+      onClose?.();
+      navigate("/admin");
+      return;
+    }
     const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (authError) { setError("Correo o contraseña incorrectos."); return; }
     const profile = await getEditorialUser();

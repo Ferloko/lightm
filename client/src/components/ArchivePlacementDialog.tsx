@@ -1,0 +1,13 @@
+import { useState } from "react";
+import { Save, X } from "lucide-react";
+import { getArchivePlacements, saveArchivePlacement, type ArchivePlacement } from "@/lib/archivePlacements";
+import type { EditorialArticle } from "@/lib/editorial";
+
+export default function ArchivePlacementDialog({ article, onClose, onSaved }: { article: EditorialArticle; onClose: () => void; onSaved: (placement: ArchivePlacement) => void }) {
+  const current = getArchivePlacements()[article.id] || { spotlight: false, mustRead: false, latest: false, order: 1 };
+  const [placement, setPlacement] = useState<ArchivePlacement>(current);
+  const toggle = (key: keyof Omit<ArchivePlacement, "order">) => setPlacement((value) => ({ ...value, [key]: !value[key] }));
+  const save = () => { saveArchivePlacement(article.id, placement); onSaved(placement); onClose(); };
+
+  return <div className="archive-placement-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><section className="archive-placement-dialog" role="dialog" aria-modal="true" aria-labelledby="archive-placement-title"><button className="archive-placement-dialog__close" type="button" onClick={onClose} aria-label="Cerrar"><X size={18} /></button><p className="eyebrow">Archivo / Ubicación editorial</p><h2 id="archive-placement-title">¿Dónde aparece “{article.title || "Sin título"}”?</h2><p className="archive-placement-dialog__intro">El contenido, la portada y la bajada se toman del artículo. Aquí solo eliges en qué módulos debe aparecer.</p><div className="archive-placement-options"><label><input type="checkbox" checked={placement.spotlight} onChange={() => toggle("spotlight")} /><span><strong>Spotlight</strong><small>Hero destacado con imagen y texto.</small></span></label><label><input type="checkbox" checked={placement.mustRead} onChange={() => toggle("mustRead")} /><span><strong>Must-Reads</strong><small>La selección editorial principal del Archivo.</small></span></label><label><input type="checkbox" checked={placement.latest} onChange={() => toggle("latest")} /><span><strong>Latest issue</strong><small>La cuadrícula de historias recientes.</small></span></label></div><label className="archive-placement-order">Orden en selección<input type="number" min="1" max="99" value={placement.order} onChange={(event) => setPlacement((value) => ({ ...value, order: Number(event.target.value) || 1 }))} /></label><div className="archive-placement-dialog__actions"><button className="admin-secondary" type="button" onClick={onClose}>Cancelar</button><button className="admin-primary" type="button" onClick={save}><Save size={14} /> Guardar ubicación</button></div></section></div>;
+}
