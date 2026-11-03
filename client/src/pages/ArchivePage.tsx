@@ -16,7 +16,7 @@ function localViewsFor(article: EditorialArticle) {
 
 function imageFor(article: EditorialArticle) {
   return article.image || "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=84";
-}
+} 
 
 function ArticleCard({ article, index, compact = false }: { article: EditorialArticle; index: number; compact?: boolean }) {
   return <article className={`archive-article-card${compact ? " archive-article-card--compact" : ""}`}><Link href={`/historias/${article.slug || article.id}`} className="archive-article-card__image"><img src={imageFor(article)} alt="" /><span>{String(index + 1).padStart(2, "0")}</span><span className="image-hover-overlay"><strong>{article.title || "Sin título"}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span></Link><div className="archive-article-card__body"><p className="eyebrow">{article.category}</p><h3><Link href={`/historias/${article.slug || article.id}`}>{article.title || "Sin título"}</Link></h3>{!compact && article.excerpt && <p>{article.excerpt}</p>}<Link className="archive-article-card__link" href={`/historias/${article.slug || article.id}`}>Leer historia <ArrowUpRight size={14} /></Link></div></article>;
