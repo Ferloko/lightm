@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import MenuThemeToggle from "@/components/MenuThemeToggle";
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownRight,
@@ -14,6 +18,7 @@ import {
 import { Link } from "wouter";
 import SiteSearch from "@/components/SiteSearch";
 import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
+import { getArchivePlacements } from "@/lib/archivePlacements";
 import { subscribeToNewsletter } from "@/lib/newsletter";
 
 const images = {
@@ -26,7 +31,46 @@ const images = {
   detail: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=1000&q=90",
 };
 
-const navItems = ["Moda", "Belleza", "Cultura", "Sociedad", "Runway"];
+const navItems = ["Moda", "Belleza", "Cultura", "Living", "Runway"];
+
+const heroSlides = [
+  {
+    eyebrow: "Portada / Moda",
+    title: <>La nueva<br /><em>sensibilidad</em><br />del vestir.</>,
+    dek: "Una exploración de las formas, texturas y gestos que están redefiniendo el lujo para una generación que elige con intención.",
+    image: images.hero,
+    alt: "Editorial de moda con prendas en tonos neutros",
+    credit: "Fotografía: Estudio LIGHT",
+    href: "/historias/vestirse-de-futuro",
+  },
+  {
+    eyebrow: "Portada / Sociedad",
+    title: <>El gesto<br /><em>propio</em><br />también viste.</>,
+    dek: "Cinco creadoras hablan de intuición, presencia y de la libertad de construir una imagen que no pide permiso.",
+    image: images.portrait,
+    alt: "Retrato editorial de una mujer",
+    credit: "Retrato: Archivo LIGHT",
+    href: "/historias/el-gesto-propio",
+  },
+  {
+    eyebrow: "Portada / Belleza",
+    title: <>Piel real,<br /><em>luz</em><br />propia.</>,
+    dek: "El nuevo lenguaje del cuidado empieza por escuchar el cuerpo y dejar que la belleza tenga su propio ritmo.",
+    image: images.beauty,
+    alt: "Editorial de belleza con luz suave",
+    credit: "Belleza: Estudio LIGHT",
+    href: "/historias/piel-real-luz-propia",
+  },
+  {
+    eyebrow: "Portada / Cultura",
+    title: <>Materia<br /><em>y</em><br />memoria.</>,
+    dek: "Los espacios que habitamos también cuentan quiénes somos: una mirada a los objetos, lugares y gestos que permanecen.",
+    image: images.culture,
+    alt: "Espacio arquitectónico editorial",
+    credit: "Cultura: Archivo LIGHT",
+    href: "/historias/arquitecturas-intimas",
+  },
+];
 
 const heroSlides = [
   {
@@ -130,9 +174,57 @@ export default function Home() {
   const [newsletterError, setNewsletterError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
+  const [homepageHeroArticle, setHomepageHeroArticle] = useState<EditorialArticle | null>(null);
+  const [homepageFeatureArticle, setHomepageFeatureArticle] = useState<EditorialArticle | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [activeHero, setActiveHero] = useState(0);
   const heroSectionRef = useRef<HTMLElement>(null);
+<<<<<<< HEAD
+
+  useEffect(() => {
+    const section = heroSectionRef.current;
+    if (!section) return;
+    let frame = 0;
+    const updateScrollParallax = () => {
+      frame = 0;
+      const bounds = section.getBoundingClientRect();
+      const distance = window.innerHeight / 2 - (bounds.top + bounds.height / 2);
+      const offset = Math.max(-28, Math.min(28, distance * 0.075));
+      section.style.setProperty("--hero-parallax", `${offset}px`);
+      section.style.setProperty("--hero-copy-parallax", `${offset * -0.28}px`);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateScrollParallax);
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      const bounds = section.getBoundingClientRect();
+      const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
+      const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
+      section.style.setProperty("--hero-pointer-x", `${Math.max(-1, Math.min(1, x)) * 8}px`);
+      section.style.setProperty("--hero-pointer-y", `${Math.max(-1, Math.min(1, y)) * 6}px`);
+    };
+    const resetPointer = () => {
+      section.style.setProperty("--hero-pointer-x", "0px");
+      section.style.setProperty("--hero-pointer-y", "0px");
+    };
+    updateScrollParallax();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    section.addEventListener("pointermove", onPointerMove);
+    section.addEventListener("pointerleave", resetPointer);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      section.removeEventListener("pointermove", onPointerMove);
+      section.removeEventListener("pointerleave", resetPointer);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setActiveHero((current) => (current + 1) % heroSlides.length), 7000);
+    return () => window.clearInterval(timer);
+  }, []);
+=======
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 
   useEffect(() => {
     const section = heroSectionRef.current;
@@ -178,7 +270,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const featured = visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setPublishedArticles(featured.length ? featured : visible); }); };
+    const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placements = getArchivePlacements(); const homeHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }); };
     refresh();
     window.addEventListener("storage", refresh);
     return () => window.removeEventListener("storage", refresh);
@@ -192,7 +284,11 @@ export default function Home() {
   }, []);
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+<<<<<<< HEAD
   const hero = heroSlides[activeHero];
+=======
+  const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.hero, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : heroSlides[activeHero];
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
   const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -237,6 +333,7 @@ export default function Home() {
         <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="Menú de navegación">
           <div className="menu-overlay__top">
             <span className="menu-overlay__edition">LIGHT</span>
+            <MenuThemeToggle />
             <button className="close-button" type="button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú">
               <X size={22} strokeWidth={1.3} />
             </button>
@@ -265,7 +362,6 @@ export default function Home() {
         tabIndex={showBackToTop ? 0 : -1}
       >
         <ArrowUp size={16} strokeWidth={1.4} />
-        <span>Volver arriba</span>
       </button>
 
       <main id="top">
@@ -297,15 +393,20 @@ export default function Home() {
 
         <section className="feature-grid" id="belleza">
           <div className="feature-grid__lead">
+<<<<<<< HEAD
             <div className="feature-grid__image-wrap"><img src={images.silhouette} alt="Silueta contemporánea en un editorial de moda" /><span className="image-hover-overlay"><strong>La forma de lo nuevo</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
             <div className="feature-grid__lead-caption"><span>02</span><span>La forma de lo nuevo</span></div>
+=======
+            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || images.silhouette} alt={homepageFeatureArticle?.title || "Silueta contemporánea en un editorial de moda"} /><span className="image-hover-overlay"><strong>{homepageFeatureArticle?.title || "La forma de lo nuevo"}</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
+            <div className="feature-grid__lead-caption"><span>02</span><span>{homepageFeatureArticle?.title || "La forma de lo nuevo"}</span></div>
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
           </div>
           <article className="feature-grid__story">
-            <SectionLabel>Moda</SectionLabel>
-            <h2>Vestirse<br /><em>de futuro.</em></h2>
-            <p>Las prendas ya no siguen una sola dirección. Un armario más libre mezcla memoria, tecnología y una nueva idea de lo que significa estar bien vestido.</p>
-            <div className="story-meta"><span>Por Inés Valdés</span><span>12 min de lectura</span></div>
-            <StoryLink href="/historias/vestirse-de-futuro">Leer el artículo</StoryLink>
+            <SectionLabel>{homepageFeatureArticle?.category || "Moda"}</SectionLabel>
+            <h2>{homepageFeatureArticle ? homepageFeatureArticle.title : <>Vestirse<br /><em>de futuro.</em></>}</h2>
+            <p>{homepageFeatureArticle?.excerpt || "Las prendas ya no siguen una sola dirección. Un armario más libre mezcla memoria, tecnología y una nueva idea de lo que significa estar bien vestido."}</p>
+            <div className="story-meta"><span>Por {homepageFeatureArticle?.author || "Inés Valdés"}</span><span>{homepageFeatureArticle?.readingTime || "12 min de lectura"}</span></div>
+            <StoryLink href={homepageFeatureArticle ? `/historias/${homepageFeatureArticle.slug || homepageFeatureArticle.id}` : "/historias/vestirse-de-futuro"}>Leer el artículo</StoryLink>
           </article>
           <div className="feature-grid__aside">
             <span className="vertical-note">ESTUDIO / 2026</span>
@@ -400,7 +501,7 @@ export default function Home() {
       <footer className="site-footer">
         <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div>
         <div className="site-footer__columns">
-          <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/sociedad">Sociedad</Link></div>
+          <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/living">Living</Link></div>
           <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/contacto">Contacto</Link></div>
           <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/contacto"><Mail size={15} /> Correo</Link></div>
           <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>

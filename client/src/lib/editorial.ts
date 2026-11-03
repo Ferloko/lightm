@@ -34,6 +34,10 @@ export type EditorialArticle = {
 };
 
 const ARTICLE_KEY = "moda.editorial.articles";
+<<<<<<< HEAD
+=======
+const DELETED_ARTICLE_KEY = "moda.editorial.deleted";
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 
 export function getArticles(): EditorialArticle[] {
   try { return JSON.parse(localStorage.getItem(ARTICLE_KEY) || "[]") as EditorialArticle[]; } catch { return []; }
@@ -43,6 +47,18 @@ export function saveArticles(articles: EditorialArticle[]) {
   localStorage.setItem(ARTICLE_KEY, JSON.stringify(articles));
 }
 
+<<<<<<< HEAD
+=======
+export function getDeletedArticleKeys(): string[] {
+  try { return JSON.parse(localStorage.getItem(DELETED_ARTICLE_KEY) || "[]") as string[]; } catch { return []; }
+}
+
+export function markArticleDeleted(article: Pick<EditorialArticle, "id" | "slug">) {
+  const next = Array.from(new Set([...getDeletedArticleKeys(), article.id, article.slug].filter(Boolean)));
+  localStorage.setItem(DELETED_ARTICLE_KEY, JSON.stringify(next));
+}
+
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 export async function getEditorialUser(): Promise<EditorialUser | null> {
   if (!supabase) {
     try {
@@ -105,6 +121,15 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<bool
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
   const { error } = await supabase.from("articles").upsert({ id: article.id, author_id: user.id, slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt });
+  if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
+  return true;
+}
+
+export async function deleteRemoteArticle(articleId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { error } = await supabase.from("articles").delete().eq("id", articleId);
   if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
   return true;
 }

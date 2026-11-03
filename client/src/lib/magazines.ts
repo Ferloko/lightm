@@ -11,6 +11,10 @@ export type MagazineEdition = {
   date: string;
   src: string;
   iframe: string;
+<<<<<<< HEAD
+=======
+  embedHtml?: string;
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
   tone: "dark" | "light";
   dek: string;
   coverKicker: string;
@@ -41,7 +45,11 @@ export const editions: MagazineEdition[] = [
     coverKicker: "LIGHT / ARCHIVO",
     coverTitle: "Mirar de cerca",
     coverNote: "Estilo · Cultura · Sociedad",
+<<<<<<< HEAD
     coverImage: images.hero,
+=======
+    coverImage: "https://i.imgur.com/Tzhqio1.png",
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
     previewPages: [
       { label: "02 / Ensayo", title: "La forma de estar", text: "Una conversación sobre vestir, habitar y elegir con intención.", image: images.silhouette },
       { label: "08 / Perfil", title: "El gesto propio", text: "Personas que convierten la intuición en una manera de mirar.", image: images.portrait },
@@ -49,6 +57,15 @@ export const editions: MagazineEdition[] = [
       { label: "24 / Belleza", title: "Piel de invierno", text: "La belleza como cuidado, tiempo y presencia.", image: images.beauty },
       { label: "32 / Cultura", title: "La ciudad como estudio", text: "Lugares para perderse y volver a encontrar una idea.", image: images.culture },
       { label: "40 / Cierre", title: "Una nota final", text: "Lo que queda cuando dejamos de mirar deprisa.", image: images.hero },
+<<<<<<< HEAD
+=======
+      { label: "48 / Archivo", title: "La materia del tiempo", text: "Objetos que guardan una forma de mirar.", image: images.detail },
+      { label: "56 / Epílogo", title: "Volver a lo esencial", text: "Una última pausa antes de cerrar la edición.", image: images.silhouette },
+      { label: "64 / Conversación", title: "Lo que permanece", text: "Una conversación sobre estilo y memoria.", image: images.portrait },
+      { label: "72 / Última página", title: "Mirar de cerca", text: "El cierre de una edición para volver a empezar.", image: images.beauty },
+      { label: "80 / Nota", title: "Una forma de elegir", text: "Pequeñas decisiones que cambian una mirada.", image: images.culture },
+      { label: "88 / Cierre", title: "Hasta el próximo número", text: "La conversación queda abierta.", image: images.hero },
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
     ],
   },
   {
@@ -70,6 +87,15 @@ export const editions: MagazineEdition[] = [
       { label: "28 / Belleza", title: "La materia del rostro", text: "Texturas, gestos y una rutina entendida como pausa.", image: images.beauty },
       { label: "36 / Sociedad", title: "Voces en presente", text: "Personas que están moviendo la conversación.", image: images.culture },
       { label: "44 / Última página", title: "Para volver a mirar", text: "Una selección breve para cerrar la edición.", image: images.silhouette },
+<<<<<<< HEAD
+=======
+      { label: "52 / Belleza", title: "Rituales de luz", text: "La belleza entendida como una práctica cotidiana.", image: images.detail },
+      { label: "60 / Cierre", title: "La conversación continúa", text: "Ideas para llevar más allá de estas páginas.", image: images.hero },
+      { label: "68 / Perfil", title: "Una voz propia", text: "Personas que están cambiando el presente.", image: images.portrait },
+      { label: "76 / Moda", title: "Otra silueta", text: "Una nueva forma de habitar la ropa.", image: images.silhouette },
+      { label: "84 / Cultura", title: "El mundo alrededor", text: "Ideas, lugares y objetos para mirar distinto.", image: images.culture },
+      { label: "92 / Cierre", title: "Seguimos conversando", text: "La última página nunca es el final.", image: images.beauty },
+>>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
     ],
   },
 ];
