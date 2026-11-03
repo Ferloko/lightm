@@ -72,7 +72,6 @@ create table public.campaigns (
   constraint campaigns_valid_range check (end_date >= start_date)
 );
 
-
 -- Safe migration for projects that already created the first version of articles.
 alter table public.articles add column if not exists slug text;
 alter table public.articles add column if not exists eyebrow text not null default 'MODA / PORTADA';
@@ -126,3 +125,39 @@ on conflict (id) do nothing;
 create policy "Public can read editorial assets" on storage.objects for select using (bucket_id = 'editorial-assets');
 create policy "Editors can upload editorial assets" on storage.objects for insert to authenticated with check (bucket_id = 'editorial-assets' and public.current_editorial_role() in ('owner','admin','staff_writer'));
 create policy "Authors and admins can update assets" on storage.objects for update to authenticated using (bucket_id = 'editorial-assets' and owner_id = auth.uid()::text);
+
+
+-- Runway: marcas y fichas editoriales administrables.
+create table if not exists public.runway_brands (
+  id text primary key,
+  slug text unique not null,
+  brand text not null,
+  city text not null default 'Paris',
+  image text not null default '',
+  season text not null default 'Spring 2027 Ready-to-Wear',
+  deck text not null default '',
+  text text not null default '',
+  tags jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.runway_brands enable row level security;
+create policy "Anyone can read runway brands" on public.runway_brands for select using (true);
+create policy "Editors can create runway brands" on public.runway_brands for insert to authenticated with check (public.current_editorial_role() in ('owner','admin','staff_writer'));
+create policy "Editors can update runway brands" on public.runway_brands for update to authenticated using (public.current_editorial_role() in ('owner','admin','staff_writer')) with check (public.current_editorial_role() in ('owner','admin','staff_writer'));
+create policy "Editors can delete runway brands" on public.runway_brands for delete to authenticated using (public.current_editorial_role() in ('owner','admin','staff_writer'));
+
+
+-- Control editorial de páginas temporalmente cerradas.
+create table if not exists public.page_availability (
+  path text primary key,
+  label text not null,
+  enabled boolean not null default false,
+  title text not null,
+  message text not null default '',
+  image text not null default '',
+  updated_at timestamptz not null default now()
+);
+alter table public.page_availability enable row level security;
+create policy "Anyone can read page availability" on public.page_availability for select using (true);
+create policy "Editors can create page availability" on public.page_availability for insert to authenticated with check (public.current_editorial_role() in ('owner','admin','staff_writer'));
+create policy "Editors can update page availability" on public.page_availability for update to authenticated using (public.current_editorial_role() in ('owner','admin','staff_writer')) with check (public.current_editorial_role() in ('owner','admin','staff_writer'));

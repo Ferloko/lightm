@@ -33,17 +33,8 @@ export type EditorialArticle = {
   updatedAt: string;
 };
 
-// Temporary development credentials. Replace with Supabase Auth before production.
-export const editorialUsers: Record<string, EditorialUser> = {
-  snow: { trigger: "Snow", email: "snow@moda.studio", role: "Owner", displayName: "Snow", canPublish: true },
-  songbird: { trigger: "Songbird", email: "songbird@moda.studio", role: "Admin", displayName: "Songbird", canPublish: true },
-  moonglow: { trigger: "Moonglow", email: "moonglow@moda.studio", role: "Staff Writer", displayName: "Moonglow", canPublish: false },
-  bianca: { trigger: "Bianca", email: "bianca@moda.studio", role: "Staff Writer", displayName: "Bianca", canPublish: false },
-};
-
-export const TEMPORARY_PASSWORD = "MODA-DEMO-2026";
 const ARTICLE_KEY = "moda.editorial.articles";
-const SESSION_KEY = "moda.editorial.session";
+const DELETED_ARTICLE_KEY = "moda.editorial.deleted";
 
 export function getArticles(): EditorialArticle[] {
   try { return JSON.parse(localStorage.getItem(ARTICLE_KEY) || "[]") as EditorialArticle[]; } catch { return []; }
@@ -53,13 +44,37 @@ export function saveArticles(articles: EditorialArticle[]) {
   localStorage.setItem(ARTICLE_KEY, JSON.stringify(articles));
 }
 
-export function getSession(): EditorialUser | null {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null") as EditorialUser | null; } catch { return null; }
+export function getDeletedArticleKeys(): string[] {
+  try { return JSON.parse(localStorage.getItem(DELETED_ARTICLE_KEY) || "[]") as string[]; } catch { return []; }
 }
 
-export function setSession(user: EditorialUser | null) {
-  if (user) sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-  else sessionStorage.removeItem(SESSION_KEY);
+export function markArticleDeleted(article: Pick<EditorialArticle, "id" | "slug">) {
+  const next = Array.from(new Set([...getDeletedArticleKeys(), article.id, article.slug].filter(Boolean)));
+  localStorage.setItem(DELETED_ARTICLE_KEY, JSON.stringify(next));
+}
+
+export async function getEditorialUser(): Promise<EditorialUser | null> {
+  if (!supabase) {
+    try {
+      if (localStorage.getItem("light.demo.editorial-auth") === "1") return { trigger: "LIGHT Editor", email: "editor@light.studio", role: "Owner", displayName: "LIGHT Editor", canPublish: true };
+    } catch {
+      // localStorage unavailable
+    }
+    return null;
+  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("display_name, role")
+    .eq("id", user.id)
+    .single();
+  if (error || !profile) {
+    console.warn("[LIGHT] Editorial profile unavailable", error?.message);
+    return null;
+  }
+  const role = profile.role === "owner" ? "Owner" : profile.role === "admin" ? "Admin" : "Staff Writer";
+  return { trigger: profile.display_name, email: user.email || "", role, displayName: profile.display_name, canPublish: profile.role === "owner" || profile.role === "admin" };
 }
 
 export function createArticle(author: string): EditorialArticle {
@@ -100,6 +115,15 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<bool
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
   const { error } = await supabase.from("articles").upsert({ id: article.id, author_id: user.id, slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt });
+  if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
+  return true;
+}
+
+export async function deleteRemoteArticle(articleId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { error } = await supabase.from("articles").delete().eq("id", articleId);
   if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
   return true;
 }
