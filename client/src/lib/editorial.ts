@@ -34,10 +34,7 @@ export type EditorialArticle = {
 };
 
 const ARTICLE_KEY = "moda.editorial.articles";
-<<<<<<< HEAD
-=======
 const DELETED_ARTICLE_KEY = "moda.editorial.deleted";
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 
 export function getArticles(): EditorialArticle[] {
   try { return JSON.parse(localStorage.getItem(ARTICLE_KEY) || "[]") as EditorialArticle[]; } catch { return []; }
@@ -47,8 +44,6 @@ export function saveArticles(articles: EditorialArticle[]) {
   localStorage.setItem(ARTICLE_KEY, JSON.stringify(articles));
 }
 
-<<<<<<< HEAD
-=======
 export function getDeletedArticleKeys(): string[] {
   try { return JSON.parse(localStorage.getItem(DELETED_ARTICLE_KEY) || "[]") as string[]; } catch { return []; }
 }
@@ -58,7 +53,6 @@ export function markArticleDeleted(article: Pick<EditorialArticle, "id" | "slug"
   localStorage.setItem(DELETED_ARTICLE_KEY, JSON.stringify(next));
 }
 
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 export async function getEditorialUser(): Promise<EditorialUser | null> {
   if (!supabase) {
     try {

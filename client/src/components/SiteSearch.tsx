@@ -9,11 +9,7 @@ const searchable = [
   ["Moda", "/moda", "Sección editorial"],
   ["Runway", "/runway", "Pasarelas y marcas"],
   ["Archivo", "/archivo", "Historias LIGHT"],
-<<<<<<< HEAD
-  ["La revista", "/archivo", "Ediciones LIGHT"],
-=======
   ["La revista", "/sobre-moda", "Ediciones LIGHT"],
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
   ["Belleza", "/belleza", "Cuidado y belleza"],
   ["Cultura", "/cultura", "Ideas y espacios"],
   ["Sociedad", "/sociedad", "Voces y personas"],

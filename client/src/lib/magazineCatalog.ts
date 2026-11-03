@@ -5,9 +5,6 @@ const MAGAZINE_KEY = "light.magazine.editions";
 export function getMagazineEditions(): MagazineEdition[] {
   try {
     const stored = JSON.parse(localStorage.getItem(MAGAZINE_KEY) || "null");
-<<<<<<< HEAD
-    return Array.isArray(stored) && stored.length ? stored as MagazineEdition[] : editions;
-=======
     if (Array.isArray(stored) && stored.length) {
       return (stored as MagazineEdition[]).map((edition) => {
         const defaults = editions.find((item) => item.number === edition.number)?.previewPages || editions[0].previewPages;
@@ -16,7 +13,6 @@ export function getMagazineEditions(): MagazineEdition[] {
       });
     }
     return editions;
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
   } catch {
     return editions;
   }

@@ -2,12 +2,9 @@ export type ArchivePlacement = {
   spotlight: boolean;
   mustRead: boolean;
   latest: boolean;
-<<<<<<< HEAD
-=======
   homeHero: boolean;
   homeFeature: boolean;
   homeSelection: boolean;
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
   order: number;
 };
 

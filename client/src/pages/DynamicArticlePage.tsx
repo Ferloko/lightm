@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 import MenuThemeToggle from "@/components/MenuThemeToggle";
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 import { ArrowLeft, ArrowUpRight, ChevronRight, Instagram, Mail, Menu, Search, X, Youtube } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";

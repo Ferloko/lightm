@@ -19,11 +19,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import DynamicArticlePage from "./pages/DynamicArticlePage";
 import MagazineEditionPage from "./pages/MagazineEditionPage";
 import ArchivePage from "./pages/ArchivePage";
-<<<<<<< HEAD
-=======
 import LivingPage from "./pages/LivingPage";
 import ComingSoonGate from "./components/ComingSoonGate";
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 
 function PageViewTracker() {
   const [location] = useLocation();
@@ -65,17 +62,10 @@ function Router() {
       <Route path="/runway" component={() => <ComingSoonGate path="/runway"><RunwayPage /></ComingSoonGate>} />
       <Route path="/runway/:brand" component={BrandPage} />
       <Route path="/revista/:number" component={MagazineEditionPage} />
-<<<<<<< HEAD
-      <Route path="/archivo" component={ArchivePage} />
-      <Route path="/newsletter" component={() => <InfoPage kind="newsletter" />} />
-      <Route path="/sobre-moda" component={() => <InfoPage kind="sobre-moda" />} />
-      <Route path="/contacto" component={() => <InfoPage kind="contacto" />} />
-=======
       <Route path="/archivo" component={() => <ComingSoonGate path="/archivo"><ArchivePage /></ComingSoonGate>} />
       <Route path="/newsletter" component={() => <ComingSoonGate path="/newsletter"><InfoPage kind="newsletter" /></ComingSoonGate>} />
       <Route path="/sobre-moda" component={() => <ComingSoonGate path="/sobre-moda"><InfoPage kind="sobre-moda" /></ComingSoonGate>} />
       <Route path="/contacto" component={() => <ComingSoonGate path="/contacto"><InfoPage kind="contacto" /></ComingSoonGate>} />
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
       <Route path="/privacidad" component={() => <InfoPage kind="privacidad" />} />
       <Route path="/terminos" component={() => <InfoPage kind="terminos" />} />
       <Route path="/cookies" component={() => <InfoPage kind="cookies" />} />

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { ArrowLeft, ArrowRight, ArrowUpRight, Instagram, Mail, Youtube } from "lucide-react";
-=======
 import { ArrowLeft, ArrowRight, ArrowUpRight, Instagram, Mail, Search, Youtube } from "lucide-react";
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 import { useRef, useState } from "react";
 import { Link } from "wouter";
 import { getMagazineEditions } from "@/lib/magazineCatalog";
@@ -33,11 +29,7 @@ function MagazineCatalog() {
   const editions = getMagazineEditions();
   const rail = useRef<HTMLDivElement>(null);
   const move = (direction: number) => rail.current?.scrollBy({ left: direction * Math.max(280, rail.current.clientWidth * .7), behavior: "smooth" });
-<<<<<<< HEAD
-  return <div className="magazine-catalog"><div className="magazine-catalog__heading"><div><p className="eyebrow">Ediciones digitales</p><span>Explora cada número antes de abrirlo</span></div><div className="magazine-catalog__controls"><button type="button" onClick={() => move(-1)} aria-label="Ediciones anteriores"><ArrowLeft size={18} /></button><button type="button" onClick={() => move(1)} aria-label="Ediciones siguientes"><ArrowRight size={18} /></button></div></div><div className="magazine-catalog__grid" ref={rail}>{editions.map((edition) => <article className={`magazine-card magazine-card--${edition.tone}`} key={edition.number}><Link href={`/revista/${edition.number}`} className="magazine-card__cover" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.64)), url(${edition.coverImage})` }}><span>LIGHT / {edition.number}</span><strong>{edition.coverTitle || edition.number}</strong><small>{edition.coverNote || edition.title}</small></Link><div className="magazine-card__body"><div><p className="eyebrow">{edition.date}</p><h3>{edition.title}</h3></div><Link href={`/revista/${edition.number}`}>Ver edición <ArrowUpRight size={15} /></Link></div></article>)}</div></div>;
-=======
   return <div className="magazine-catalog"><div className="magazine-catalog__heading"><div><p className="eyebrow">Ediciones digitales</p><span>Explora cada número antes de abrirlo</span></div><div className="magazine-catalog__controls"><button type="button" onClick={() => move(-1)} aria-label="Ediciones anteriores"><ArrowLeft size={18} /></button><button type="button" onClick={() => move(1)} aria-label="Ediciones siguientes"><ArrowRight size={18} /></button></div></div><div className="magazine-catalog__grid" ref={rail}>{editions.map((edition) => <article className={`magazine-card magazine-card--${edition.tone}`} key={edition.number}><Link href={`/revista/${edition.number}`} className="magazine-card__cover magazine-card__cover--image-only"><img className="magazine-card__full-image" src={edition.coverImage} alt={`Portada ${edition.title}`} /></Link><div className="magazine-card__body"><div><p className="eyebrow">{edition.date}</p><h3>{edition.title}</h3></div><Link href={`/revista/${edition.number}`}>Ver edición <ArrowUpRight size={15} /></Link></div></article>)}</div></div>;
->>>>>>> 262872a606f138ec3ba64c08b614496d59e84fc6
 }
 
 export default function InfoPage({ kind }: { kind: InfoKind }) {
