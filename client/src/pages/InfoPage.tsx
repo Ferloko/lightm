@@ -1,7 +1,8 @@
 import { ArrowLeft, ArrowRight, ArrowUpRight, Instagram, Mail, Search, Youtube } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { getMagazineEditions } from "@/lib/magazineCatalog";
+import { fetchRemoteMagazineEditions } from "@/lib/magazineCatalog";
+import type { MagazineEdition } from "@/lib/magazines";
 
 type InfoKind = "archivo" | "newsletter" | "sobre-moda" | "contacto" | "privacidad" | "terminos" | "cookies";
 
@@ -26,7 +27,8 @@ function Footer() {
 }
 
 function MagazineCatalog() {
-  const editions = getMagazineEditions();
+  const [editions, setEditions] = useState<MagazineEdition[]>([]);
+  useEffect(() => { void fetchRemoteMagazineEditions().then(setEditions).catch((error) => console.error("[LIGHT] No se pudieron cargar las ediciones", error)); }, []);
   const rail = useRef<HTMLDivElement>(null);
   const move = (direction: number) => rail.current?.scrollBy({ left: direction * Math.max(280, rail.current.clientWidth * .7), behavior: "smooth" });
   return <div className="magazine-catalog"><div className="magazine-catalog__heading"><div><p className="eyebrow">Ediciones digitales</p><span>Explora cada número antes de abrirlo</span></div><div className="magazine-catalog__controls"><button type="button" onClick={() => move(-1)} aria-label="Ediciones anteriores"><ArrowLeft size={18} /></button><button type="button" onClick={() => move(1)} aria-label="Ediciones siguientes"><ArrowRight size={18} /></button></div></div><div className="magazine-catalog__grid" ref={rail}>{editions.map((edition) => <article className={`magazine-card magazine-card--${edition.tone}`} key={edition.number}><Link href={`/revista/${edition.number}`} className="magazine-card__cover magazine-card__cover--image-only"><img className="magazine-card__full-image" src={edition.coverImage} alt={`Portada ${edition.title}`} /></Link><div className="magazine-card__body"><div><p className="eyebrow">{edition.date}</p><h3>{edition.title}</h3></div><Link href={`/revista/${edition.number}`}>Ver edición <ArrowUpRight size={15} /></Link></div></article>)}</div></div>;
@@ -36,6 +38,7 @@ export default function InfoPage({ kind }: { kind: InfoKind }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const current = content[kind];
-  const featuredEdition = kind === "sobre-moda" ? getMagazineEditions()[0] : null;
+  const [featuredEdition, setFeaturedEdition] = useState<MagazineEdition | null>(null);
+  useEffect(() => { if (kind !== "sobre-moda") return; void fetchRemoteMagazineEditions().then((editions) => setFeaturedEdition(editions[0] || null)).catch((error) => console.error("[LIGHT] No se pudo cargar la portada", error)); }, [kind]);
   return <div className={`site-shell info-page info-page--${kind}`}><header className="site-header"><div className="topline"><Link className="header-action" href="/"><span>← Inicio</span></Link><p>La conversación de estilo, sin concesiones.</p><button className="header-action" type="button" onClick={() => window.dispatchEvent(new Event("light:open-search"))}><Search size={19} strokeWidth={1.4} /><span>Buscar</span></button></div><div className="brand-row"><Link href="/" className="wordmark">LIGHT</Link></div><nav className="main-nav"><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/living">Living</Link><Link href="/runway">Runway</Link><Link href="/sobre-moda">La revista</Link></nav></header><main>{kind === "sobre-moda" ? <section className="info-hero info-hero--magazine" style={featuredEdition?.coverImage ? { backgroundImage: `linear-gradient(90deg, rgba(22,22,20,.74), rgba(22,22,20,.2)), url(${featuredEdition.coverImage})` } : undefined}><div><p className="eyebrow">LIGHT / LA REVISTA</p><h1>Una revista<br /><em>para lo que viene.</em></h1><p>{current.dek}</p></div><div className="info-hero__mark">LIGHT</div></section> : <section className="info-hero"><div><p className="eyebrow">LIGHT / {current.label}</p><h1>{current.title}</h1><p>{current.dek}</p></div><div className="info-hero__mark">LIGHT</div></section>}<section className="info-body"><p className="info-body__note">{current.note}</p>{legalSections[kind as keyof typeof legalSections] && <div className="legal-document">{legalSections[kind as keyof typeof legalSections].map((section) => <section key={section.title}><h2>{section.title}</h2><p>{section.body}</p></section>)}</div>}{kind === "newsletter" && <form className="info-form" onSubmit={(event) => { event.preventDefault(); if (email.trim()) setSent(true); }}>{sent ? <div className="newsletter-success"><span>Ya estás dentro.</span><small>Gracias por suscribirte a Correspondencia LIGHT.</small></div> : <><label htmlFor="info-email">Tu correo electrónico</label><div><input id="info-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@correo.com" /><button type="submit"><ArrowUpRight size={20} /></button></div><small>Una carta semanal. Sin ruido.</small></>}</form>}{kind === "archivo" && <div className="info-links"><Link href="/moda">Explorar Moda <ArrowUpRight size={15} /></Link><Link href="/belleza">Explorar Belleza <ArrowUpRight size={15} /></Link><Link href="/cultura">Explorar Cultura <ArrowUpRight size={15} /></Link><Link href="/sociedad">Explorar Sociedad <ArrowUpRight size={15} /></Link></div>}{kind === "sobre-moda" && <MagazineCatalog />}{kind === "contacto" && <div className="info-links"><a href="mailto:hola@moda.example">hola@moda.example <ArrowUpRight size={15} /></a><a href="mailto:prensa@moda.example">prensa@moda.example <ArrowUpRight size={15} /></a><a href="mailto:colabora@moda.example">colabora@moda.example <ArrowUpRight size={15} /></a></div>}</section><section className="info-marquee">LIGHT — MIRAR MÁS DE CERCA — LIGHT</section></main><Footer /></div>;
 }

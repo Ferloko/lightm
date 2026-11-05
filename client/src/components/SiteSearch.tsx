@@ -52,12 +52,7 @@ export default function SiteSearch({ onClose }: { onClose?: () => void }) {
     event.preventDefault();
     setError("");
     if (!supabase) {
-      if (password.trim().length < 4) { setError("En preview demo, usa una contraseña de al menos 4 caracteres."); return; }
-      localStorage.setItem("light.demo.editorial-auth", "1");
-      setLoginOpen(false);
-      setPassword("");
-      onClose?.();
-      navigate("/admin");
+      setError("El acceso editorial requiere Supabase configurado.");
       return;
     }
     const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });

@@ -7,19 +7,13 @@ export type ArchivePlacement = {
   homeSelection: boolean;
   order: number;
 };
+import { getContentSetting, saveContentSetting } from "./contentSettings";
 
-const PLACEMENTS_KEY = "light.archive.placements";
-
-export function getArchivePlacements(): Record<string, ArchivePlacement> {
-  try {
-    return JSON.parse(localStorage.getItem(PLACEMENTS_KEY) || "{}") as Record<string, ArchivePlacement>;
-  } catch {
-    return {};
-  }
+export function getArchivePlacements(): Promise<Record<string, ArchivePlacement>> {
+  return getContentSetting("archive_placements", {});
 }
 
-export function saveArchivePlacement(articleId: string, placement: ArchivePlacement) {
-  const next = { ...getArchivePlacements(), [articleId]: placement };
-  localStorage.setItem(PLACEMENTS_KEY, JSON.stringify(next));
-  window.dispatchEvent(new StorageEvent("storage", { key: PLACEMENTS_KEY, newValue: JSON.stringify(next) }));
+export async function saveArchivePlacement(articleId: string, placement: ArchivePlacement) {
+  const next = { ...(await getArchivePlacements()), [articleId]: placement };
+  await saveContentSetting("archive_placements", next);
 }

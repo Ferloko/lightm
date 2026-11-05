@@ -61,6 +61,18 @@ img { display: block; max-width: 100%; }
 .story-link:hover { color: var(--acid); border-color: var(--acid); gap: 35px; }
 .hero-visual { position: relative; }
 .hero-visual img { width: 100%; height: min(64vw, 690px); object-fit: cover; filter: saturate(.7) contrast(1.04); }
+.hero-skeleton { position: relative; overflow: hidden; background: linear-gradient(100deg, #e7e2d9 20%, #f4f0e9 40%, #e7e2d9 60%); background-size: 220% 100%; animation: hero-skeleton-shimmer 1.4s ease-in-out infinite; }
+.hero-copy.hero-skeleton { min-height: 330px; background: transparent; animation: none; }
+.hero-copy.hero-skeleton span { display: block; height: 12px; width: 78%; margin: 25px 0; border-radius: 2px; background: #ded8ce; }
+.hero-copy.hero-skeleton span:first-child { width: 32%; margin-top: 65px; }
+.hero-copy.hero-skeleton span:last-child { width: 34%; margin-top: 45px; }
+.hero-visual.hero-skeleton { min-height: min(64vw, 690px); }
+.hero-visual.hero-skeleton span { position: absolute; inset: 0; }
+.hero-image-empty { min-height: min(64vw, 690px); display: grid; place-items: center; padding: 30px; background: #e7e2d9; color: var(--muted); text-align: center; font: 10px var(--mono); text-transform: uppercase; }
+.hero-empty { grid-column: 1 / -1; max-width: 620px; padding: 8vw 0; }
+.hero-empty h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(68px, 9vw, 142px); line-height: .82; letter-spacing: -.07em; margin: 42px 0 38px; }
+.hero-empty p { max-width: 390px; margin: 0 0 28px; color: var(--muted); line-height: 1.6; }
+@keyframes hero-skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 .hero-stamp { width: 92px; height: 92px; position: absolute; top: 8%; right: -4%; border: 1px solid var(--acid); color: var(--acid); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; transform: rotate(12deg); font: 9px var(--mono); letter-spacing: .08em; line-height: 1.5; }
 .hero-caption { position: absolute; bottom: -28px; left: 0; right: 0; display: flex; justify-content: space-between; font: 9px var(--mono); text-transform: uppercase; color: var(--muted); letter-spacing: .08em; }
 

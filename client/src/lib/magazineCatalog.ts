@@ -1,30 +1,20 @@
 import { editions, type MagazineEdition } from "@/lib/magazines";
-
-const MAGAZINE_KEY = "light.magazine.editions";
+import { getContentSetting, saveContentSetting } from "./contentSettings";
 
 export function getMagazineEditions(): MagazineEdition[] {
-  try {
-    const stored = JSON.parse(localStorage.getItem(MAGAZINE_KEY) || "null");
-    if (Array.isArray(stored) && stored.length) {
-      return (stored as MagazineEdition[]).map((edition) => {
-        const defaults = editions.find((item) => item.number === edition.number)?.previewPages || editions[0].previewPages;
-        const previewPages = edition.previewPages.length >= 12 ? edition.previewPages : [...edition.previewPages, ...defaults.slice(edition.previewPages.length, 12)];
-        return { ...edition, coverImage: edition.number === "01" ? editions[0].coverImage : edition.coverImage, previewPages };
-      });
-    }
-    return editions;
-  } catch {
-    return editions;
-  }
+  return [];
 }
 
-export function saveMagazineEditions(nextEditions: MagazineEdition[]) {
-  localStorage.setItem(MAGAZINE_KEY, JSON.stringify(nextEditions));
-  window.dispatchEvent(new StorageEvent("storage", { key: MAGAZINE_KEY, newValue: JSON.stringify(nextEditions) }));
+export async function fetchRemoteMagazineEditions(): Promise<MagazineEdition[]> {
+  return getContentSetting<MagazineEdition[]>("magazine_editions", []);
+}
+
+export async function saveMagazineEditions(nextEditions: MagazineEdition[]) {
+  await saveContentSetting("magazine_editions", nextEditions);
 }
 
 export function createMagazineEdition(): MagazineEdition {
-  const number = String(getMagazineEditions().length + 1).padStart(2, "0");
+  const number = "01";
   return {
     number,
     title: "Nueva edición",

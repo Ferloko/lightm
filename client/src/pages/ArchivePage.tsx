@@ -1,17 +1,14 @@
 import { ArrowUpRight, Search, Instagram, Mail, Youtube } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { fetchRemoteArticles, saveArticles, type EditorialArticle } from "@/lib/editorial";
-import { legacyStories } from "@/lib/legacyStories";
-import { getArchivePlacements } from "@/lib/archivePlacements";
+import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
+import { getArchivePlacements, type ArchivePlacement } from "@/lib/archivePlacements";
 
 const categories = ["Todo", "Moda", "Belleza", "Cultura", "Sociedad"];
 
 function localViewsFor(article: EditorialArticle) {
-  try {
-    const views = JSON.parse(localStorage.getItem("light_page_views") || "[]") as Array<{ path?: string }>;
-    return views.filter((view) => view.path === `/historias/${article.slug || article.id}`).length;
-  } catch { return 0; }
+  void article;
+  return 0;
 }
 
 function imageFor(article: EditorialArticle) {
@@ -38,13 +35,12 @@ export default function ArchivePage() {
   const [selectedCategory, setSelectedCategory] = useState("Todo");
 
   useEffect(() => {
-    const refresh = () => { void fetchRemoteArticles().then((next) => { const visible = next.filter((article) => article.status === "published" && article.isVisible !== false); if (visible.length) setArticles(visible); else { const seeded = legacyStories("LIGHT"); saveArticles(seeded); setArticles(seeded); } }); };
+    const refresh = () => { void Promise.all([fetchRemoteArticles(), getArchivePlacements()]).then(([next, nextPlacements]) => { setArticles(next.filter((article) => article.status === "published" && article.isVisible !== false)); setPlacements(nextPlacements); }).catch((error) => console.error("[LIGHT] No se pudo cargar el archivo", error)); };
     refresh();
-    window.addEventListener("storage", refresh);
-    return () => window.removeEventListener("storage", refresh);
+    return undefined;
   }, []);
 
-  const placements = getArchivePlacements();
+  const [placements, setPlacements] = useState<Record<string, ArchivePlacement>>({});
   const recent = useMemo(() => [...articles].sort((a, b) => (b.date || b.updatedAt).localeCompare(a.date || a.updatedAt)), [articles]);
   const popular = useMemo(() => [...articles].sort((a, b) => Number(placements[b.id]?.mustRead) - Number(placements[a.id]?.mustRead) || localViewsFor(b) - localViewsFor(a) || Number(b.isFeatured) - Number(a.isFeatured) || (b.date || "").localeCompare(a.date || "")), [articles, placements]);
   const hasExplicitSpotlight = Object.values(placements).some((placement) => placement.spotlight);

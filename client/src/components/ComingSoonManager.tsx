@@ -1,6 +1,6 @@
 import { Eye, EyeOff, ExternalLink, Monitor, Save, Smartphone, Tablet } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchRemoteComingSoonPages, getComingSoonPages, saveComingSoonPage, saveComingSoonPages, type ComingSoonPage } from "@/lib/pageAvailability";
+import { fetchRemoteComingSoonPages, getComingSoonPages, saveComingSoonPages, saveRemoteComingSoonPage, type ComingSoonPage } from "@/lib/pageAvailability";
 
 type PreviewDevice = "desktop" | "tablet" | "mobile";
 const deviceLabels: Record<PreviewDevice, string> = { desktop: "Escritorio", tablet: "Tablet", mobile: "Móvil" };
