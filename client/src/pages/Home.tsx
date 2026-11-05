@@ -129,6 +129,7 @@ export default function Home() {
   const [newsletterError, setNewsletterError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
   const [homepageHeroArticle, setHomepageHeroArticle] = useState<EditorialArticle | null>(null);
   const [homepageFeatureArticle, setHomepageFeatureArticle] = useState<EditorialArticle | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -174,7 +175,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placements = getArchivePlacements(); const homeHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }); };
+    const refresh = () => { setArticlesLoading(true); fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placements = getArchivePlacements(); const homeHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }).finally(() => setArticlesLoading(false)); };
     refresh();
     window.addEventListener("storage", refresh);
     const refreshFeature = () => setHomepageFeatureContent(getHomepageFeature());
@@ -322,7 +323,7 @@ export default function Home() {
                 <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3>{article.title}</h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
               </article>
             ))}
-            {!publishedArticles.length && <><StoryCard image={images.portrait} category="Sociedad" title="El gesto propio" excerpt="Cinco creadoras hablan de la intuición como una forma de poder." /><StoryCard image={images.beauty} category="Belleza" title="Piel real, luz propia" excerpt="El nuevo lenguaje del cuidado empieza por escuchar." tone="dark" /><StoryCard image={images.culture} category="Cultura" title="Arquitecturas íntimas" excerpt="Los espacios que habitamos también cuentan quiénes somos." /></>}
+            {articlesLoading && <div className="article-skeleton-grid" aria-label="Cargando historias">{[1, 2, 3].map((item) => <div className="article-skeleton-card" key={item}><div className="article-skeleton-card__image" /><div className="article-skeleton-card__line article-skeleton-card__line--short" /><div className="article-skeleton-card__line" /><div className="article-skeleton-card__line article-skeleton-card__line--medium" /></div>)}</div>} {!articlesLoading && !publishedArticles.length && <p className="editorial-empty-state">No hay historias publicadas todavía.</p>}
           </div>
         </section>
 

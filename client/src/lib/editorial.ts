@@ -33,26 +33,6 @@ export type EditorialArticle = {
   updatedAt: string;
 };
 
-const ARTICLE_KEY = "moda.editorial.articles";
-const DELETED_ARTICLE_KEY = "moda.editorial.deleted";
-
-export function getArticles(): EditorialArticle[] {
-  try { return JSON.parse(localStorage.getItem(ARTICLE_KEY) || "[]") as EditorialArticle[]; } catch { return []; }
-}
-
-export function saveArticles(articles: EditorialArticle[]) {
-  localStorage.setItem(ARTICLE_KEY, JSON.stringify(articles));
-}
-
-export function getDeletedArticleKeys(): string[] {
-  try { return JSON.parse(localStorage.getItem(DELETED_ARTICLE_KEY) || "[]") as string[]; } catch { return []; }
-}
-
-export function markArticleDeleted(article: Pick<EditorialArticle, "id" | "slug">) {
-  const next = Array.from(new Set([...getDeletedArticleKeys(), article.id, article.slug].filter(Boolean)));
-  localStorage.setItem(DELETED_ARTICLE_KEY, JSON.stringify(next));
-}
-
 export async function getEditorialUser(): Promise<EditorialUser | null> {
   if (!supabase) {
     try {
@@ -81,13 +61,10 @@ export function createArticle(author: string): EditorialArticle {
   return { id: crypto.randomUUID(), slug: "", eyebrow: "LIGHT / PORTADA", title: "", category: "Moda", excerpt: "", lead: "", readingTime: "8 min de lectura", date: new Date().toISOString().slice(0, 10), body: "", blocks: starterBlocks(), image: "", imageCaption: "", status: "draft", isVisible: true, isFeatured: false, featuredOrder: 99, author, updatedAt: new Date().toISOString() };
 }
 
-// Supabase-ready contract: replace these local functions with supabase.from("articles") calls.
-export const editorialRepository = { getArticles, saveArticles };
-
 export async function fetchRemoteArticles(): Promise<EditorialArticle[]> {
-  if (!supabase) return getArticles();
+  if (!supabase) return [];
   const { data, error } = await supabase.from("articles").select("id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,updated_at,profiles(display_name)").order("updated_at", { ascending: false });
-  if (error || !data) { console.warn("[LIGHT] Supabase articles unavailable; using local demo data", error?.message); return getArticles(); }
+  if (error || !data) { console.warn("[LIGHT] Supabase articles unavailable", error?.message); return []; }
   return data.map((row: any) => ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body || "", blocks: parsePageBlocks(row.page_blocks), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, isVisible: row.is_visible !== false, isFeatured: row.is_featured === true, featuredOrder: Number(row.featured_order || 99), author: row.profiles?.display_name || "LIGHT", updatedAt: row.updated_at }));
 }
 
