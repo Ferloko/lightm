@@ -17,7 +17,8 @@ export default function HomepageFeatureManager() {
   const save = () => { const next = { ...value, updatedAt: new Date().toISOString() }; saveHomepageFeature(next); setValue(next); setNotice("La sección destacada del homepage ya está actualizada."); };
   const placements = getArchivePlacements();
   const visible = remoteArticles.filter((article) => article.status === "published" && article.isVisible !== false);
-  const heroArticle = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null;
+  const explicitHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null;
+  const heroArticle = explicitHero || visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder)[0] || null;
   const featureArticle = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null;
   const selection = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)).slice(0, 3);
   const previewFeature = { eyebrow: featureArticle?.category || value.eyebrow, title: featureArticle?.title || value.title, excerpt: featureArticle?.excerpt || featureArticle?.lead || value.excerpt, author: featureArticle?.author || value.author, image: featureArticle?.image || value.image };
