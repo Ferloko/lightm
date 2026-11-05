@@ -22,12 +22,13 @@ export const managedPages: Omit<ComingSoonPage, "updatedAt">[] = [
   { path: "/contacto", label: "Contacto", enabled: false, title: "Volvemos enseguida.", message: "Estamos actualizando este espacio. Puedes volver a la portada mientras tanto.", image: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=90" },
 ];
 
+const KEY = "light.page-availability";
 const eventName = "light:page-availability-updated";
 function defaults(): ComingSoonPage[] { const now = new Date().toISOString(); return managedPages.map((page) => ({ ...page, updatedAt: now })); }
-export function getComingSoonPages(): ComingSoonPage[] { return defaults(); }
-export function saveComingSoonPages(pages: ComingSoonPage[]) { void pages; window.dispatchEvent(new CustomEvent(eventName)); }
+export function getComingSoonPages(): ComingSoonPage[] { try { const saved = JSON.parse(localStorage.getItem(KEY) || "null") as ComingSoonPage[] | null; if (!saved?.length) return defaults(); const byPath = new Map(saved.map((page) => [page.path, page])); return defaults().map((page) => ({ ...page, ...byPath.get(page.path) })); } catch { return defaults(); } }
+export function saveComingSoonPages(pages: ComingSoonPage[]) { localStorage.setItem(KEY, JSON.stringify(pages)); window.dispatchEvent(new CustomEvent(eventName)); }
 export function getComingSoonPage(path: string) { return getComingSoonPages().find((page) => page.path === path); }
 export function isComingSoon(path: string) { return getComingSoonPage(path)?.enabled === true; }
 export function comingSoonEventName() { return eventName; }
-export async function fetchRemoteComingSoonPages(): Promise<ComingSoonPage[]> { if (!supabase) return getComingSoonPages(); const { data, error } = await supabase.from("page_availability").select("path,label,enabled,title,message,image,updated_at"); if (error) throw error; const base = getComingSoonPages(); return base.map((page) => { const row = (data || []).find((item: any) => item.path === page.path); return row ? { ...page, ...row, updatedAt: row.updated_at } : page; }); }
-export async function saveRemoteComingSoonPage(page: ComingSoonPage): Promise<boolean> { if (!supabase) throw new Error("Supabase no está configurado."); const { error } = await supabase.from("page_availability").upsert({ path: page.path, label: page.label, enabled: page.enabled, title: page.title, message: page.message, image: page.image, updated_at: page.updatedAt }); if (error) throw error; return true; }
+export async function fetchRemoteComingSoonPages(): Promise<ComingSoonPage[]> { if (!supabase) return getComingSoonPages(); const { data, error } = await supabase.from("page_availability").select("path,label,enabled,title,message,image,updated_at"); if (error || !data?.length) return getComingSoonPages(); return getComingSoonPages().map((page) => ({ ...page, ...(data.find((row: any) => row.path === page.path) ? { ...data.find((row: any) => row.path === page.path), updatedAt: data.find((row: any) => row.path === page.path).updated_at } : {}) })); }
+export async function saveRemoteComingSoonPage(page: ComingSoonPage): Promise<boolean> { if (!supabase) return false; const { error } = await supabase.from("page_availability").upsert({ path: page.path, label: page.label, enabled: page.enabled, title: page.title, message: page.message, image: page.image, updated_at: page.updatedAt }); if (error) throw error; return true; }

@@ -88,6 +88,5 @@ export const editions: MagazineEdition[] = [
 ];
 
 export function getMagazineEdition(number: string) {
-  void number;
-  return undefined;
+  return editions.find((edition) => edition.number === number);
 }

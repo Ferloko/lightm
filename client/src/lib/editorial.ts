@@ -33,24 +33,35 @@ export type EditorialArticle = {
   updatedAt: string;
 };
 
+const ARTICLE_KEY = "moda.editorial.articles";
+const DELETED_ARTICLE_KEY = "moda.editorial.deleted";
+
 export function getArticles(): EditorialArticle[] {
-  return [];
+  try { return JSON.parse(localStorage.getItem(ARTICLE_KEY) || "[]") as EditorialArticle[]; } catch { return []; }
 }
 
 export function saveArticles(articles: EditorialArticle[]) {
-  void articles;
+  localStorage.setItem(ARTICLE_KEY, JSON.stringify(articles));
 }
 
 export function getDeletedArticleKeys(): string[] {
-  return [];
+  try { return JSON.parse(localStorage.getItem(DELETED_ARTICLE_KEY) || "[]") as string[]; } catch { return []; }
 }
 
 export function markArticleDeleted(article: Pick<EditorialArticle, "id" | "slug">) {
-  void article;
+  const next = Array.from(new Set([...getDeletedArticleKeys(), article.id, article.slug].filter(Boolean)));
+  localStorage.setItem(DELETED_ARTICLE_KEY, JSON.stringify(next));
 }
 
 export async function getEditorialUser(): Promise<EditorialUser | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    try {
+      if (localStorage.getItem("light.demo.editorial-auth") === "1") return { trigger: "LIGHT Editor", email: "editor@light.studio", role: "Owner", displayName: "LIGHT Editor", canPublish: true };
+    } catch {
+      // localStorage unavailable
+    }
+    return null;
+  }
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data: profile, error } = await supabase
@@ -74,9 +85,9 @@ export function createArticle(author: string): EditorialArticle {
 export const editorialRepository = { getArticles, saveArticles };
 
 export async function fetchRemoteArticles(): Promise<EditorialArticle[]> {
-  if (!supabase) return [];
+  if (!supabase) return getArticles();
   const { data, error } = await supabase.from("articles").select("id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,updated_at,profiles(display_name)").order("updated_at", { ascending: false });
-  if (error || !data) throw error || new Error("No se pudieron cargar los artículos desde Supabase.");
+  if (error || !data) { console.warn("[LIGHT] Supabase articles unavailable; using local demo data", error?.message); return getArticles(); }
   return data.map((row: any) => ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body || "", blocks: parsePageBlocks(row.page_blocks), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, isVisible: row.is_visible !== false, isFeatured: row.is_featured === true, featuredOrder: Number(row.featured_order || 99), author: row.profiles?.display_name || "LIGHT", updatedAt: row.updated_at }));
 }
 
@@ -90,7 +101,7 @@ function safeJsonParse(value: string): unknown {
 }
 
 export async function uploadRemoteImage(file: File, articleId: string): Promise<string | null> {
-  if (!supabase) throw new Error("Supabase no está configurado.");
+  if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Supabase Auth requiere un usuario editorial antes de subir imágenes.");
   const path = `${user.id}/${articleId}-${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, "-")}`;
@@ -100,18 +111,18 @@ export async function uploadRemoteImage(file: File, articleId: string): Promise<
 }
 
 export async function saveRemoteArticle(article: EditorialArticle): Promise<boolean> {
-  if (!supabase) throw new Error("Supabase no está configurado.");
+  if (!supabase) return false;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Debes iniciar sesión en Supabase.");
+  if (!user) return false;
   const { error } = await supabase.from("articles").upsert({ id: article.id, author_id: user.id, slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt });
   if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
   return true;
 }
 
 export async function deleteRemoteArticle(articleId: string): Promise<boolean> {
-  if (!supabase) throw new Error("Supabase no está configurado.");
+  if (!supabase) return false;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Debes iniciar sesión en Supabase.");
+  if (!user) return false;
   const { error } = await supabase.from("articles").delete().eq("id", articleId);
   if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
   return true;

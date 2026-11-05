@@ -161,14 +161,3 @@ alter table public.page_availability enable row level security;
 create policy "Anyone can read page availability" on public.page_availability for select using (true);
 create policy "Editors can create page availability" on public.page_availability for insert to authenticated with check (public.current_editorial_role() in ('owner','admin','staff_writer'));
 create policy "Editors can update page availability" on public.page_availability for update to authenticated using (public.current_editorial_role() in ('owner','admin','staff_writer')) with check (public.current_editorial_role() in ('owner','admin','staff_writer'));
-
-create table if not exists public.site_settings (
-  key text primary key,
-  value jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now(),
-  updated_by uuid references auth.users(id) on delete set null
-);
-alter table public.site_settings enable row level security;
-create policy "Anyone can read site settings" on public.site_settings for select using (true);
-create policy "Editors can create site settings" on public.site_settings for insert to authenticated with check (public.current_editorial_role() in ('owner','admin','staff_writer'));
-create policy "Editors can update site settings" on public.site_settings for update to authenticated using (public.current_editorial_role() in ('owner','admin','staff_writer')) with check (public.current_editorial_role() in ('owner','admin','staff_writer'));

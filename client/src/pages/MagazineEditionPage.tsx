@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ArrowUpRight, Instagram, Mail, Search, X, Youtube } from "lucide-react";
 import { Link, useRoute } from "wouter";
-import type { MagazineEdition } from "@/lib/magazines";
-import { fetchRemoteMagazineEditions } from "@/lib/magazineCatalog";
+import { getMagazineEdition } from "@/lib/magazines";
+import { getMagazineEditions } from "@/lib/magazineCatalog";
 
 function Footer() {
   return <footer className="site-footer magazine-edition-footer"><div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div><div className="site-footer__columns"><div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/living">Living</Link></div><div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/contacto">Contacto</Link></div><div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/contacto"><Mail size={15} /> Correo</Link></div><div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div></div><div className="site-footer__bottom"><Link href="/privacidad">Privacidad</Link><Link href="/terminos">Términos</Link><Link href="/cookies">Cookies</Link><span className="footer-bottom__right">Madrid · Ciudad de México · Buenos Aires</span></div></footer>;
@@ -10,12 +10,9 @@ function Footer() {
 
 export default function MagazineEditionPage() {
   const [, params] = useRoute("/revista/:number");
-  const [edition, setEdition] = useState<MagazineEdition | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => { setLoading(true); void fetchRemoteMagazineEditions().then((editions) => setEdition(editions.find((item) => item.number === (params?.number || "")) || null)).catch((error) => console.error("[LIGHT] No se pudo cargar la edición", error)).finally(() => setLoading(false)); }, [params?.number]);
+  const edition = getMagazineEditions().find((item) => item.number === (params?.number || "")) || getMagazineEdition(params?.number || "");
   const [isReaderOpen, setIsReaderOpen] = useState(false);
 
-  if (loading) return <div className="magazine-missing"><p>Cargando edición…</p></div>;
   if (!edition) return <div className="magazine-missing"><p>Esta edición todavía no está en el archivo.</p><Link href="/sobre-moda"><ArrowLeft size={15} /> Volver a La revista</Link></div>;
 
   const readerProps = edition.embedHtml ? { srcDoc: edition.embedHtml } : { src: edition.iframe || edition.src };

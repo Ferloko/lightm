@@ -1,20 +1,38 @@
 import { supabase } from "@/lib/supabase";
 
+const LOCAL_KEY = "light_page_views";
+
+type LocalView = { path: string; viewedAt: string };
 export type PageViewPoint = { date: string; label: string; count: number };
+
+function readLocalViews(): LocalView[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
+    return Array.isArray(value) ? value.filter((item): item is LocalView => Boolean(item?.viewedAt)) : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function trackPageView(path: string) {
   if (path.startsWith("/admin") || path.startsWith("/404")) return;
-  if (!supabase) return;
-  const { error } = await supabase.from("page_views").insert({ path });
-  if (error) console.warn("[LIGHT] Page view tracking unavailable", error.message);
+  if (supabase) {
+    const { error } = await supabase.from("page_views").insert({ path });
+    if (!error) return;
+    console.warn("[LIGHT] Page view tracking unavailable; using local fallback", error.message);
+  }
+  const views = readLocalViews();
+  localStorage.setItem(LOCAL_KEY, JSON.stringify([...views.slice(-4999), { path, viewedAt: new Date().toISOString() }]));
 }
 
 export async function fetchTodayPageViewCount() {
   const today = new Date().toISOString().slice(0, 10);
-  if (!supabase) return 0;
-  const { count, error } = await supabase.from("page_views").select("id", { count: "exact", head: true }).gte("viewed_at", `${today}T00:00:00.000Z`);
-  if (error) throw error;
-  return typeof count === "number" ? count : 0;
+  if (supabase) {
+    const { count, error } = await supabase.from("page_views").select("id", { count: "exact", head: true }).gte("viewed_at", `${today}T00:00:00.000Z`);
+    if (!error && typeof count === "number") return count;
+    console.warn("[LIGHT] Could not read page view count", error?.message);
+  }
+  return readLocalViews().filter((view) => view.viewedAt.slice(0, 10) === today).length;
 }
 
 export async function fetchPageViewSeries(days = 15): Promise<PageViewPoint[]> {
@@ -43,6 +61,11 @@ export async function fetchPageViewSeries(days = 15): Promise<PageViewPoint[]> {
     } else if (error) {
       console.warn("[LIGHT] Could not read page view series", error.message);
     }
+  } else {
+    readLocalViews().forEach((view) => {
+      const date = view.viewedAt.slice(0, 10);
+      if (counts.has(date)) counts.set(date, (counts.get(date) || 0) + 1);
+    });
   }
 
   return [...counts.entries()].map(([date, count]) => ({

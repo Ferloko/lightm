@@ -4,6 +4,7 @@ import {
   ArrowDownRight,
   ArrowUp,
   ArrowUpRight,
+  ChevronRight,
   Instagram,
   Mail,
   Menu,
@@ -28,6 +29,45 @@ const images = {
 };
 
 const navItems = ["Moda", "Belleza", "Cultura", "Living", "Runway"];
+
+const heroSlides = [
+  {
+    eyebrow: "Portada / Moda",
+    title: <>La nueva<br /><em>sensibilidad</em><br />del vestir.</>,
+    dek: "Una exploración de las formas, texturas y gestos que están redefiniendo el lujo para una generación que elige con intención.",
+    image: images.hero,
+    alt: "Editorial de moda con prendas en tonos neutros",
+    credit: "Fotografía: Estudio LIGHT",
+    href: "/historias/vestirse-de-futuro",
+  },
+  {
+    eyebrow: "Portada / Sociedad",
+    title: <>El gesto<br /><em>propio</em><br />también viste.</>,
+    dek: "Cinco creadoras hablan de intuición, presencia y de la libertad de construir una imagen que no pide permiso.",
+    image: images.portrait,
+    alt: "Retrato editorial de una mujer",
+    credit: "Retrato: Archivo LIGHT",
+    href: "/historias/el-gesto-propio",
+  },
+  {
+    eyebrow: "Portada / Belleza",
+    title: <>Piel real,<br /><em>luz</em><br />propia.</>,
+    dek: "El nuevo lenguaje del cuidado empieza por escuchar el cuerpo y dejar que la belleza tenga su propio ritmo.",
+    image: images.beauty,
+    alt: "Editorial de belleza con luz suave",
+    credit: "Belleza: Estudio LIGHT",
+    href: "/historias/piel-real-luz-propia",
+  },
+  {
+    eyebrow: "Portada / Cultura",
+    title: <>Materia<br /><em>y</em><br />memoria.</>,
+    dek: "Los espacios que habitamos también cuentan quiénes somos: una mirada a los objetos, lugares y gestos que permanecen.",
+    image: images.culture,
+    alt: "Espacio arquitectónico editorial",
+    credit: "Cultura: Archivo LIGHT",
+    href: "/historias/arquitecturas-intimas",
+  },
+];
 
 const archiveItems = [
   { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
@@ -94,8 +134,8 @@ export default function Home() {
   const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
   const [homepageHeroArticle, setHomepageHeroArticle] = useState<EditorialArticle | null>(null);
   const [homepageFeatureArticle, setHomepageFeatureArticle] = useState<EditorialArticle | null>(null);
-  const [isEditorialLoading, setIsEditorialLoading] = useState(true);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [activeHero, setActiveHero] = useState(0);
   const heroSectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -137,7 +177,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const refresh = () => { setIsEditorialLoading(true); Promise.all([fetchRemoteArticles(), getArchivePlacements()]).then(([articles, placements]) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placedHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const featuredFromSource = visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); const homeHero = placedHero || featuredFromSource[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : featuredFromSource; setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }).catch((error) => { console.error("[LIGHT] Could not load homepage editorial content", error); setHomepageHeroArticle(null); setHomepageFeatureArticle(null); setPublishedArticles([]); }).finally(() => setIsEditorialLoading(false)); };
+    const timer = window.setInterval(() => setActiveHero((current) => (current + 1) % heroSlides.length), 7000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placements = getArchivePlacements(); const homeHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }); };
     refresh();
     window.addEventListener("storage", refresh);
     return () => window.removeEventListener("storage", refresh);
@@ -151,6 +196,7 @@ export default function Home() {
   }, []);
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.hero, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : heroSlides[activeHero];
   const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -227,27 +273,21 @@ export default function Home() {
       </button>
 
       <main id="top">
-        <section className={`hero-section${isEditorialLoading ? " hero-section--loading" : ""}`} ref={heroSectionRef} aria-label="Portada editorial">
-          {isEditorialLoading ? <>
-            <div className="hero-copy hero-skeleton" aria-hidden="true"><span /><span /><span /><span /></div>
-            <div className="hero-visual hero-skeleton" aria-hidden="true"><span /></div>
-          </> : homepageHeroArticle ? <>
-            <div className="hero-copy hero-slide">
-              <SectionLabel>{homepageHeroArticle.category} / HOMEPAGE / </SectionLabel>
-              <h1>{homepageHeroArticle.title}</h1>
-              {(homepageHeroArticle.excerpt || homepageHeroArticle.lead) && <p className="hero-dek">{homepageHeroArticle.excerpt || homepageHeroArticle.lead}</p>}
-              <StoryLink href={`/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`}>Descubrir la portada</StoryLink>
+        <section className="hero-section" ref={heroSectionRef} aria-label="Portadas destacadas">
+          <div className="hero-copy hero-slide" key={`hero-copy-${activeHero}`}>
+            <SectionLabel>{hero.eyebrow} / </SectionLabel>
+            <h1>{hero.title}</h1>
+            <p className="hero-dek">{hero.dek}</p>
+            <StoryLink href={hero.href}>Descubrir la portada</StoryLink>
+          </div>
+          <div className="hero-visual hero-slide" key={`hero-visual-${activeHero}`}>
+            <img src={hero.image} alt={hero.alt} />
+            <div className="hero-caption"><span>{String(activeHero + 1).padStart(2, "0")} — {String(heroSlides.length).padStart(2, "0")}</span><span>{hero.credit}</span></div>
+            <div className="hero-controls" aria-label="Cambiar portada">
+              {heroSlides.map((slide, index) => <button type="button" key={slide.eyebrow} className={index === activeHero ? "is-active" : ""} onClick={() => setActiveHero(index)} aria-label={`Ver ${slide.eyebrow}`} aria-pressed={index === activeHero}><span /></button>)}
+              <button type="button" className="hero-next" onClick={() => setActiveHero((activeHero + 1) % heroSlides.length)} aria-label="Siguiente portada"><ChevronRight size={18} strokeWidth={1.3} /></button>
             </div>
-            <div className="hero-visual hero-slide">
-              {homepageHeroArticle.image ? <img src={homepageHeroArticle.image} alt={homepageHeroArticle.title} /> : <div className="hero-image-empty">Esta portada no tiene imagen todavía.</div>}
-              <div className="hero-caption"><span>PORTADA</span><span>{homepageHeroArticle.author || "LIGHT"}</span></div>
-            </div>
-          </> : <div className="hero-empty">
-            <SectionLabel>LIGHT / PORTADA / </SectionLabel>
-            <h1>La portada<br /><em>está por llegar.</em></h1>
-            <p>Publica una historia y márcala como portada desde el Dashboard para mostrarla aquí.</p>
-            <Link className="story-link" href="/admin">Abrir Dashboard <ArrowUpRight size={16} /></Link>
-          </div>}
+          </div>
         </section>
 
         <section className="intro-band" id="moda">

@@ -14,22 +14,23 @@ function MagazineLivePreview({ edition }: { edition: MagazineEdition }) {
 
 export default function MagazineManager({ editions, onChange }: { editions: MagazineEdition[]; onChange: (next: MagazineEdition[]) => void }) {
   const [editing, setEditing] = useState<MagazineEdition | null>(null);
-  const [notice, setNotice] = useState("");
   const update = (patch: Partial<MagazineEdition>) => setEditing((current) => current ? { ...current, ...patch } : current);
   const updatePage = (index: number, patch: Partial<MagazineEdition["previewPages"][number]>) => setEditing((current) => {
     if (!current) return current;
     return { ...current, previewPages: current.previewPages.map((page, pageIndex) => pageIndex === index ? { ...page, ...patch } : page) };
   });
-  const save = async () => {
+  const save = () => {
     if (!editing?.title.trim() || !editing.number.trim()) return;
     const next = [...editions.filter((edition) => edition.number !== editing.number), editing].sort((a, b) => a.number.localeCompare(b.number));
-    try { await saveMagazineEditions(next); onChange(next); setEditing(null); setNotice("Edición guardada en Supabase."); } catch (error) { setNotice(`No se pudo guardar la edición: ${error instanceof Error ? error.message : "error desconocido"}`); }
+    saveMagazineEditions(next);
+    onChange(next);
+    setEditing(null);
   };
-  const remove = async (number: string) => { const next = editions.filter((edition) => edition.number !== number); try { await saveMagazineEditions(next); onChange(next); if (editing?.number === number) setEditing(null); setNotice("Edición eliminada de Supabase."); } catch (error) { setNotice(`No se pudo eliminar la edición: ${error instanceof Error ? error.message : "error desconocido"}`); } };
+  const remove = (number: string) => { const next = editions.filter((edition) => edition.number !== number); saveMagazineEditions(next); onChange(next); if (editing?.number === number) setEditing(null); };
 
   return <section className="magazine-manager">
     <div className="admin-section-heading"><div><p>La revista / catálogo</p><h2>Ediciones y portadas.</h2></div><button className="admin-primary" type="button" onClick={() => setEditing(createMagazineEdition())}><Plus size={15} /> Nueva edición</button></div>
-    <p className="magazine-manager__intro">Crea la edición como una página editorial: edita los datos y comprueba a la derecha cómo quedará la portada y la cuadrícula de páginas antes de guardarla.</p>{notice && <p className="admin-notice">{notice}</p>}
+    <p className="magazine-manager__intro">Crea la edición como una página editorial: edita los datos y comprueba a la derecha cómo quedará la portada y la cuadrícula de páginas antes de guardarla.</p>
     <div className="magazine-manager__grid">{editions.map((edition) => <article className="magazine-manager-card" key={edition.number}><div className="magazine-manager-card__cover" style={edition.coverImage ? { backgroundImage: `url(${edition.coverImage})` } : undefined}><span>EDICIÓN {edition.number}</span></div><div className="magazine-manager-card__body"><div><p className="eyebrow">{edition.date}</p><h3>{edition.title}</h3></div><div className="magazine-manager-card__actions"><button type="button" onClick={() => setEditing(edition)}><Pencil size={14} /> Editar</button><button type="button" onClick={() => remove(edition.number)} aria-label={`Eliminar edición ${edition.number}`}><Trash2 size={14} /></button></div></div></article>)}</div>
     {editing && <div className="magazine-editor-panel">
       <div className="magazine-editor-panel__heading"><div><p className="eyebrow">Edición editable</p><h3>{editing.title || "Nueva edición"}</h3></div><button className="admin-secondary" type="button" onClick={() => setEditing(null)}>Cerrar</button></div>
