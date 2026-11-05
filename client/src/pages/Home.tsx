@@ -30,45 +30,6 @@ const images = {
 
 const navItems = ["Moda", "Belleza", "Cultura", "Living", "Runway"];
 
-const heroSlides = [
-  {
-    eyebrow: "Portada / Moda",
-    title: <>La nueva<br /><em>sensibilidad</em><br />del vestir.</>,
-    dek: "Una exploración de las formas, texturas y gestos que están redefiniendo el lujo para una generación que elige con intención.",
-    image: images.hero,
-    alt: "Editorial de moda con prendas en tonos neutros",
-    credit: "Fotografía: Estudio LIGHT",
-    href: "/historias/vestirse-de-futuro",
-  },
-  {
-    eyebrow: "Portada / Sociedad",
-    title: <>El gesto<br /><em>propio</em><br />también viste.</>,
-    dek: "Cinco creadoras hablan de intuición, presencia y de la libertad de construir una imagen que no pide permiso.",
-    image: images.portrait,
-    alt: "Retrato editorial de una mujer",
-    credit: "Retrato: Archivo LIGHT",
-    href: "/historias/el-gesto-propio",
-  },
-  {
-    eyebrow: "Portada / Belleza",
-    title: <>Piel real,<br /><em>luz</em><br />propia.</>,
-    dek: "El nuevo lenguaje del cuidado empieza por escuchar el cuerpo y dejar que la belleza tenga su propio ritmo.",
-    image: images.beauty,
-    alt: "Editorial de belleza con luz suave",
-    credit: "Belleza: Estudio LIGHT",
-    href: "/historias/piel-real-luz-propia",
-  },
-  {
-    eyebrow: "Portada / Cultura",
-    title: <>Materia<br /><em>y</em><br />memoria.</>,
-    dek: "Los espacios que habitamos también cuentan quiénes somos: una mirada a los objetos, lugares y gestos que permanecen.",
-    image: images.culture,
-    alt: "Espacio arquitectónico editorial",
-    credit: "Cultura: Archivo LIGHT",
-    href: "/historias/arquitecturas-intimas",
-  },
-];
-
 const archiveItems = [
   { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
   { date: "05.18", category: "Belleza", image: images.beauty, title: "La piel como paisaje" },
@@ -137,6 +98,12 @@ export default function Home() {
   const heroSectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    // El contenido editorial ya no se lee del navegador: Supabase es la única fuente.
+    localStorage.removeItem("moda.editorial.articles");
+    localStorage.removeItem("moda.editorial.deleted");
+  }, []);
+
+  useEffect(() => {
     const section = heroSectionRef.current;
     if (!section) return;
     let frame = 0;
@@ -191,7 +158,7 @@ export default function Home() {
   }, []);
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-  const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.hero, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : heroSlides[0];
+  const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.silhouette, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : null;
   const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -268,18 +235,7 @@ export default function Home() {
       </button>
 
       <main id="top">
-        <section className="hero-section" ref={heroSectionRef} aria-label="Portadas destacadas">
-          <div className="hero-copy hero-slide">
-            <SectionLabel>{hero.eyebrow} / </SectionLabel>
-            <h1>{hero.title}</h1>
-            <p className="hero-dek">{hero.dek}</p>
-            <StoryLink href={hero.href}>Descubrir la portada</StoryLink>
-          </div>
-          <div className="hero-visual hero-slide">
-            <img src={hero.image} alt={hero.alt} />
-            <div className="hero-caption"><span>01 — 01</span><span>{hero.credit}</span></div>
-          </div>
-        </section>
+        {articlesLoading ? <section className="hero-section hero-section--loading" aria-label="Cargando portada"><div className="hero-skeleton-copy"><span /><span /><span /></div><div className="hero-skeleton-visual" /></section> : hero ? <section className="hero-section" ref={heroSectionRef} aria-label="Portada destacada"><div className="hero-copy hero-slide"><SectionLabel>{hero.eyebrow} / </SectionLabel><h1>{hero.title}</h1><p className="hero-dek">{hero.dek}</p><StoryLink href={hero.href}>Descubrir la portada</StoryLink></div><div className="hero-visual hero-slide"><img src={hero.image} alt={hero.alt} /><div className="hero-caption"><span>01 — 01</span><span>{hero.credit}</span></div></div></section> : null}
 
         <section className="intro-band" id="moda">
           <p className="intro-band__number">06—26</p>
