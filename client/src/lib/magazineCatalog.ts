@@ -25,6 +25,12 @@ export function saveMagazineEditions(nextEditions: MagazineEdition[]) {
 
 export function createMagazineEdition(): MagazineEdition {
   const number = String(getMagazineEditions().length + 1).padStart(2, "0");
+  const previewPages: MagazineEdition["previewPages"] = Array.from({ length: 12 }, (_, index) => ({
+    label: `${String(index + 1).padStart(2, "0")} / Página`,
+    title: "",
+    text: "",
+    image: "",
+  }));
   return {
     number,
     title: "Nueva edición",
@@ -37,6 +43,6 @@ export function createMagazineEdition(): MagazineEdition {
     coverTitle: "Nueva mirada",
     coverNote: "Moda · Belleza · Ideas",
     coverImage: "",
-    previewPages: [],
+    previewPages,
   };
 }

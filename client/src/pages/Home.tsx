@@ -4,7 +4,6 @@ import {
   ArrowDownRight,
   ArrowUp,
   ArrowUpRight,
-  ChevronRight,
   Instagram,
   Mail,
   Menu,
@@ -17,6 +16,7 @@ import SiteSearch from "@/components/SiteSearch";
 import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
 import { getArchivePlacements } from "@/lib/archivePlacements";
 import { subscribeToNewsletter } from "@/lib/newsletter";
+import { getHomepageFeature, type HomepageFeatureContent } from "@/lib/homepageContent";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90",
@@ -85,12 +85,9 @@ function SectionLabel({ children, light = false }: { children: React.ReactNode; 
 }
 
 function StoryLink({ children, href = "/historias/vestirse-de-futuro" }: { children: React.ReactNode; href?: string }) {
-  return (
-    <Link className="story-link" href={href}>
-      {children}
-      <ArrowUpRight size={16} strokeWidth={1.5} />
-    </Link>
-  );
+  const external = /^https?:\/\//i.test(href);
+  const content = <>{children}<ArrowUpRight size={16} strokeWidth={1.5} /></>;
+  return external ? <a className="story-link" href={href} target="_blank" rel="noreferrer">{content}</a> : <Link className="story-link" href={href}>{content}</Link>;
 }
 
 function StoryCard({
@@ -135,7 +132,7 @@ export default function Home() {
   const [homepageHeroArticle, setHomepageHeroArticle] = useState<EditorialArticle | null>(null);
   const [homepageFeatureArticle, setHomepageFeatureArticle] = useState<EditorialArticle | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [activeHero, setActiveHero] = useState(0);
+  const [homepageFeatureContent, setHomepageFeatureContent] = useState<HomepageFeatureContent>(getHomepageFeature());
   const heroSectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -177,15 +174,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setActiveHero((current) => (current + 1) % heroSlides.length), 7000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
     const refresh = () => { fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placements = getArchivePlacements(); const homeHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }); };
     refresh();
     window.addEventListener("storage", refresh);
-    return () => window.removeEventListener("storage", refresh);
+    const refreshFeature = () => setHomepageFeatureContent(getHomepageFeature());
+    window.addEventListener("storage", refreshFeature);
+    return () => { window.removeEventListener("storage", refresh); window.removeEventListener("storage", refreshFeature); };
   }, []);
 
   useEffect(() => {
@@ -196,7 +190,7 @@ export default function Home() {
   }, []);
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-  const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.hero, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : heroSlides[activeHero];
+  const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.hero, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : heroSlides[0];
   const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -274,19 +268,15 @@ export default function Home() {
 
       <main id="top">
         <section className="hero-section" ref={heroSectionRef} aria-label="Portadas destacadas">
-          <div className="hero-copy hero-slide" key={`hero-copy-${activeHero}`}>
+          <div className="hero-copy hero-slide">
             <SectionLabel>{hero.eyebrow} / </SectionLabel>
             <h1>{hero.title}</h1>
             <p className="hero-dek">{hero.dek}</p>
             <StoryLink href={hero.href}>Descubrir la portada</StoryLink>
           </div>
-          <div className="hero-visual hero-slide" key={`hero-visual-${activeHero}`}>
+          <div className="hero-visual hero-slide">
             <img src={hero.image} alt={hero.alt} />
-            <div className="hero-caption"><span>{String(activeHero + 1).padStart(2, "0")} — {String(heroSlides.length).padStart(2, "0")}</span><span>{hero.credit}</span></div>
-            <div className="hero-controls" aria-label="Cambiar portada">
-              {heroSlides.map((slide, index) => <button type="button" key={slide.eyebrow} className={index === activeHero ? "is-active" : ""} onClick={() => setActiveHero(index)} aria-label={`Ver ${slide.eyebrow}`} aria-pressed={index === activeHero}><span /></button>)}
-              <button type="button" className="hero-next" onClick={() => setActiveHero((activeHero + 1) % heroSlides.length)} aria-label="Siguiente portada"><ChevronRight size={18} strokeWidth={1.3} /></button>
-            </div>
+            <div className="hero-caption"><span>01 — 01</span><span>{hero.credit}</span></div>
           </div>
         </section>
 
@@ -301,19 +291,19 @@ export default function Home() {
 
         <section className="feature-grid" id="belleza">
           <div className="feature-grid__lead">
-            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || images.silhouette} alt={homepageFeatureArticle?.title || "Silueta contemporánea en un editorial de moda"} /><span className="image-hover-overlay"><strong>{homepageFeatureArticle?.title || "La forma de lo nuevo"}</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
-            <div className="feature-grid__lead-caption"><span>02</span><span>{homepageFeatureArticle?.title || "La forma de lo nuevo"}</span></div>
+            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || homepageFeatureContent.image || images.silhouette} alt={homepageFeatureArticle?.title || homepageFeatureContent.title} /><span className="image-hover-overlay"><strong>{homepageFeatureArticle?.title || homepageFeatureContent.title}</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
+            <div className="feature-grid__lead-caption"><span>02</span><span>{homepageFeatureArticle?.title || homepageFeatureContent.title}</span></div>
           </div>
           <article className="feature-grid__story">
-            <SectionLabel>{homepageFeatureArticle?.category || "Moda"}</SectionLabel>
-            <h2>{homepageFeatureArticle ? homepageFeatureArticle.title : <>Vestirse<br /><em>de futuro.</em></>}</h2>
-            <p>{homepageFeatureArticle?.excerpt || "Las prendas ya no siguen una sola dirección. Un armario más libre mezcla memoria, tecnología y una nueva idea de lo que significa estar bien vestido."}</p>
-            <div className="story-meta"><span>Por {homepageFeatureArticle?.author || "Inés Valdés"}</span><span>{homepageFeatureArticle?.readingTime || "12 min de lectura"}</span></div>
-            <StoryLink href={homepageFeatureArticle ? `/historias/${homepageFeatureArticle.slug || homepageFeatureArticle.id}` : "/historias/vestirse-de-futuro"}>Leer el artículo</StoryLink>
+            <SectionLabel>{homepageFeatureArticle?.category || homepageFeatureContent.eyebrow}</SectionLabel>
+            <h2>{homepageFeatureArticle ? homepageFeatureArticle.title : homepageFeatureContent.title}</h2>
+            <p>{homepageFeatureArticle?.excerpt || homepageFeatureContent.excerpt}</p>
+            <div className="story-meta"><span>Por {homepageFeatureArticle?.author || homepageFeatureContent.author}</span><span>{homepageFeatureArticle?.readingTime || homepageFeatureContent.readingTime}</span></div>
+            <StoryLink href={homepageFeatureContent.ctaHref || (homepageFeatureArticle ? `/historias/${homepageFeatureArticle.slug || homepageFeatureArticle.id}` : "/historias/vestirse-de-futuro")}>{homepageFeatureContent.ctaLabel || "Leer el artículo"}</StoryLink>
           </article>
           <div className="feature-grid__aside">
             <span className="vertical-note">ESTUDIO / 2026</span>
-            <p>“La elegancia no es una respuesta: es una forma de hacer preguntas.”</p>
+            <p>“{homepageFeatureContent.asideQuote}”</p>
           </div>
         </section>
 
