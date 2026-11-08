@@ -28,12 +28,12 @@ const images = {
   detail: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=1000&q=90",
 };
 
-const navItems = ["Moda", "Belleza", "Cultura", "Living", "Runway"];
+const navItems = ["Moda", "Belleza", "Eventos", "Living", "Runway"];
 
 const archiveItems = [
   { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
   { date: "05.18", category: "Belleza", image: images.beauty, title: "La piel como paisaje" },
-  { date: "04.02", category: "Cultura", image: images.culture, title: "Materia y memoria" },
+  { date: "04.02", category: "Eventos", image: images.culture, title: "Una noche para encontrarnos" },
 ];
 
 function SectionLabel({ children, light = false }: { children: React.ReactNode; light?: boolean }) {
@@ -211,7 +211,7 @@ export default function Home() {
           <div className="menu-overlay__inner">
             <p className="eyebrow">Explora la revista</p>
             <div className="menu-overlay__links">
-              {["Inicio", ...navItems, "La revista", "Archivo", "Newsletter"].map((item, index) => (
+              {["Inicio", ...navItems, "Masthead", "Business", "La revista", "Archivo", "Newsletter"].map((item, index) => (
                 <Link href={index === 0 ? "/" : item === "La revista" ? "/sobre-moda" : item === "Archivo" ? "/archivo" : item === "Newsletter" ? "/newsletter" : `/${item.toLowerCase()}`} key={item} onClick={() => setMenuOpen(false)}>
                   <span>{String(index + 1).padStart(2, "0")}</span>{item}<ArrowUpRight size={22} strokeWidth={1.2} />
                 </Link>
@@ -264,7 +264,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="editorial-section" id="cultura">
+        <section className="editorial-section" id="seleccion">
           <div className="section-heading">
             <div>
               <SectionLabel>Selección LIGHT</SectionLabel>
@@ -340,7 +340,7 @@ export default function Home() {
         </section>
 
         <section className="archive-section" id="archivo">
-          <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Cultura"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
+          <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Eventos"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
           <div className={`archive-strip archive-strip--${activeCategory.toLowerCase()}`}>
             {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><div className="archive-card__image-wrap"><img src={item.image} alt="" /><span className="image-hover-overlay"><strong>{item.title}</strong><small>Explorar historia <ArrowUpRight size={14} /></small></span></div><strong>{item.title}</strong></div>)}
             {!visibleArchiveItems.length && <p className="archive-empty">Todavía no hay piezas en esta sección.</p>}
@@ -351,9 +351,9 @@ export default function Home() {
       <footer className="site-footer">
         <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div>
         <div className="site-footer__columns">
-          <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/cultura">Cultura</Link><Link href="/living">Living</Link></div>
-          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/contacto">Contacto</Link></div>
-          <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/contacto"><Mail size={15} /> Correo</Link></div>
+          <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link></div>
+          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
+          <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
           <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>
         </div>
         <div className="site-footer__bottom"><Link href="/privacidad">Privacidad</Link><Link href="/terminos">Términos</Link><Link href="/cookies">Cookies</Link><span className="footer-bottom__right">Madrid · Ciudad de México · Buenos Aires</span></div>

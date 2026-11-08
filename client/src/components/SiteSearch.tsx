@@ -8,10 +8,12 @@ const searchable = [
   ["Vestirse de futuro", "/historias/vestirse-de-futuro", "Moda"],
   ["Moda", "/moda", "Sección editorial"],
   ["Runway", "/runway", "Pasarelas y marcas"],
+  ["Masthead", "/masthead", "Equipo editorial LIGHT"],
+  ["Business", "/business", "Colaboraciones y oportunidades"],
   ["Archivo", "/archivo", "Historias LIGHT"],
   ["La revista", "/sobre-moda", "Ediciones LIGHT"],
   ["Belleza", "/belleza", "Cuidado y belleza"],
-  ["Cultura", "/cultura", "Ideas y espacios"],
+  ["Eventos", "/eventos", "Crónicas y encuentros"],
   ["Sociedad", "/sociedad", "Voces y personas"],
   ["Newsletter", "/newsletter", "Correspondencia LIGHT"],
 ] as const;

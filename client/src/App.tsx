@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { trackPageView } from "@/lib/analytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import SiteSearch from "./components/SiteSearch";
@@ -20,11 +20,19 @@ import DynamicArticlePage from "./pages/DynamicArticlePage";
 import MagazineEditionPage from "./pages/MagazineEditionPage";
 import ArchivePage from "./pages/ArchivePage";
 import LivingPage from "./pages/LivingPage";
+import MastheadPage from "./pages/MastheadPage";
+import BusinessPage from "./pages/BusinessPage";
 import ComingSoonGate from "./components/ComingSoonGate";
 
 function PageViewTracker() {
   const [location] = useLocation();
   useEffect(() => {
+    const targetId = window.location.hash.slice(1);
+    if (targetId) {
+      const frame = window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView({ block: "start", behavior: "auto" }));
+      void trackPageView(location);
+      return () => window.cancelAnimationFrame(frame);
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     void trackPageView(location);
   }, [location]);
@@ -56,16 +64,19 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/moda" component={() => <ComingSoonGate path="/moda"><SectionPage section="moda" /></ComingSoonGate>} />
       <Route path="/belleza" component={() => <ComingSoonGate path="/belleza"><SectionPage section="belleza" /></ComingSoonGate>} />
-      <Route path="/cultura" component={() => <ComingSoonGate path="/cultura"><SectionPage section="cultura" /></ComingSoonGate>} />
+      <Route path="/eventos" component={() => <ComingSoonGate path="/eventos"><SectionPage section="eventos" /></ComingSoonGate>} />
+      <Route path="/cultura" component={() => <SectionPage section="eventos" />} />
       <Route path="/sociedad" component={() => <SectionPage section="sociedad" />} />
       <Route path="/living" component={() => <ComingSoonGate path="/living"><LivingPage /></ComingSoonGate>} />
+      <Route path="/masthead" component={MastheadPage} />
+      <Route path="/business" component={BusinessPage} />
       <Route path="/runway" component={() => <ComingSoonGate path="/runway"><RunwayPage /></ComingSoonGate>} />
       <Route path="/runway/:brand" component={BrandPage} />
       <Route path="/revista/:number" component={MagazineEditionPage} />
       <Route path="/archivo" component={() => <ComingSoonGate path="/archivo"><ArchivePage /></ComingSoonGate>} />
       <Route path="/newsletter" component={() => <ComingSoonGate path="/newsletter"><InfoPage kind="newsletter" /></ComingSoonGate>} />
       <Route path="/sobre-moda" component={() => <ComingSoonGate path="/sobre-moda"><InfoPage kind="sobre-moda" /></ComingSoonGate>} />
-      <Route path="/contacto" component={() => <ComingSoonGate path="/contacto"><InfoPage kind="contacto" /></ComingSoonGate>} />
+      <Route path="/contacto" component={() => <Redirect to="/business#colaboraciones" />} />
       <Route path="/privacidad" component={() => <InfoPage kind="privacidad" />} />
       <Route path="/terminos" component={() => <InfoPage kind="terminos" />} />
       <Route path="/cookies" component={() => <InfoPage kind="cookies" />} />

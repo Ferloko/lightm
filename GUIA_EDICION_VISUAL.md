@@ -2,7 +2,7 @@
 
 Esta guía explica cómo modificar el contenido y la apariencia de las páginas públicas visibles de LIGHT manteniendo la estructura actual de React/TypeScript.
 
-> **Alcance:** esta guía cubre únicamente la portada, las hojas de sección, las páginas informativas, Runway y las historias públicas. No incluye el Dashboard, el editor de artículos ni la lógica de Supabase.
+> **Alcance:** esta guía cubre la portada, las hojas de sección e informativas, Living, Runway, Masthead, Business, la edición del roster y la bandeja de comentarios. No incluye el editor de artículos ni la lógica interna de autenticación de Supabase.
 
 ---
 
@@ -30,8 +30,14 @@ Evita modificar estados, funciones, imports o componentes si solo quieres cambia
 | Página visible | Archivo principal | Qué se modifica ahí |
 |---|---|---|
 | Portada | `client/src/pages/Home.tsx` | Hero, textos, imágenes, navegación de portada y secciones visibles |
-| Moda, Belleza, Cultura, Sociedad | `client/src/pages/SectionPage.tsx` | Datos y estructura común de las hojas de sección |
-| Archivo, Newsletter, Sobre LIGHT, Contacto y legales | `client/src/pages/InfoPage.tsx` | Textos informativos, formularios, catálogo y enlaces |
+| Moda, Belleza, Eventos, Sociedad | `client/src/pages/SectionPage.tsx` | Datos y estructura común de las hojas de sección |
+| Living | `client/src/pages/LivingPage.tsx` | Hero, cuadrícula de destinos, agenda y pie |
+| Masthead | `client/src/pages/MastheadPage.tsx` | Presentación pública del equipo |
+| Business | `client/src/pages/BusinessPage.tsx` | Información de colaboraciones y oportunidades |
+| Roster del equipo | `client/src/components/MastheadManager.tsx` | Cargos, personas, retratos y orden editables desde Dashboard |
+| Formulario Business | `client/src/components/ContactSubmissionForm.tsx` | Nombre, apellido, correo, comentario y envío de colaboraciones |
+| Comentarios de Business | `client/src/components/CommentsManager.tsx` | Mensajes enviados por el formulario Business y recibidos en Dashboard |
+| Archivo, Newsletter, Sobre LIGHT y páginas legales | `client/src/pages/InfoPage.tsx` | Textos informativos, formularios, catálogo y enlaces |
 | Runway | `client/src/pages/RunwayPage.tsx` | Encabezado, filtros y tarjetas de marcas |
 | Ficha de una marca | `client/src/pages/BrandPage.tsx` | Hero, textos e imagen de cada marca |
 | Historia fija de portada | `client/src/pages/ArticlePage.tsx` | Texto e imágenes de la historia editorial fija |
@@ -159,7 +165,7 @@ En mobile se ajusta en la regla `@media (max-width: 700px)`.
 
 ---
 
-## 4. Cambiar Moda, Belleza, Cultura o Sociedad
+## 4. Cambiar Moda, Belleza, Eventos o Sociedad
 
 Archivo:
 
@@ -169,30 +175,9 @@ client/src/pages/SectionPage.tsx
 
 ### 4.1 Datos de cada sección
 
-Al principio del archivo existe un objeto parecido a este:
+Al principio del archivo hay una configuración para cada sección. Sus claves públicas son `moda`, `belleza`, `eventos` y `sociedad`; cada una define `label`, `title`, `dek`, `intro` e `image`. El hero editorial usa esa configuración.
 
-```tsx
-const sections = {
-  moda: {
-    label: "Moda",
-    title: "...",
-    dek: "...",
-    image: images.moda,
-    stories: ["...", "...", "..."]
-  },
-  belleza: { ... },
-  cultura: { ... },
-  sociedad: { ... }
-};
-```
-
-Cada sección puede modificar:
-
-- `label`: nombre de la sección.
-- `title`: titular grande.
-- `dek`: descripción debajo del titular.
-- `image`: imagen principal.
-- `stories`: tres títulos de historias destacadas.
+Las tarjetas ya no son titulares de ejemplo: `SectionPage.tsx` obtiene los artículos del repositorio editorial y muestra únicamente los que están publicados, visibles y tienen la categoría correspondiente. Para publicar una historia en Eventos, créala desde el Dashboard con categoría `Eventos` y publícala; la página la recogerá automáticamente. Las categorías históricas `Cultura` no se convierten en artículos de Eventos.
 
 Ejemplo:
 
@@ -201,12 +186,8 @@ sociedad: {
   label: "Sociedad",
   title: "El gesto propio.",
   dek: "Las voces que abren conversaciones nuevas.",
-  image: images.sociedad,
-  stories: [
-    "El poder de elegir distinto",
-    "Cinco creadoras, cinco formas de mirar",
-    "La conversación continúa"
-  ]
+  intro: "Personas, ideas y conversaciones para entender cómo se transforma la vida en común.",
+  image: images.sociedad
 }
 ```
 
@@ -218,7 +199,7 @@ Cambia las URLs en el objeto `images` del mismo archivo. Mantén los nombres de 
 const images = {
   moda: "https://...",
   belleza: "https://...",
-  cultura: "https://...",
+  eventos: "https://...",
   sociedad: "https://..."
 };
 ```
@@ -417,6 +398,8 @@ menu-overlay
 menu-overlay__links
 ```
 
+Masthead y Business no se muestran en la barra horizontal: se accede a ellos desde el menú de tres líneas y el pie del sitio.
+
 El navbar compacto al hacer scroll utiliza las reglas CSS que comienzan con:
 
 ```css
@@ -513,7 +496,17 @@ client/src/pages/AdminDashboard.tsx
 
 ---
 
-## 12. Ejemplos de solicitudes visuales
+## 12. Editar el Masthead y los comentarios
+
+El listado público y la lista de cargos del equipo están en `client/src/pages/MastheadPage.tsx` y `client/src/lib/masthead.ts`. Los cargos, nombres, URL de retrato y orden se editan en la pestaña **Masthead** del Dashboard. Cada cargo admite más de una persona; sus retratos se muestran en tarjetas horizontales que envuelven a la siguiente fila.
+
+El formulario de colaboraciones está en `/business` y se define en `client/src/components/ContactSubmissionForm.tsx`. Los mensajes se consultan en la pestaña **Comentarios** del Dashboard (Owner/Admin). En Supabase, ejecuta la migración `supabase/migrations/20261108_add_contact_submissions.sql`; en la vista previa sin Supabase, el modo local no comparte los registros entre navegadores.
+
+Masthead y Business se encuentran en el menú de tres líneas y en el pie, no en la barra horizontal. `/contacto` redirige a `/business#colaboraciones` para que los enlaces antiguos abran el formulario.
+
+---
+
+## 13. Ejemplos de solicitudes visuales
 
 Cambios seguros que pueden hacerse siguiendo esta guía:
 
