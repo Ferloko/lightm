@@ -17,7 +17,7 @@ export default function ArticlePage() {
 
   return <div className="site-shell article-page">
     <header className="site-header">
-      <div className="topline"><button className="header-action header-action--menu" type="button" onClick={() => setMenuOpen(true)}><Menu size={20} strokeWidth={1.4} /><span>Menú</span></button><p>La conversación de estilo, sin concesiones.</p><button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}><Search size={19} strokeWidth={1.4} /><span>Buscar</span></button></div>
+      <div className="topline"><button className="header-action header-action--menu" type="button" onClick={() => setMenuOpen(true)}><Menu size={20} strokeWidth={1.4} /><span>Menú</span></button><p>Antes de que esté de moda, está en LIGHT</p><button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}><Search size={19} strokeWidth={1.4} /><span>Buscar</span></button></div>
       <div className="brand-row"><Link href="/" className="wordmark" aria-label="LIGHT inicio">LIGHT</Link></div>
       <nav className="main-nav" aria-label="Navegación principal"><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link><Link href="/runway">Runway</Link><Link href="/sobre-moda">La revista</Link></nav>
     </header>
