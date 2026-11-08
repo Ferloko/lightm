@@ -180,7 +180,7 @@ export default function Home() {
             <Menu size={20} strokeWidth={1.4} />
             <span>Menú</span>
           </button>
-          <p>La conversación de estilo, sin concesiones.</p>
+          <p>MAS QUE UNA EDITORIAL</p>
           <button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
             <Search size={19} strokeWidth={1.4} />
             <span>Buscar</span>
