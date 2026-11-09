@@ -28,8 +28,12 @@ No uses esta contraseña en producción. Con Supabase configurado, la sesión y 
 
 ## Permisos
 
-- Owner y Admin pueden guardar borradores, editar y publicar.
-- Staff Writer puede crear y editar borradores, pero no publicar.
+- Owner y Admin pueden guardar borradores, editar y publicar; la base de datos conserva el ID y el byline del perfil que creó el artículo, aunque otra persona lo edite o publique.
+- Staff Writer puede crear y editar sus propios borradores, pero no publicar ni consultar los borradores privados de otros autores.
+- Owner y Admin pueden revisar en **Páginas** todos los borradores, también los creados por Staff Writer; la lista conserva el nombre del autor.
+- En una base Supabase existente, ejecuta `supabase/migrations/20261109_editorial_likes_deletions.sql` para aplicar de una vez la lectura administrativa y los controles nuevos. Esta migración incremental no crea tipos ENUM; no vuelvas a ejecutar todo `schema.sql` sobre una base ya inicializada.
+- Solo Owner/Admin pueden borrar artículos; Staff Writer puede solicitar el borrado de sus propios borradores desde **Páginas**. Owner/Admin tramitan esas solicitudes en **Solicitudes**, deben dejar un comentario para autorizar o rechazar y la decisión se conserva en el historial.
+- Los artículos públicos muestran un contador de **Me gusta** persistente en `public.article_likes`. El botón de compartir copia la URL actual y confirma “Enlace copiado!”.
 - Las historias publicadas aparecen en la portada dentro de la selección editorial del navegador actual.
 
 ## Editor editorial
@@ -48,12 +52,13 @@ Masthead y Business no forman parte de la barra horizontal: están en el menú d
 ## Migración a Supabase
 
 1. Crear un proyecto Supabase.
-2. Ejecutar `supabase/schema.sql` en el SQL Editor.
-3. Activar Supabase Auth y crear los cuatro usuarios reales.
-4. Crear sus filas en `public.profiles` con los roles `owner`, `admin` o `staff_writer`.
-5. Añadir `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` como variables públicas del frontend. El cliente compatible con Vite ya está en `client/src/lib/supabase.ts`.
-6. Verificar que las políticas RLS permitan a los editores administrar contenido y que las consultas de artículos y `site_settings` funcionen con las credenciales públicas configuradas.
-7. Mover la validación definitiva de publicación a una Edge Function o a una política RLS; nunca confiar solo en la interfaz.
+2. En una base nueva y vacía, ejecutar `supabase/schema.sql` una sola vez en el SQL Editor; el archivo crea los tipos ENUM.
+3. En una base ya inicializada, **no volver a ejecutar todo `schema.sql`**. Ejecutar solamente `supabase/migrations/20261109_editorial_likes_deletions.sql` para habilitar la lectura administrativa, conservar la autoría, tramitar solicitudes y persistir likes.
+4. Activar Supabase Auth y crear los cuatro usuarios reales.
+5. Crear sus filas en `public.profiles` con los roles `owner`, `admin` o `staff_writer`.
+6. Añadir `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` como variables públicas del frontend. El cliente compatible con Vite ya está en `client/src/lib/supabase.ts`.
+7. Verificar que las políticas RLS permitan a los editores administrar contenido y que las consultas de artículos y `site_settings` funcionen con las credenciales públicas configuradas.
+8. Mover la validación definitiva de publicación a una Edge Function o a una política RLS; nunca confiar solo en la interfaz.
 
 ### Sobre el prompt que entrega Supabase
 

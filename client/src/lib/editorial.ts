@@ -30,6 +30,7 @@ export type EditorialArticle = {
   isFeatured: boolean;
   featuredOrder: number;
   author: string;
+  authorId?: string;
   updatedAt: string;
 };
 
@@ -97,9 +98,9 @@ export function createArticle(author: string): EditorialArticle {
 
 export async function fetchRemoteArticles(): Promise<EditorialArticle[]> {
   if (!supabase) return getDemoArticles();
-  const { data, error } = await supabase.from("articles").select("id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,updated_at,profiles(display_name)").order("updated_at", { ascending: false });
+  const { data, error } = await supabase.from("articles").select("id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,updated_at,author_id,author_name,profiles(display_name)").order("updated_at", { ascending: false });
   if (error || !data) { console.warn("[LIGHT] Supabase articles unavailable", error?.message); return []; }
-  return data.map((row: any) => ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body || "", blocks: parsePageBlocks(row.page_blocks), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, isVisible: row.is_visible !== false, isFeatured: row.is_featured === true, featuredOrder: Number(row.featured_order || 99), author: row.profiles?.display_name || "LIGHT", updatedAt: row.updated_at }));
+  return data.map((row: any) => ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body || "", blocks: parsePageBlocks(row.page_blocks), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, isVisible: row.is_visible !== false, isFeatured: row.is_featured === true, featuredOrder: Number(row.featured_order || 99), author: row.author_name || row.profiles?.display_name || "LIGHT", authorId: row.author_id || undefined, updatedAt: row.updated_at }));
 }
 
 function parsePageBlocks(value: unknown): PageBlock[] {
@@ -125,7 +126,17 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<bool
   if (!supabase) return saveDemoArticle(article);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  const { error } = await supabase.from("articles").upsert({ id: article.id, author_id: user.id, slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt });
+  const { data: existing, error: lookupError } = await supabase.from("articles").select("id").eq("id", article.id).maybeSingle();
+  if (lookupError) throw new Error([lookupError.message, lookupError.details, lookupError.hint, lookupError.code ? `(${lookupError.code})` : ""].filter(Boolean).join(" "));
+  const payload = { slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, published_at: article.status === "published" ? new Date().toISOString() : null, updated_at: article.updatedAt };
+  if (existing) {
+    const { error } = await supabase.from("articles").update(payload).eq("id", article.id);
+    if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
+    return true;
+  }
+  const { data: profile, error: profileError } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
+  if (profileError) throw new Error([profileError.message, profileError.details, profileError.hint, profileError.code ? `(${profileError.code})` : ""].filter(Boolean).join(" "));
+  const { error } = await supabase.from("articles").insert({ id: article.id, author_id: user.id, author_name: profile.display_name, ...payload });
   if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
   return true;
 }
@@ -134,7 +145,8 @@ export async function deleteRemoteArticle(articleId: string): Promise<boolean> {
   if (!supabase) return deleteDemoArticle(articleId);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  const { error } = await supabase.from("articles").delete().eq("id", articleId);
+  const { data, error } = await supabase.from("articles").delete().eq("id", articleId).select("id").maybeSingle();
   if (error) throw new Error([error.message, error.details, error.hint, error.code ? `(${error.code})` : ""].filter(Boolean).join(" "));
+  if (!data) throw new Error("El artículo no se borró: verifica permisos de Owner/Admin.");
   return true;
 }

@@ -3045,3 +3045,99 @@ html.dark .masthead-hero::before {
   .masthead-people,
   .masthead-roster__empty { margin-top: 0; }
 }
+
+
+/* Retratos del Masthead: primero el cargo, luego las personas alineadas con el título. */
+.masthead-roster__member { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.masthead-people { grid-column: 1; display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-start; gap: clamp(14px, 2vw, 26px); width: 100%; margin-top: 20px; padding-left: 46px; align-self: start; }
+.masthead-roster__empty { grid-column: 1; margin-top: 20px; padding-left: 46px; justify-content: flex-start; align-self: start; }
+.masthead-person { flex: 0 1 clamp(250px, 24vw, 340px); min-width: 205px; max-width: 340px; margin: 0; transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+.masthead-person:hover { transform: translateY(-6px); }
+.masthead-person__portrait { border: 1px solid var(--line); box-shadow: 0 7px 20px rgba(18, 17, 15, .08); transition: box-shadow .35s ease; }
+.masthead-person:hover .masthead-person__portrait { box-shadow: 0 20px 42px rgba(18, 17, 15, .2); }
+.masthead-person__portrait img { transition: transform .55s cubic-bezier(.2,.7,.2,1), filter .35s ease; }
+.masthead-person:hover .masthead-person__portrait img { transform: scale(1.045); filter: saturate(1.08); }
+.masthead-person figcaption { font-size: 17px; }
+
+/* Acciones de artículo: like persistente y copia del enlace con confirmación junto al botón. */
+.article-engagement { width: 100%; min-width: 0; margin: 24px 0; }
+.article-engagement__controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.article-engagement__like,
+.article-engagement__share { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 15px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; transition: color .2s ease, background .2s ease, border-color .2s ease, transform .2s ease; }
+.article-engagement__like:hover,
+.article-engagement__share:hover { border-color: var(--ink); background: var(--ink); color: var(--paper); transform: translateY(-2px); }
+.article-engagement__like:disabled { opacity: .6; cursor: wait; transform: none; }
+.article-engagement__like b { min-width: 20px; font: 600 11px var(--mono); }
+.article-engagement__like.is-liked { color: #a84444; border-color: currentColor; }
+.article-engagement__like.is-liked:hover { color: #fff; background: #a84444; border-color: #a84444; }
+.article-engagement__share-wrap { position: relative; display: inline-flex; }
+.article-engagement__toast { position: absolute; z-index: 3; left: 50%; bottom: calc(100% + 9px); transform: translateX(-50%); padding: 9px 12px; color: #fff; background: #24231f; box-shadow: 0 8px 24px rgba(0,0,0,.18); font: 10px var(--mono); white-space: nowrap; animation: article-toast-in .2s ease both; }
+@keyframes article-toast-in { from { opacity: 0; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
+.article-end { align-items: center; flex-wrap: wrap; }
+.article-end .article-engagement { flex: 1 1 100%; }
+.public-article-end { align-items: center; gap: 20px; flex-wrap: wrap; }
+.public-article-end .article-engagement { flex: 1 1 0; }
+
+/* Solicitudes de borrado: comentarios y confirmación claros en el Dashboard. */
+.article-delete-dialog-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(15, 15, 14, .68); backdrop-filter: blur(5px); }
+.article-delete-dialog { position: relative; width: min(100%, 590px); padding: clamp(24px, 5vw, 46px); color: var(--ink); background: var(--paper); border: 1px solid var(--line); box-shadow: 0 28px 90px rgba(0,0,0,.3); }
+.article-delete-dialog__close { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer; }
+.article-delete-dialog h2 { margin: 16px 0 10px; font: 500 clamp(36px, 6vw, 58px)/.95 var(--serif); letter-spacing: -.05em; }
+.article-delete-dialog__summary { color: var(--muted); font: 15px/1.55 var(--serif); }
+.article-delete-dialog form { display: grid; gap: 10px; margin-top: 24px; }
+.article-delete-dialog label,
+.article-deletion-card__resolve label { display: grid; gap: 8px; color: var(--ink); font: 10px var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.article-delete-dialog textarea,
+.article-deletion-card__resolve textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--line); border-radius: 0; color: var(--ink); background: transparent; font: 14px/1.55 var(--sans); resize: vertical; }
+.article-delete-dialog form small { color: var(--muted); font: 9px var(--mono); }
+.article-delete-dialog__error { margin: 4px 0 0; color: #a84444; font-size: 12px; }
+.article-delete-dialog__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+.article-deletion-manager__intro { max-width: 650px; margin: 0 0 24px; color: var(--muted); font: 14px/1.7 var(--serif); }
+.article-deletion-manager__notice { margin: 16px 0; padding: 12px 14px; border-left: 2px solid var(--ink); color: var(--ink); background: color-mix(in srgb, var(--paper) 78%, var(--ink) 4%); font-size: 12px; }
+.article-deletion-list { display: grid; gap: 14px; }
+.article-deletion-card { padding: clamp(18px, 3vw, 28px); border: 1px solid var(--line); color: var(--ink); background: var(--paper); }
+.article-deletion-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.article-deletion-card__head h3 { margin: 8px 0 5px; font: 500 clamp(22px, 3vw, 32px)/1.08 var(--serif); }
+.article-deletion-card__head small { color: var(--muted); font: 10px var(--mono); }
+.article-deletion-status { flex: 0 0 auto; padding: 7px 9px; border: 1px solid var(--line); color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
+.article-deletion-status--pending { color: #926225; border-color: color-mix(in srgb, #926225 50%, var(--line)); }
+.article-deletion-status--approved { color: #427658; border-color: color-mix(in srgb, #427658 50%, var(--line)); }
+.article-deletion-status--rejected { color: #a84444; border-color: color-mix(in srgb, #a84444 50%, var(--line)); }
+.article-deletion-card__notes { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin: 20px 0; }
+.article-deletion-card__notes > div { padding: 13px; border: 1px solid var(--line); }
+.article-deletion-card__notes span { color: var(--muted); font: 9px var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.article-deletion-card__notes p { margin: 9px 0 0; color: var(--ink); font: 14px/1.6 var(--serif); white-space: pre-wrap; }
+.article-deletion-card__resolve { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 16px; }
+.article-deletion-card__resolve > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.article-deletion-card__approve { background: #a84444; border-color: #a84444; }
+.article-deletion-card__resolved { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 10px var(--mono); }
+
+@media (max-width: 820px) {
+  .masthead-roster__member { grid-template-columns: 1fr; }
+  .masthead-person { flex-basis: clamp(195px, 34vw, 270px); }
+}
+@media (max-width: 560px) {
+  .masthead-roster__member { grid-template-columns: 1fr; gap: 0; }
+  .masthead-roster__role,
+  .masthead-people,
+  .masthead-roster__empty { grid-column: 1; }
+  .masthead-people,
+  .masthead-roster__empty { margin-top: 18px; padding-left: 46px; }
+  .masthead-person { flex: 0 1 min(100%, 260px); min-width: 0; max-width: 260px; }
+  .article-end .article-engagement { margin: 18px 0; }
+  .public-article-end .article-engagement { flex-basis: 100%; }
+  .article-delete-dialog__actions { justify-content: stretch; }
+  .article-delete-dialog__actions > * { flex: 1 1 auto; justify-content: center; }
+  .article-deletion-card__head { flex-direction: column; }
+  .article-deletion-card__notes,
+  .article-deletion-card__resolve { grid-template-columns: 1fr; }
+  .article-deletion-card__resolve > div { justify-content: stretch; }
+  .article-deletion-card__resolve button { flex: 1 1 auto; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .masthead-person,
+  .masthead-person__portrait,
+  .masthead-person__portrait img,
+  .article-engagement__like,
+  .article-engagement__share { transition: none; }
+}

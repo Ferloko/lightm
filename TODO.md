@@ -33,7 +33,6 @@
   - El orden manual se aplica a las listas con varios artículos (Selección de portada y Must-Reads).
   - El hero permanece en una sola historia estática, sin carrusel; la interfaz deja clara esa diferencia.
 
-
 - [x] **Mejorar contraste de footer y KPIs en modo oscuro**
   - El pie de Living mantiene fondo y colores de texto con contraste legible, tanto en tema claro como en oscuro.
   - Las tarjetas de KPI y sus etiquetas, métricas y notas se leen con claridad en Dark Mode.
@@ -51,7 +50,6 @@
   - Se crea `/business` como hoja informativa de oportunidades de negocio, colaboraciones editoriales y contacto comercial, sin inventar cifras ni datos de contacto.
   - Masthead y Business aparecen en el menú de tres líneas y en los pies pertinentes, pero no en la barra horizontal; ambas rutas se registran en los manifests públicos.
 
-
 - [x] **Añadir retratos y grupos de personas al Masthead**
   - Cada integrante puede tener nombre y fotografía; cada cargo admite una o varias personas.
   - Las personas de un mismo cargo se muestran en fila horizontal y, al superar el ancho disponible, continúan en una fila inferior del mismo grupo.
@@ -66,10 +64,32 @@
   - La hoja Moda recupera una composición legible y coherente con las hojas editoriales LIGHT, en escritorio y móvil.
   - Los artículos publicados y visibles de categoría Moda continúan enlazando a sus páginas; si no hay artículos, aparece un estado vacío claro.
 
-
 - [x] **Añadir fondo editorial al hero de Masthead**
   - `masthead-hero` utiliza una imagen de fondo con contraste suficiente para leer todo el texto en claro, oscuro y móvil.
 
 - [x] **Alinear retratos con el nombre del cargo**
   - En cada grupo del roster, el inicio de las imágenes se alinea con el inicio del texto del cargo, no con la parte superior de la fila.
   - En móvil, los retratos siguen apareciendo debajo del nombre del cargo.
+
+- [x] **Hacer visibles los borradores de Staff Writer para Owner/Admin**
+  - Owner y Admin pueden ver en la pestaña Páginas todos los borradores de cualquier Staff Writer, además de los suyos propios.
+  - Staff Writer puede seguir viendo sus propios borradores y los artículos publicados, pero no los borradores privados de otras personas.
+  - La lista administrativa conserva el nombre del autor cuando muestra un borrador ajeno.
+
+- [x] **Conservar autoría original al publicar**
+  - El ID y el nombre guardados de quien creó un artículo siguen apareciendo como autor aunque Owner/Admin lo edite o publique; los artículos nuevos se atribuyen al perfil que los crea.
+
+- [x] **Restringir borrados y tramitar solicitudes de Staff Writer**
+  - Solo Owner/Admin pueden borrar artículos directamente, incluidos los ya publicados.
+  - Staff Writer puede solicitar el borrado de sus propios borradores, con un motivo; la solicitud aparece para Owner/Admin.
+  - Owner/Admin pueden autorizarla con un comentario y borrar el artículo; el registro de solicitud y comentario queda conservado.
+
+- [x] **Añadir “Me gusta” persistente a los artículos**
+  - Cada artículo publicado ofrece un botón Like y muestra su conteo; los likes y el estado por navegador se sincronizan con Supabase cuando está configurado y quedan persistidos en la base.
+
+- [x] **Hacer funcional “Compartir historia”**
+  - El control copia el enlace actual del artículo y muestra la confirmación exacta “Enlace copiado!”.
+
+- [x] **Ajustar pie y presentación del Masthead**
+  - Reemplazar “Madrid · Ciudad de México · Buenos Aires” por “San Andreas, United States”.
+  - Cada cargo se muestra primero y sus retratos más grandes aparecen debajo del título, alineados a la izquierda, con un efecto hover cuidado.
