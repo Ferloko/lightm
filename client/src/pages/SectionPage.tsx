@@ -2,7 +2,8 @@ import MenuThemeToggle from "@/components/MenuThemeToggle";
 import { ArrowUpRight, Instagram, Mail, Menu, Search, X, Youtube } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
+import { fetchPublishedArticleSummaries, type EditorialArticle } from "@/lib/editorial";
+import { subscribeToTable } from "@/lib/supabase";
 
 const images = {
   moda: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1500&q=90",
@@ -37,15 +38,14 @@ export default function SectionPage({ section }: { section: SectionKey }) {
   useEffect(() => {
     let active = true;
     const refresh = () => {
-      setArticlesLoading(true);
-      void fetchRemoteArticles().then((items) => {
-        if (active) setArticles(items.filter((article) => article.status === "published" && article.isVisible !== false && article.category.trim().toLocaleLowerCase() === current.label.toLocaleLowerCase()));
+      void fetchPublishedArticleSummaries().then((items) => {
+        if (active) setArticles(items.filter((article) => article.category.trim().toLocaleLowerCase() === current.label.toLocaleLowerCase()));
       }).finally(() => { if (active) setArticlesLoading(false); });
     };
     refresh();
-    window.addEventListener("storage", refresh);
+    const unsubscribe = subscribeToTable("articles", refresh);
     window.addEventListener("light:editorial-updated", refresh);
-    return () => { active = false; window.removeEventListener("storage", refresh); window.removeEventListener("light:editorial-updated", refresh); };
+    return () => { active = false; unsubscribe(); window.removeEventListener("light:editorial-updated", refresh); };
   }, [current.label]);
 
   return <div className={`site-shell subpage subpage--${section}`}>

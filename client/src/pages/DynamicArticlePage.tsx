@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useRoute } from "wouter";
 import SiteSearch from "@/components/SiteSearch";
-import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
+import { fetchPublishedArticle, type EditorialArticle } from "@/lib/editorial";
 import type { PageBlock } from "@/lib/pageBlocks";
 
 const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Sociedad", "Runway", "La revista", "Archivo", "Newsletter"];
@@ -18,7 +18,10 @@ export default function DynamicArticlePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => { fetchRemoteArticles().then((articles) => setArticle(articles.find((item) => item.status === "published" && (item.slug === params?.slug || item.id === params?.slug)) || null)); }, [params?.slug]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { let active = true; setLoading(true); void fetchPublishedArticle(decodeURIComponent(params?.slug || "")).then((next) => { if (active) setArticle(next); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [params?.slug]);
+  useEffect(() => { if (article) document.title = `${article.title} — LIGHT`; return () => { document.title = "LIGHT — Revista de estilo"; }; }, [article]);
+  if (loading && !article) return <div className="dynamic-article-empty" aria-busy="true"><p className="eyebrow">LIGHT / Página</p><h1>Cargando historia…</h1></div>;
   if (!article) return <div className="dynamic-article-empty"><p className="eyebrow">LIGHT / Página</p><h1>Esta historia todavía no existe.</h1><Link href="/" className="story-link">Volver a la revista <ArrowUpRight size={15} /></Link></div>;
 
   const blocks = article.blocks || [];

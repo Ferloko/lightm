@@ -1,8 +1,9 @@
 import { ArrowUpRight, Search, Instagram, Mail, Youtube } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
-import { getArchivePlacements } from "@/lib/archivePlacements";
+import { fetchPublishedArticleSummaries, type EditorialArticle } from "@/lib/editorial";
+import { useArchivePlacements } from "@/lib/archivePlacements";
+import { subscribeToTable } from "@/lib/supabase";
 
 const categories = ["Todo", "Moda", "Belleza", "Eventos", "Sociedad"];
 
@@ -38,13 +39,14 @@ export default function ArchivePage() {
   const [selectedCategory, setSelectedCategory] = useState("Todo");
 
   useEffect(() => {
-    const refresh = () => { setArticlesLoading(true); void fetchRemoteArticles().then((next) => { const visible = next.filter((article) => article.status === "published" && article.isVisible !== false); setArticles(visible); }).finally(() => setArticlesLoading(false)); };
+    let active = true;
+    const refresh = () => { void fetchPublishedArticleSummaries().then((visible) => { if (active) setArticles(visible); }).finally(() => { if (active) setArticlesLoading(false); }); };
     refresh();
-    window.addEventListener("storage", refresh);
-    return () => window.removeEventListener("storage", refresh);
+    const unsubscribe = subscribeToTable("articles", refresh);
+    return () => { active = false; unsubscribe(); };
   }, []);
 
-  const placements = getArchivePlacements();
+  const [placements] = useArchivePlacements();
   const recent = useMemo(() => [...articles].sort((a, b) => (b.date || b.updatedAt).localeCompare(a.date || a.updatedAt)), [articles]);
   const popular = useMemo(() => [...articles].sort((a, b) => Number(placements[b.id]?.mustRead) - Number(placements[a.id]?.mustRead) || localViewsFor(b) - localViewsFor(a) || Number(b.isFeatured) - Number(a.isFeatured) || (b.date || "").localeCompare(a.date || "")), [articles, placements]);
   const hasExplicitSpotlight = Object.values(placements).some((placement) => placement.spotlight);
@@ -53,7 +55,7 @@ export default function ArchivePage() {
   const mustReads = (hasExplicitMustReads ? articles.filter((article) => placements[article.id]?.mustRead).sort((a, b) => (placements[a.id]?.order ?? 99) - (placements[b.id]?.order ?? 99)) : popular.filter((article) => article.isFeatured)).slice(0, 5);
   const categoryArticles = selectedCategory === "Todo" ? recent : recent.filter((article) => article.category.toLowerCase() === selectedCategory.toLowerCase());
   const searchResults = useMemo(() => { const term = search.trim().toLowerCase(); if (!term) return []; return articles.filter((article) => [article.title, article.category, article.excerpt, article.lead].some((value) => value.toLowerCase().includes(term))); }, [articles, search]);
-  const mastheadImage = "/images/GTA54.png";
+  const mastheadImage = "/images/GTA54.webp";
 
   return <div className="site-shell archive-page"><header className="site-header"><div className="topline"><Link className="header-action" href="/"><span>← Inicio</span></Link><p>Antes de que esté de moda, está en LIGHT</p><button className="header-action" type="button" onClick={() => window.dispatchEvent(new Event("light:open-search"))}><Search size={19} strokeWidth={1.4} /><span>Buscar</span></button></div><div className="brand-row"><Link href="/" className="wordmark" aria-label="LIGHT inicio">LIGHT</Link></div><nav className="main-nav"><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link><Link href="/runway">Runway</Link><Link href="/sobre-moda">La revista</Link></nav></header><main><section className="archive-masthead" style={{ backgroundImage: `linear-gradient(90deg, rgba(29,28,28,.64), rgba(29,28,28,.12)), url(${mastheadImage})` }}><div className="archive-masthead__top"><span>LIGHT / ARCHIVE</span></div><div className="archive-masthead__title"><strong>LIGHT</strong><span>THE COMPLETE ARCHIVE</span></div></section><section className="archive-content" id="latest-issue"><div className="archive-section-heading archive-section-heading--latest"><div><p className="eyebrow">LIGHT / Selección editorial</p><h2>LATEST ISSUE</h2></div><span>{recent.length} historias publicadas</span></div>{articlesLoading ? <div className="archive-latest-grid article-skeleton-grid" aria-label="Cargando historias">{[1, 2, 3, 4, 5, 6].map((item) => <div className="article-skeleton-card" key={item}><div className="article-skeleton-card__image" /><div className="article-skeleton-card__line article-skeleton-card__line--short" /><div className="article-skeleton-card__line" /><div className="article-skeleton-card__line article-skeleton-card__line--medium" /></div>)}</div> : recent.length ? <div className="archive-latest-grid">{recent.slice(0, 6).map((article, index) => <ArticleCard article={article} index={index} key={article.id} />)}</div> : <div className="archive-empty">Las nuevas historias aparecerán aquí cuando se publiquen desde el Dashboard.</div>}<MustReads articles={mustReads} /></section>{spotlight && <section className="archive-spotlight"><div className="archive-spotlight__backdrop" style={{ backgroundImage: `url(${imageFor(spotlight)})` }} /><div className="archive-spotlight__image"><img src={imageFor(spotlight)} alt="" /></div><div className="archive-spotlight__copy"><p className="eyebrow">SPOTLIGHT / {spotlight.category}</p><h2>{spotlight.title}</h2><p>{spotlight.excerpt || spotlight.lead}</p><Link className="archive-spotlight__link" href={`/historias/${spotlight.slug || spotlight.id}`}>Abrir spotlight <ArrowUpRight size={16} /></Link></div></section>}<section className="archive-search"><div><p className="eyebrow">Archivo abierto</p><h2>Busca una historia.</h2></div><label><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Título, tema o palabra clave" /></label>{search && <div className="archive-search__results">{searchResults.length ? searchResults.map((article, index) => <ArticleCard article={article} index={index} compact key={article.id} />) : <p>No encontramos historias con esa búsqueda.</p>}</div>}</section><section className="archive-categories"><div className="archive-section-heading"><div><p className="eyebrow">Archivo por conversación</p><h2>Browse by category.</h2></div></div><div className="archive-category-tabs" role="tablist" aria-label="Categorías del archivo">{categories.map((category) => <button key={category} type="button" className={selectedCategory === category ? "is-active" : ""} onClick={() => setSelectedCategory(category)}>{category}</button>)}</div><section className="archive-category archive-category--selected"><div className="archive-category__heading"><h3>{selectedCategory}</h3><span>{categoryArticles.length} historias</span></div>{categoryArticles.length ? <div className="archive-category__grid">{categoryArticles.map((article, index) => <ArticleCard article={article} index={index} compact key={article.id} />)}</div> : <p className="archive-category__empty">Próximamente en {selectedCategory}.</p>}</section></section></main><Footer /></div>;
 }

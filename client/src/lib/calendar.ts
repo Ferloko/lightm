@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+// localStorage is used ONLY in the local demo (no Supabase). With Supabase, errors are surfaced.
 
 const LOCAL_KEY = "light_calendar_events";
 
@@ -28,18 +29,18 @@ function fromRow(row: Record<string, unknown>): CalendarEvent {
 export async function fetchCalendarEvents() {
   if (supabase) {
     const { data, error } = await supabase.from("calendar_events").select("*").order("start_at", { ascending: true });
-    if (!error && data) return data.map(fromRow);
-    console.warn("[LIGHT] Calendar unavailable; using local fallback", error?.message);
+    if (error) throw error;
+    return (data || []).map(fromRow);
   }
   return readLocalEvents();
 }
 
 export async function saveCalendarEvent(event: Omit<CalendarEvent, "id"> & { id?: string }) {
   if (supabase) {
-    const payload = { ...(event.id ? { id: event.id } : {}), title: event.title, description: event.description, start_at: event.startAt, end_at: event.endAt, all_day: event.allDay, color: event.color };
+    const payload = { ...(event.id && !event.id.startsWith("event-") ? { id: event.id } : {}), title: event.title, description: event.description, start_at: event.startAt, end_at: event.endAt, all_day: event.allDay, color: event.color };
     const { data, error } = await supabase.from("calendar_events").upsert(payload).select().single();
-    if (!error && data) return fromRow(data);
-    console.warn("[LIGHT] Calendar save unavailable; using local fallback", error?.message);
+    if (error) throw error;
+    return fromRow(data);
   }
   const next = { ...event, id: event.id || `event-${Date.now()}` } as CalendarEvent;
   const events = readLocalEvents().filter((item) => item.id !== next.id);
@@ -50,8 +51,8 @@ export async function saveCalendarEvent(event: Omit<CalendarEvent, "id"> & { id?
 export async function deleteCalendarEvent(id: string) {
   if (supabase) {
     const { error } = await supabase.from("calendar_events").delete().eq("id", id);
-    if (!error) return;
-    console.warn("[LIGHT] Calendar delete unavailable; using local fallback", error.message);
+    if (error) throw error;
+    return;
   }
   localStorage.setItem(LOCAL_KEY, JSON.stringify(readLocalEvents().filter((event) => event.id !== id)));
 }

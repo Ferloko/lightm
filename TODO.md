@@ -93,3 +93,27 @@
 - [x] **Ajustar pie y presentación del Masthead**
   - Reemplazar “Madrid · Ciudad de México · Buenos Aires” por “San Andreas, United States”.
   - Cada cargo se muestra primero y sus retratos más grandes aparecen debajo del título, alineados a la izquierda, con un efecto hover cuidado.
+
+- [x] **Todo el Dashboard sincronizado con Supabase**
+  - Ediciones, Destacado, ubicaciones de portada/Archivo, Runway, Próximamente, Calendario y Campañas se guardan en Supabase y se actualizan en directo para todo el equipo y el público; localStorage queda solo como caché o para la demo local.
+  - Runway ya no pierde las firmas predeterminadas al guardar la primera y la lista pública se actualiza con los datos remotos.
+  - Si Supabase falla, se muestra el error en lugar de guardar en silencio solo en el navegador.
+
+- [x] **Próximamente real**
+  - El estado se lee de Supabase en cada visita: el público ve la portada de Próximamente; quien tiene sesión editorial puede abrir la página y ve un aviso de que está cerrada al público.
+
+- [x] **Equipo, roles, bloqueo y permisos por apartado**
+  - Pestaña **Equipo**: crear usuarios (Edge Function `editorial-users`), cambiar rol, nombre y palabra de acceso, bloquear/desbloquear y cambiar contraseñas.
+  - Matriz de permisos Ver/Editar por rol y apartado, aplicada también en RLS. Staff Writer ve por defecto Ediciones, Runway, Masthead, Destacado, Próximamente, Calendario, Campañas, Suscriptores, Comentarios y Solicitudes en modo lectura.
+
+- [x] **Masthead con hojas individuales**
+  - Retratos 9:16 en blanco y negro que pasan a color con una transición suave al pasar el cursor.
+  - Cada persona enlaza a `/masthead/:slug` con biografía, datos, redes, imagen principal y galería, editables desde Dashboard → Masthead → Hoja propia.
+
+- [x] **Correcciones**
+  - Menú de tres líneas en las fichas de Runway (`/runway/:marca`) unificado con el resto del sitio.
+  - La URL de un artículo queda fija al publicarse y la fecha de publicación original se conserva.
+  - Newsletter de `/newsletter` ahora guarda de verdad; ningún formulario confirma si no se guardó.
+  - Acceso: los correos de la documentación coinciden con el código; la contraseña de demostración se retiró del repositorio; sin Supabase, producción no abre un Dashboard de demostración.
+  - Enlaces del Destacado limitados a rutas internas o https (sin `javascript:`); embeds HTML de Heyzine aislados en sandbox.
+  - Visitas contadas por la base de datos en tu zona horaria; imágenes GTA usadas convertidas a WebP (≈15 MB → ≈0,4 MB).

@@ -1,67 +1,82 @@
 # LIGHT Studio — CMS editorial
 
-Esta rama experimental incluye un CMS privado activado desde el buscador. Puede funcionar en modo demostración local o conectarse a Supabase Auth y a las tablas editoriales para persistencia compartida.
+El Dashboard privado (`/admin`) funciona con Supabase Auth y las tablas editoriales. Supabase es la **única fuente de verdad**: todo lo que se guarda desde el Dashboard (artículos, Ediciones, Runway, Masthead, Destacado, ubicaciones de portada, Próximamente, Calendario, Campañas) lo ve al instante el resto del equipo y el público, sin recargar (Realtime).
 
-## Acceso temporal
+## Puesta en marcha (una sola vez)
 
-En el buscador escribe exactamente uno de estos nombres y presiona Enter:
+1. **Base de datos.**
+   - Base nueva y vacía: ejecuta `supabase/schema.sql` una sola vez en el SQL Editor (ya incluye todas las migraciones).
+   - Base ya inicializada: **no vuelvas a ejecutar `schema.sql`**. Ejecuta, en este orden y solo las que falten:
+     1. `supabase/migrations/20261109_editorial_likes_deletions.sql`
+     2. `supabase/migrations/20261110_team_permissions_sync.sql` ← nueva: equipo, permisos por rol, sincronización, borrado de comentarios, estadísticas de visitas.
+2. **Función para crear usuarios desde el Dashboard.** Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):
+   ```bash
+   supabase login
+   supabase link --project-ref TU_PROJECT_REF
+   supabase functions deploy editorial-users
+   ```
+   La función usa la clave de servicio que Supabase le inyecta; esa clave nunca llega al navegador.
+3. **Variables en Vercel** (públicas del frontend): `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+4. **Seguridad de Auth.** En Supabase → Authentication → Providers → Email, desactiva **Allow new users to sign up**. Así solo existen las cuentas que crea un Owner.
 
-- `Snow` → Owner
-- `Songbird` → Admin
-- `Moonglow` → Staff Writer
-- `Bianca` → Staff Writer
+## Acceso al Dashboard
 
-La contraseña temporal de desarrollo para los cuatro perfiles es:
+Escribe en el buscador del sitio la **palabra de acceso** de tu cuenta (por ejemplo `snow`) y pulsa Enter; se abre el formulario de contraseña. La palabra de acceso de cada persona se define en **Dashboard → Equipo**. La migración 20261110 asigna automáticamente `snow`, `songbird`, `moonglow` y `bianca` a las cuentas cuyo correo empieza así.
 
-```text
-MODA-DEMO-2026
-```
+El buscador es solo una puerta discreta, no la seguridad: la autoridad real son Supabase Auth y las políticas RLS.
 
-Para conectar Supabase Auth, crea estos usuarios con esa contraseña temporal o con contraseñas reales:
+> Las contraseñas no se documentan en el repositorio. Si alguna vez se usó una contraseña de demostración en cuentas reales, cámbiala desde **Equipo → 🔑**.
 
-- `snow@moda.studio` — Owner
-- `songbird@moda.studio` — Admin
-- `moonglow@moda.studio` — Staff Writer
-- `bianca@moda.studio` — Staff Writer
+### Modo demostración
 
-No uses esta contraseña en producción. Con Supabase configurado, la sesión y los artículos se guardan en sus servicios remotos. Sin credenciales, la vista previa usa almacenamiento local del navegador para la demostración.
+Sin variables de Supabase, el Dashboard solo funciona en desarrollo (`pnpm dev:static`) y guarda todo en el navegador. Una build de producción sin Supabase deja el acceso cerrado. Para forzar la demo en una preview, define `VITE_ENABLE_DEMO=true`.
 
-## Permisos
+## Equipo, roles y permisos (Dashboard → Equipo)
 
-- Owner y Admin pueden guardar borradores, editar y publicar; la base de datos conserva el ID y el byline del perfil que creó el artículo, aunque otra persona lo edite o publique.
-- Staff Writer puede crear y editar sus propios borradores, pero no publicar ni consultar los borradores privados de otros autores.
-- Owner y Admin pueden revisar en **Páginas** todos los borradores, también los creados por Staff Writer; la lista conserva el nombre del autor.
-- En una base Supabase existente, ejecuta `supabase/migrations/20261109_editorial_likes_deletions.sql` para aplicar de una vez la lectura administrativa y los controles nuevos. Esta migración incremental no crea tipos ENUM; no vuelvas a ejecutar todo `schema.sql` sobre una base ya inicializada.
-- Solo Owner/Admin pueden borrar artículos; Staff Writer puede solicitar el borrado de sus propios borradores desde **Páginas**. Owner/Admin tramitan esas solicitudes en **Solicitudes**, deben dejar un comentario para autorizar o rechazar y la decisión se conserva en el historial.
-- Los artículos públicos muestran un contador de **Me gusta** persistente en `public.article_likes`. El botón de compartir copia la URL actual y confirma “Enlace copiado!”.
-- Las historias publicadas aparecen en la portada dentro de la selección editorial del navegador actual.
+Visible para Owner (y para quien tenga el permiso *Equipo*).
 
-## Editor editorial
-Las categorías disponibles incluyen Moda, Belleza, Eventos, Sociedad, Living y Archivo. Los artículos de Eventos se muestran automáticamente en la hoja `/eventos` cuando están publicados y visibles. Si Supabase no está configurado en la vista previa, la demo guarda los artículos en el almacenamiento local de ese navegador; para persistencia compartida o producción, usa Supabase. El campo “Orden dentro de la selección” comparte la numeración entre Must-Reads y Homepage / Selección: un número menor aparece antes. El Hero solo muestra una historia estática, sin carrusel, y el orden no cambia su contenido.
+- **Nuevo usuario:** nombre editorial (byline), correo, contraseña inicial (mín. 10 caracteres), palabra de acceso y rol. Requiere la función `editorial-users` desplegada.
+- **Cambiar rol, nombre o palabra de acceso:** edita la fila y pulsa *Guardar*. Solo un Owner puede crear o modificar a otro Owner, y siempre debe quedar al menos un Owner activo.
+- **Bloquear / Desbloquear:** una cuenta bloqueada pierde el acceso al Dashboard y todos sus permisos en la base de datos al instante. Sus artículos se conservan.
+- **🔑 Contraseña:** fija una contraseña nueva para esa persona.
+- **Permisos por rol:** para Admin y Staff Writer decide qué apartados del Dashboard pueden **Ver** y cuáles pueden **Editar**. Owner siempre lo tiene todo. Un apartado con *Ver* pero sin *Editar* se muestra en **modo lectura**. Estos permisos se aplican también en la base de datos (RLS), no solo en la pantalla.
 
-Cada historia se crea como una página editorial con slug propio. El borrador se abre como la maqueta completa del artículo, no como un formulario aislado: kicker, título, bajada, autor, fecha, tiempo de lectura, portada por URL de Imgur, pie de imagen, frase de inicio y bloques verticales de texto, citas, separadores e imágenes. La sección Páginas permite ver el borrador, abrir la página publicada o volver a editarla. Los bloques se guardan en `articles.page_blocks` como JSONB y una página publicada se renderiza en `/historias/:slug`.
+Valores iniciales: Admin ve y edita todo salvo Equipo; Staff Writer ve en modo lectura Ediciones, Runway, Masthead, Destacado, Próximamente, Calendario, Campañas, Suscriptores, Comentarios y Solicitudes. *Suscriptores* y *Comentarios* contienen datos personales: quítales el permiso de ver si no lo necesitan.
 
-## Masthead y Business
+### Artículos (reglas fijas)
 
-La hoja pública `/masthead` presenta el roster del equipo. Owner/Admin pueden abrir la pestaña **Masthead** del Dashboard para editar cargos, añadir o quitar posiciones y cambiar el orden. Cada cargo admite varias personas; para cada integrante puedes editar nombre y URL https del retrato. Las personas se agrupan en horizontal y pasan a otra fila cuando no cabe más contenido. Los ocho cargos iniciales son Head of Global Editorial, Assistant Global Editorial, Cast & Talent Director, Senior Fashion Editor, Supermodel, Runway Model, New Face Up y Staff Writer. Los nombres y retratos se incorporan desde Dashboard cuando el equipo los tenga.
+- Staff Writer crea y edita **sus** borradores; no publica ni ve borradores ajenos. Puede **solicitar el borrado** de sus borradores con un motivo.
+- Owner y Admin ven todos los borradores, publican, ocultan, destacan y borran (también los publicados). Las solicitudes se resuelven en **Solicitudes** con un comentario obligatorio; el historial se conserva.
+- La autoría original (ID y byline) se conserva aunque otra persona edite o publique.
+- La URL (`/historias/:slug`) se genera con el título mientras es borrador y **queda fija al publicarse**: cambiar el título después no rompe los enlaces compartidos. Si la URL ya existe, se añade un sufijo.
+- La fecha de publicación original se conserva al volver a editar (`published_at`).
 
-Con Supabase, el roster se guarda como JSONB en `public.site_settings`, bajo la clave `public:masthead-team`; la lectura pública queda limitada a claves `public:*` y solo Owner/Admin pueden escribirlas. En preview sin Supabase, la edición se conserva en el almacenamiento local de ese navegador. Para aplicar la tabla y sus políticas en una base ya existente, ejecuta `supabase/migrations/20261107_add_public_site_settings.sql`. Business está disponible en `/business` y sustituye la hoja independiente Contacto; el formulario de colaboraciones guarda nombre, apellido, correo y comentario. Los envíos aparecen en la pestaña privada **Comentarios** del Dashboard, visible para Owner/Admin; ejecuta `supabase/migrations/20261108_add_contact_submissions.sql` para habilitar recepción remota, lectura editorial y políticas RLS. En preview sin Supabase, los comentarios se guardan localmente en el navegador.
+## Apartados compartidos
 
-Masthead y Business no forman parte de la barra horizontal: están en el menú de tres líneas y en el pie del sitio.
+| Apartado | Dónde se guarda |
+|---|---|
+| Ediciones | `site_settings` → `public:magazine-editions` |
+| Destacado del homepage | `site_settings` → `public:homepage-feature` |
+| Ubicaciones (Hero, Selección, Must-Reads, Spotlight) | `site_settings` → `public:archive-placements` |
+| Masthead y hojas de cada persona | `site_settings` → `public:masthead-team` |
+| Runway | tabla `runway_brands` (el primer guardado copia también las firmas predeterminadas) |
+| Próximamente | tabla `page_availability` |
+| Calendario / Campañas | tablas `calendar_events` / `campaigns` |
 
-## Migración a Supabase
+### Próximamente
 
-1. Crear un proyecto Supabase.
-2. En una base nueva y vacía, ejecutar `supabase/schema.sql` una sola vez en el SQL Editor; el archivo crea los tipos ENUM.
-3. En una base ya inicializada, **no volver a ejecutar todo `schema.sql`**. Ejecutar solamente `supabase/migrations/20261109_editorial_likes_deletions.sql` para habilitar la lectura administrativa, conservar la autoría, tramitar solicitudes y persistir likes.
-4. Activar Supabase Auth y crear los cuatro usuarios reales.
-5. Crear sus filas en `public.profiles` con los roles `owner`, `admin` o `staff_writer`.
-6. Añadir `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` como variables públicas del frontend. El cliente compatible con Vite ya está en `client/src/lib/supabase.ts`.
-7. Verificar que las políticas RLS permitan a los editores administrar contenido y que las consultas de artículos y `site_settings` funcionen con las credenciales públicas configuradas.
-8. Mover la validación definitiva de publicación a una Edge Function o a una política RLS; nunca confiar solo en la interfaz.
+Al cerrar una sección, **todo el público** ve la portada de Próximamente. Las personas con sesión editorial pueden seguir abriéndola para trabajar y ven un aviso negro arriba que indica que está cerrada al público.
 
-### Sobre el prompt que entrega Supabase
+### Masthead
 
-El prompt recibido usa `page.tsx`, `next/headers`, `NextRequest` y `@supabase/ssr`. Es correcto para Next.js, pero LIGHT usa Vite + React + Express. Por eso aquí no se deben copiar esos archivos ni usar `NEXT_PUBLIC_*`. En esta aplicación se utiliza `@supabase/supabase-js`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+`/masthead` muestra el equipo por cargos. Los retratos se muestran en 9:16, en blanco y negro, y pasan a color con una transición suave al pasar el cursor. Cada persona tiene su **hoja propia** en `/masthead/:slug`: en Dashboard → Masthead, pulsa **Hoja propia** en la persona para editar frase corta, biografía, ciudad, agencia, Instagram, imagen principal, galería (book) y datos libres (altura, temporadas…).
 
-El buscador oculto es una forma cómoda de descubrir el acceso, no el mecanismo de seguridad. En producción, Supabase Auth, RLS y las políticas de publicación deben ser la autoridad real.
+## Público
+
+- **Me gusta:** contador persistente en `public.article_likes`, una vez por navegador. No es un sistema antifraude: alguien con conocimientos técnicos podría inflar el contador.
+- **Compartir historia:** copia la URL y confirma “Enlace copiado!”.
+- **Newsletter** (portada y `/newsletter`) y el formulario de **Business** guardan en Supabase. Si falla, el visitante ve un error en lugar de una confirmación falsa. Owner/Admin pueden borrar suscriptores y comentarios (spam).
+
+## Sobre el prompt que entrega Supabase
+
+El prompt de Supabase usa `page.tsx`, `next/headers` y `@supabase/ssr` (Next.js). LIGHT usa Vite + React: no copies esos archivos ni uses `NEXT_PUBLIC_*`. El cliente correcto ya está en `client/src/lib/supabase.ts` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.

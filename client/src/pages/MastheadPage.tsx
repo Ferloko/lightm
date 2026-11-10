@@ -1,7 +1,9 @@
-import { UserRound } from "lucide-react";
+import { ArrowUpRight, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
-import { defaultMastheadTeam, fetchMastheadTeam, mastheadTeamEventName, type MastheadMember } from "@/lib/masthead";
+import { defaultMastheadTeam, fetchMastheadTeam, onMastheadChange, type MastheadMember } from "@/lib/masthead";
+import { safeImageUrl } from "@/lib/utils";
 
 export default function MastheadPage() {
   const [team, setTeam] = useState<MastheadMember[]>(defaultMastheadTeam);
@@ -20,13 +22,8 @@ export default function MastheadPage() {
       }
     };
     void refresh();
-    window.addEventListener(mastheadTeamEventName, refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      active = false;
-      window.removeEventListener(mastheadTeamEventName, refresh);
-      window.removeEventListener("storage", refresh);
-    };
+    const unsubscribe = onMastheadChange(() => { void refresh(); });
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   return <EditorialPageLayout activePath="/masthead">
@@ -49,10 +46,11 @@ export default function MastheadPage() {
             <h3>{member.role}</h3>
           </div>
           {member.people.length ? <div className="masthead-people" aria-label={`Integrantes: ${member.role}`}>
-            {member.people.map((person) => <figure className="masthead-person" key={person.id}>
-              <div className="masthead-person__portrait">{person.image ? <img src={person.image} alt={`Retrato de ${person.name}`} loading="lazy" /> : <div className="masthead-person__placeholder"><UserRound size={27} strokeWidth={1.2} /><span>LIGHT</span></div>}</div>
-              <figcaption>{person.name}</figcaption>
-            </figure>)}
+            {member.people.map((person) => { const image = safeImageUrl(person.image); return <Link className="masthead-person" key={person.id} href={`/masthead/${person.slug}`} aria-label={`Ver la hoja de ${person.name}`}>
+              <div className="masthead-person__portrait">{image ? <img src={image} alt={`Retrato de ${person.name}`} loading="lazy" /> : <div className="masthead-person__placeholder"><UserRound size={27} strokeWidth={1.2} /><span>LIGHT</span></div>}<span className="masthead-person__cta">Ver perfil <ArrowUpRight size={13} /></span></div>
+              <span className="masthead-person__name">{person.name}</span>
+              {person.tagline && <small className="masthead-person__tagline">{person.tagline}</small>}
+            </Link>; })}
           </div> : <p className="masthead-roster__empty">Integrantes por presentar.</p>}
         </li>)}
       </ol>

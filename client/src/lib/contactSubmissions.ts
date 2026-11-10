@@ -63,3 +63,12 @@ export async function createContactSubmission(input: NewContactSubmission): Prom
   window.dispatchEvent(new Event(contactSubmissionsUpdatedEvent));
   return item;
 }
+
+export async function deleteContactSubmission(id: string) {
+  if (supabase) {
+    const { error } = await supabase.from("contact_submissions").delete().eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  try { localStorage.setItem(localKey, JSON.stringify(readLocal().filter((item) => item.id !== id))); } catch { /* demo only */ }
+}

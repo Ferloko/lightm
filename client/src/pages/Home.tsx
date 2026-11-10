@@ -13,10 +13,12 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import SiteSearch from "@/components/SiteSearch";
-import { fetchRemoteArticles, type EditorialArticle } from "@/lib/editorial";
-import { getArchivePlacements } from "@/lib/archivePlacements";
+import { fetchPublishedArticleSummaries, type EditorialArticle } from "@/lib/editorial";
+import { useArchivePlacements } from "@/lib/archivePlacements";
+import { subscribeToTable } from "@/lib/supabase";
+import { safeHref } from "@/lib/utils";
 import { subscribeToNewsletter } from "@/lib/newsletter";
-import { getHomepageFeature, type HomepageFeatureContent } from "@/lib/homepageContent";
+import { getHomepageFeature, useHomepageFeature, type HomepageFeatureContent } from "@/lib/homepageContent";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90",
@@ -24,7 +26,7 @@ const images = {
   portrait: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1100&q=90",
   beauty: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1100&q=90",
   culture: "https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1200&q=90",
-  minimal: "/images/GTA51.png",
+  minimal: "/images/GTA51.webp",
   detail: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=1000&q=90",
 };
 
@@ -141,14 +143,31 @@ export default function Home() {
     };
   }, []);
 
+  const [visibleArticles, setVisibleArticles] = useState<EditorialArticle[]>([]);
+  const [placements] = useArchivePlacements();
+  const [sharedHomepageFeature] = useHomepageFeature();
+  useEffect(() => { setHomepageFeatureContent(sharedHomepageFeature); }, [sharedHomepageFeature]);
+
   useEffect(() => {
-    const refresh = () => { setArticlesLoading(true); fetchRemoteArticles().then((articles) => { const visible = articles.filter((article) => article.status === "published" && article.isVisible !== false); const placements = getArchivePlacements(); const explicitHero = visible.filter((article) => placements[article.id]?.homeHero).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const featuredHero = visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder)[0] || null; const homeHero = explicitHero || featuredHero || visible[0] || null; const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99))[0] || null; const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort((a, b) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99)); const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder); setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible); }).finally(() => setArticlesLoading(false)); };
+    let active = true;
+    const refresh = () => { void fetchPublishedArticleSummaries().then((articles) => { if (active) setVisibleArticles(articles); }).finally(() => { if (active) setArticlesLoading(false); }); };
     refresh();
-    window.addEventListener("storage", refresh);
-    const refreshFeature = () => setHomepageFeatureContent(getHomepageFeature());
-    window.addEventListener("storage", refreshFeature);
-    return () => { window.removeEventListener("storage", refresh); window.removeEventListener("storage", refreshFeature); };
+    const unsubscribe = subscribeToTable("articles", refresh);
+    window.addEventListener("light:editorial-updated", refresh);
+    return () => { active = false; unsubscribe(); window.removeEventListener("light:editorial-updated", refresh); };
   }, []);
+
+  useEffect(() => {
+    const visible = visibleArticles;
+    const byOrder = (a: EditorialArticle, b: EditorialArticle) => (placements[a.id]?.order || 99) - (placements[b.id]?.order || 99);
+    const explicitHero = visible.filter((article) => placements[article.id]?.homeHero).sort(byOrder)[0] || null;
+    const featuredHero = visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder)[0] || null;
+    const homeHero = explicitHero || featuredHero || visible[0] || null;
+    const homeFeature = visible.filter((article) => placements[article.id]?.homeFeature).sort(byOrder)[0] || null;
+    const selected = visible.filter((article) => placements[article.id]?.homeSelection).sort(byOrder);
+    const featured = selected.length ? selected : visible.filter((article) => article.isFeatured).sort((a, b) => a.featuredOrder - b.featuredOrder);
+    setHomepageHeroArticle(homeHero); setHomepageFeatureArticle(homeFeature); setPublishedArticles(featured.length ? featured : visible);
+  }, [visibleArticles, placements]);
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -256,7 +275,7 @@ export default function Home() {
             <h2>{homepageFeatureArticle ? homepageFeatureArticle.title : homepageFeatureContent.title}</h2>
             <p>{homepageFeatureArticle?.excerpt || homepageFeatureContent.excerpt}</p>
             <div className="story-meta"><span>Por {homepageFeatureArticle?.author || homepageFeatureContent.author}</span><span>{homepageFeatureArticle?.readingTime || homepageFeatureContent.readingTime}</span></div>
-            <StoryLink href={homepageFeatureContent.ctaHref || (homepageFeatureArticle ? `/historias/${homepageFeatureArticle.slug || homepageFeatureArticle.id}` : "/historias/vestirse-de-futuro")}>{homepageFeatureContent.ctaLabel || "Leer el artículo"}</StoryLink>
+            <StoryLink href={safeHref(homepageFeatureContent.ctaHref) || (homepageFeatureArticle ? `/historias/${homepageFeatureArticle.slug || homepageFeatureArticle.id}` : "/historias/vestirse-de-futuro")}>{homepageFeatureContent.ctaLabel || "Leer el artículo"}</StoryLink>
           </article>
           <div className="feature-grid__aside">
             <span className="vertical-note">ESTUDIO / 2026</span>

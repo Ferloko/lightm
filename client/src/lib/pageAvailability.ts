@@ -21,21 +21,34 @@ export const managedPages: Omit<ComingSoonPage, "updatedAt">[] = [
   { path: "/newsletter", label: "Newsletter", enabled: false, title: "Una carta en preparación.", message: "Estamos preparando la próxima correspondencia de LIGHT.", image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1800&q=90" },
 ];
 
-const KEY = "light.page-availability";
+const KEY = "light.page-availability"; // cache only: Supabase is the source of truth
 const eventName = "light:page-availability-updated";
 function defaults(): ComingSoonPage[] { const now = new Date().toISOString(); return managedPages.map((page) => ({ ...page, updatedAt: now })); }
-export function getComingSoonPages(): ComingSoonPage[] { try { const saved = JSON.parse(localStorage.getItem(KEY) || "null") as ComingSoonPage[] | null; if (!saved?.length) return defaults(); const byPath = new Map(saved.map((page) => [page.path, page])); return defaults().map((page) => ({ ...page, ...byPath.get(page.path) })); } catch { return defaults(); } }
-export function saveComingSoonPages(pages: ComingSoonPage[]) { localStorage.setItem(KEY, JSON.stringify(pages)); window.dispatchEvent(new CustomEvent(eventName)); }
+function merge(saved: Partial<ComingSoonPage>[] | null | undefined): ComingSoonPage[] { if (!saved?.length) return defaults(); const byPath = new Map(saved.map((page) => [page.path, page])); return defaults().map((page) => ({ ...page, ...byPath.get(page.path) })); }
+function writeCache(pages: ComingSoonPage[]) { try { localStorage.setItem(KEY, JSON.stringify(pages)); } catch { /* cache is optional */ } }
+
+/** Last known state (instant). Call fetchRemoteComingSoonPages for the shared state. */
+export function getComingSoonPages(): ComingSoonPage[] { try { return merge(JSON.parse(localStorage.getItem(KEY) || "null") as ComingSoonPage[] | null); } catch { return defaults(); } }
 export function getComingSoonPage(path: string) { return getComingSoonPages().find((page) => page.path === path); }
 export function isComingSoon(path: string) { return getComingSoonPage(path)?.enabled === true; }
 export function comingSoonEventName() { return eventName; }
+
 export async function fetchRemoteComingSoonPages(): Promise<ComingSoonPage[]> {
   if (!supabase) return getComingSoonPages();
   const { data, error } = await supabase.from("page_availability").select("path,label,enabled,title,message,image,updated_at");
-  if (error || !data?.length) return getComingSoonPages();
-  return getComingSoonPages().map((page) => {
-    const remote = data.find((row: any) => row.path === page.path);
-    return remote ? { ...page, label: remote.label, enabled: remote.enabled, title: remote.title, message: remote.message, image: remote.image, updatedAt: remote.updated_at } : page;
-  });
+  if (error) { console.warn("[LIGHT] page_availability unavailable", error.message); return getComingSoonPages(); }
+  const pages = merge((data || []).map((row: any) => ({ path: row.path, label: row.label, enabled: row.enabled === true, title: row.title, message: row.message, image: row.image, updatedAt: row.updated_at })));
+  writeCache(pages);
+  return pages;
 }
-export async function saveRemoteComingSoonPage(page: ComingSoonPage): Promise<boolean> { if (!supabase) return false; const { error } = await supabase.from("page_availability").upsert({ path: page.path, label: page.label, enabled: page.enabled, title: page.title, message: page.message, image: page.image, updated_at: page.updatedAt }); if (error) throw error; return true; }
+
+export async function saveRemoteComingSoonPage(page: ComingSoonPage): Promise<ComingSoonPage[]> {
+  if (supabase) {
+    const { error } = await supabase.from("page_availability").upsert({ path: page.path, label: page.label, enabled: page.enabled, title: page.title, message: page.message, image: page.image, updated_at: page.updatedAt });
+    if (error) throw error;
+  }
+  const pages = getComingSoonPages().map((item) => item.path === page.path ? page : item);
+  writeCache(pages);
+  window.dispatchEvent(new CustomEvent(eventName));
+  return pages;
+}

@@ -21,6 +21,7 @@ import MagazineEditionPage from "./pages/MagazineEditionPage";
 import ArchivePage from "./pages/ArchivePage";
 import LivingPage from "./pages/LivingPage";
 import MastheadPage from "./pages/MastheadPage";
+import MastheadPersonPage from "./pages/MastheadPersonPage";
 import BusinessPage from "./pages/BusinessPage";
 import ComingSoonGate from "./components/ComingSoonGate";
 
@@ -65,10 +66,11 @@ function Router() {
       <Route path="/moda" component={() => <ComingSoonGate path="/moda"><SectionPage section="moda" /></ComingSoonGate>} />
       <Route path="/belleza" component={() => <ComingSoonGate path="/belleza"><SectionPage section="belleza" /></ComingSoonGate>} />
       <Route path="/eventos" component={() => <ComingSoonGate path="/eventos"><SectionPage section="eventos" /></ComingSoonGate>} />
-      <Route path="/cultura" component={() => <SectionPage section="eventos" />} />
+      <Route path="/cultura" component={() => <Redirect to="/eventos" />} />
       <Route path="/sociedad" component={() => <SectionPage section="sociedad" />} />
       <Route path="/living" component={() => <ComingSoonGate path="/living"><LivingPage /></ComingSoonGate>} />
       <Route path="/masthead" component={MastheadPage} />
+      <Route path="/masthead/:slug" component={MastheadPersonPage} />
       <Route path="/business" component={BusinessPage} />
       <Route path="/runway" component={() => <ComingSoonGate path="/runway"><RunwayPage /></ComingSoonGate>} />
       <Route path="/runway/:brand" component={BrandPage} />

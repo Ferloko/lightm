@@ -17,8 +17,55 @@ export const defaultRunwayBrands: RunwayBrand[] = [
   { id: "victoria-beckham", slug: "victoria-beckham", brand: "Victoria Beckham", city: "London", image: "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=900&q=90", season: "Spring 2027 Ready-to-Wear", deck: "Una silueta londinense, afilada y suave al mismo tiempo.", text: "La colección encuentra fuerza en la precisión: hombros limpios, vestidos fluidos y una paleta que deja respirar al cuerpo.", tags: ["London", "Precision", "Softness"], updatedAt: "" },
 ];
 
+function writeCache(brands: RunwayBrand[]) { try { localStorage.setItem(RUNWAY_KEY, JSON.stringify(brands)); } catch { /* cache is optional */ } }
+function fromRow(row: any): RunwayBrand { return { id: row.id, slug: row.slug, brand: row.brand, city: row.city, image: row.image, season: row.season, deck: row.deck, text: row.text, tags: Array.isArray(row.tags) ? row.tags : [], updatedAt: row.updated_at }; }
+function toRow(brand: RunwayBrand) { return { id: brand.id, slug: brand.slug, brand: brand.brand, city: brand.city, image: brand.image, season: brand.season, deck: brand.deck, text: brand.text, tags: brand.tags, updated_at: brand.updatedAt || new Date().toISOString() }; }
+export const runwayEventName = "light:runway-updated";
+
+/** Last known list (instant, from cache). Supabase is the source of truth. */
 export function getRunwayBrands() { try { const saved = JSON.parse(localStorage.getItem(RUNWAY_KEY) || "null"); return Array.isArray(saved) && saved.length ? saved as RunwayBrand[] : defaultRunwayBrands; } catch { return defaultRunwayBrands; } }
-export function saveRunwayBrands(brands: RunwayBrand[]) { localStorage.setItem(RUNWAY_KEY, JSON.stringify(brands)); window.dispatchEvent(new StorageEvent("storage", { key: RUNWAY_KEY })); }
-export async function fetchRemoteRunwayBrands(): Promise<RunwayBrand[]> { if (!supabase) return getRunwayBrands(); const { data, error } = await supabase.from("runway_brands").select("*").order("brand"); if (error || !data?.length) return getRunwayBrands(); return data.map((row: any) => ({ id: row.id, slug: row.slug, brand: row.brand, city: row.city, image: row.image, season: row.season, deck: row.deck, text: row.text, tags: row.tags || [], updatedAt: row.updated_at })); }
-export async function saveRemoteRunwayBrand(brand: RunwayBrand) { if (!supabase) return false; const { error } = await supabase.from("runway_brands").upsert({ id: brand.id, slug: brand.slug, brand: brand.brand, city: brand.city, image: brand.image, season: brand.season, deck: brand.deck, text: brand.text, tags: brand.tags, updated_at: brand.updatedAt }); if (error) throw error; return true; }
-export async function deleteRemoteRunwayBrand(id: string) { if (!supabase) return false; const { error } = await supabase.from("runway_brands").delete().eq("id", id); if (error) throw error; return true; }
+
+/** Local demo only (no Supabase). */
+export function saveRunwayBrands(brands: RunwayBrand[]) { writeCache(brands); window.dispatchEvent(new Event(runwayEventName)); }
+
+let remoteHasRows: boolean | null = null;
+
+export async function fetchRemoteRunwayBrands(): Promise<RunwayBrand[]> {
+  if (!supabase) return getRunwayBrands();
+  const { data, error } = await supabase.from("runway_brands").select("*").order("brand");
+  if (error) { console.warn("[LIGHT] runway_brands unavailable", error.message); return getRunwayBrands(); }
+  remoteHasRows = Boolean(data?.length);
+  // Until the team saves the first brand, the default selection is shown to everyone.
+  const brands = data?.length ? data.map(fromRow) : defaultRunwayBrands;
+  writeCache(brands);
+  return brands;
+}
+
+/**
+ * Saves one brand. The first remote save also stores the default brands, so the
+ * public list never collapses to a single entry.
+ */
+export async function saveRemoteRunwayBrand(brand: RunwayBrand, currentList: RunwayBrand[]): Promise<void> {
+  if (!supabase) { saveRunwayBrands([brand, ...currentList.filter((item) => item.id !== brand.id)]); return; }
+  if (remoteHasRows === null) await fetchRemoteRunwayBrands();
+  const rows = remoteHasRows ? [toRow(brand)] : [brand, ...currentList.filter((item) => item.id !== brand.id)].map(toRow);
+  const { error } = await supabase.from("runway_brands").upsert(rows);
+  if (error) throw error;
+  remoteHasRows = true;
+  window.dispatchEvent(new Event(runwayEventName));
+}
+
+export async function deleteRemoteRunwayBrand(id: string, currentList: RunwayBrand[]): Promise<void> {
+  if (!supabase) { saveRunwayBrands(currentList.filter((item) => item.id !== id)); return; }
+  if (remoteHasRows === null) await fetchRemoteRunwayBrands();
+  if (!remoteHasRows) {
+    // Deleting a default brand before anything was saved: persist the remaining defaults.
+    const { error } = await supabase.from("runway_brands").upsert(currentList.filter((item) => item.id !== id).map(toRow));
+    if (error) throw error;
+    remoteHasRows = true;
+  } else {
+    const { error } = await supabase.from("runway_brands").delete().eq("id", id);
+    if (error) throw error;
+  }
+  window.dispatchEvent(new Event(runwayEventName));
+}

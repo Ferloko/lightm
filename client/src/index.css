@@ -2350,7 +2350,7 @@ body.is-scrolling-down .dynamic-article__header .brand-row .wordmark { opacity: 
 
 /* Menú principal: tratamiento de campaña editorial en el lado derecho. */
 .menu-overlay { overflow: hidden; }
-.menu-overlay::after { content: ""; position: absolute; z-index: 0; top: 13vh; right: 4.6vw; width: min(34vw, 510px); height: 72vh; background: linear-gradient(180deg, rgba(23,23,23,.08), rgba(23,23,23,.62)), url("/images/GTA52.png") center/cover; box-shadow: 18px 18px 0 rgba(244,240,233,.08); filter: saturate(.76) contrast(1.04); pointer-events: none; animation: menu-campaign-in .7s .12s ease both; }
+.menu-overlay::after { content: ""; position: absolute; z-index: 0; top: 13vh; right: 4.6vw; width: min(34vw, 510px); height: 72vh; background: linear-gradient(180deg, rgba(23,23,23,.08), rgba(23,23,23,.62)), url("/images/GTA52.webp") center/cover; box-shadow: 18px 18px 0 rgba(244,240,233,.08); filter: saturate(.76) contrast(1.04); pointer-events: none; animation: menu-campaign-in .7s .12s ease both; }
 .menu-overlay::before { content: "LIGHT / EDITORIAL CAMPAIGN"; position: absolute; z-index: 1; right: calc(4.6vw + 18px); bottom: 9vh; color: rgba(244,240,233,.82); font: 9px var(--mono); letter-spacing: .12em; }
 .menu-overlay__top, .menu-overlay__inner { position: relative; z-index: 2; }
 .menu-overlay__inner { max-width: min(52vw, 760px); }
