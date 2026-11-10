@@ -11,10 +11,17 @@ alter table public.profiles add column if not exists login_alias text;
 create unique index if not exists profiles_login_alias_unique on public.profiles (lower(login_alias)) where login_alias is not null;
 
 -- Alias iniciales para los cuatro perfiles conocidos (solo si aún no tienen uno).
-update public.profiles p set login_alias = lower(split_part(u.email, '@', 1))
-from auth.users u
-where u.id = p.id and p.login_alias is null
-  and lower(split_part(u.email, '@', 1)) in ('snow', 'songbird', 'moonglow', 'bianca');
+-- Si hay dos cuentas con el mismo nombre (p. ej. snow@light.studio y snow@moda.studio),
+-- la palabra de acceso se asigna a la de @light.studio.
+update public.profiles p set login_alias = x.alias
+from (
+  select distinct on (lower(split_part(u.email, '@', 1))) u.id, lower(split_part(u.email, '@', 1)) as alias
+  from auth.users u join public.profiles pr on pr.id = u.id
+  where lower(split_part(u.email, '@', 1)) in ('snow', 'songbird', 'moonglow', 'bianca')
+  order by lower(split_part(u.email, '@', 1)), (u.email ilike '%@light.studio') desc, pr.created_at
+) x
+where p.id = x.id and p.login_alias is null
+  and not exists (select 1 from public.profiles o where lower(o.login_alias) = x.alias);
 
 -- Una cuenta bloqueada pierde su rol editorial en TODAS las políticas RLS.
 create or replace function public.current_editorial_role()
@@ -232,6 +239,8 @@ grant select, delete on table public.contact_submissions to authenticated;
 select public.drop_all_policies('page_views');
 create policy "Anyone can record page views" on public.page_views for insert to anon, authenticated with check (char_length(path) between 1 and 300);
 create policy "Dashboard can read page views" on public.page_views for select to authenticated using (public.can_dashboard('overview'));
+grant insert on table public.page_views to anon, authenticated;
+grant select on table public.page_views to authenticated;
 
 -- Serie de visitas agregada en la base (sin el límite de 10.000 filas) y en tu zona horaria.
 create or replace function public.page_view_stats(p_days int default 15, p_tz text default 'UTC')
@@ -299,7 +308,7 @@ grant insert, update on table public.page_availability to authenticated;
 -- Ajustes públicos compartidos (Masthead, Destacado, Ubicaciones, Ediciones).
 -- Cada clave pertenece a un apartado del Dashboard.
 create or replace function public.site_setting_section(p_key text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public as $$
   select case p_key
     when 'public:masthead-team' then 'masthead'
     when 'public:homepage-feature' then 'homepage-feature'
