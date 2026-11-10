@@ -32,12 +32,6 @@ const images = {
 
 const navItems = ["Moda", "Belleza", "Eventos", "Living", "Runway"];
 
-const archiveItems = [
-  { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
-  { date: "05.18", category: "Belleza", image: images.beauty, title: "La piel como paisaje" },
-  { date: "04.02", category: "Eventos", image: images.culture, title: "Una noche para encontrarnos" },
-];
-
 function SectionLabel({ children, light = false }: { children: React.ReactNode; light?: boolean }) {
   return (
     <span className={`section-label ${light ? "section-label--light" : ""}`}>
@@ -55,7 +49,6 @@ function StoryLink({ children, href = "/historias/vestirse-de-futuro" }: { child
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("Todo");
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
@@ -148,7 +141,6 @@ export default function Home() {
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.silhouette, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : null;
-  const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -304,14 +296,6 @@ export default function Home() {
                 {newsletterError && <small className="newsletter-form__error">{newsletterError}</small>}
               </form>
             )}
-          </div>
-        </section>
-
-        <section className="archive-section" id="archivo">
-          <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Eventos"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
-          <div className={`archive-strip archive-strip--${activeCategory.toLowerCase()}`}>
-            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><div className="archive-card__image-wrap"><img src={item.image} alt="" /></div><strong>{item.title}</strong></div>)}
-            {!visibleArchiveItems.length && <p className="archive-empty">Todavía no hay piezas en esta sección.</p>}
           </div>
         </section>
       </main>
