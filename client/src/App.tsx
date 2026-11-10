@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { trackPageView } from "@/lib/analytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -23,6 +23,7 @@ const LivingPage = lazy(() => import("./pages/LivingPage"));
 const MastheadPage = lazy(() => import("./pages/MastheadPage"));
 const MastheadPersonPage = lazy(() => import("./pages/MastheadPersonPage"));
 const BusinessPage = lazy(() => import("./pages/BusinessPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
 import ComingSoonGate from "./components/ComingSoonGate";
 
 function PageViewTracker() {
@@ -46,6 +47,15 @@ function PageViewTracker() {
     void trackPageView(location);
   }, [location]);
   return null;
+}
+
+/** Fades each new page in (opacity only: a transform here would break fixed menus and dialogs) and draws a hairline progress bar. */
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const first = useRef(true);
+  const [navigations, setNavigations] = useState(0);
+  useEffect(() => { if (first.current) { first.current = false; return; } document.documentElement.classList.add("has-navigated"); setNavigations((count) => count + 1); }, [location]);
+  return <>{navigations > 0 && <div className="route-progress" key={navigations} aria-hidden="true" />}<div className="page-transition" key={location}>{children}</div></>;
 }
 
 function GlobalSearchLayer() {
@@ -80,6 +90,7 @@ function Router() {
       <Route path="/masthead" component={MastheadPage} />
       <Route path="/masthead/:slug" component={MastheadPersonPage} />
       <Route path="/business" component={BusinessPage} />
+      <Route path="/about" component={AboutPage} />
       <Route path="/runway" component={() => <ComingSoonGate path="/runway"><RunwayPage /></ComingSoonGate>} />
       <Route path="/runway/:brand" component={BrandPage} />
       <Route path="/revista/:number" component={MagazineEditionPage} />
@@ -100,5 +111,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><Suspense fallback={<div className="min-h-screen" aria-busy="true" />}><Router /></Suspense></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><PageTransition><Suspense fallback={<div className="min-h-screen" aria-busy="true" />}><Router /></Suspense></PageTransition></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }
