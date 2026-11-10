@@ -1,14 +1,34 @@
 # LIGHT — Revista de estilo
 
-React / Express / tRPC / Drizzle starter, adapted from the Sandbox web-db-user template.
+Web pública y Dashboard editorial de LIGHT. React + Vite en el cliente, Supabase como base de datos, autenticación y tiempo real, y un pequeño servidor Express/tRPC heredado de la plantilla.
 
-- `pnpm dev`: development server; honors `PORT` (default 3000).
-- `pnpm build` / `pnpm start`: build and serve `dist/index.js` and `dist/public/`.
-- `pnpm db:migrate`: apply checked-in migrations. `pnpm db:push`: generate and apply new schema changes.
-- `pnpm check` / `pnpm test`: types and application tests.
+## Puesta en marcha
 
-Start with the Webdev skill's default-template guide. Platform login, storage, payments and service contracts live in its shared references; read the relevant capability before extending its helper.
+```bash
+pnpm install
+cp .env.example .env   # VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY
+pnpm dev               # http://localhost:3000 (respeta PORT)
+```
 
-`server/_core/publicConfig.ts` exposes only named public runtime values. Private keys stay server-side. The platform serves managed `/manus-storage/` assets; the application does not register a second proxy.
+| Comando | Qué hace |
+| --- | --- |
+| `pnpm dev` | Servidor de desarrollo |
+| `pnpm build` / `pnpm start` | Build de producción y servidor |
+| `pnpm check` | Comprobación de tipos |
+| `pnpm test` | Tests |
+| `pnpm format` | Formatea el código con Prettier |
 
-Platform configuration is readable and editable through `webdev.config`. Default settings are initial values, not enforced constraints. The agent may modify the files, commands and configuration or follow the flexible guide for another stack.
+## Estructura
+
+- `client/src/pages/` — hojas públicas (Home, Moda, Belleza, Eventos, Living, Runway, Archivo, Masthead, Business…) y `AdminDashboard` (`/admin`).
+- `client/src/components/` — gestores del Dashboard (Ediciones, Runway, Masthead, Equipo, Calendario, Campañas…) y componentes compartidos.
+- `client/src/lib/` — acceso a Supabase y lógica de cada apartado.
+- `supabase/schema.sql` — esquema completo para instalaciones nuevas; `supabase/migrations/` — cambios incrementales; `supabase/functions/editorial-users` — Edge Function para gestionar usuarios.
+
+Las páginas se cargan bajo demanda (`React.lazy` en `client/src/App.tsx`), así que el público no descarga el código del Dashboard.
+
+## Documentación
+
+- `EDITORIAL-CMS.md` — roles, permisos y funcionamiento del Dashboard.
+- `GUIA_EDICION_VISUAL.md` — guía de edición visual.
+- `TODO.md` — historial de cambios realizados.

@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { trackPageView } from "@/lib/analytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -9,20 +9,20 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import SiteSearch from "./components/SiteSearch";
 import Home from "./pages/Home";
-import ArticlePage from "./pages/ArticlePage";
-import InfoPage from "./pages/InfoPage";
-import SectionPage from "./pages/SectionPage";
-import RunwayPage from "./pages/RunwayPage";
-import BrandPage from "./pages/BrandPage";
+const ArticlePage = lazy(() => import("./pages/ArticlePage"));
+const InfoPage = lazy(() => import("./pages/InfoPage"));
+const SectionPage = lazy(() => import("./pages/SectionPage"));
+const RunwayPage = lazy(() => import("./pages/RunwayPage"));
+const BrandPage = lazy(() => import("./pages/BrandPage"));
 import ScrollAnimations from "./components/ScrollAnimations";
-import AdminDashboard from "./pages/AdminDashboard";
-import DynamicArticlePage from "./pages/DynamicArticlePage";
-import MagazineEditionPage from "./pages/MagazineEditionPage";
-import ArchivePage from "./pages/ArchivePage";
-import LivingPage from "./pages/LivingPage";
-import MastheadPage from "./pages/MastheadPage";
-import MastheadPersonPage from "./pages/MastheadPersonPage";
-import BusinessPage from "./pages/BusinessPage";
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const DynamicArticlePage = lazy(() => import("./pages/DynamicArticlePage"));
+const MagazineEditionPage = lazy(() => import("./pages/MagazineEditionPage"));
+const ArchivePage = lazy(() => import("./pages/ArchivePage"));
+const LivingPage = lazy(() => import("./pages/LivingPage"));
+const MastheadPage = lazy(() => import("./pages/MastheadPage"));
+const MastheadPersonPage = lazy(() => import("./pages/MastheadPersonPage"));
+const BusinessPage = lazy(() => import("./pages/BusinessPage"));
 import ComingSoonGate from "./components/ComingSoonGate";
 
 function PageViewTracker() {
@@ -30,7 +30,15 @@ function PageViewTracker() {
   useEffect(() => {
     const targetId = window.location.hash.slice(1);
     if (targetId) {
-      const frame = window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView({ block: "start", behavior: "auto" }));
+      // Pages load lazily, so the anchor may not exist yet: retry for ~2s.
+      let frame = 0;
+      let attempts = 0;
+      const scrollToTarget = () => {
+        const target = document.getElementById(targetId);
+        if (target) target.scrollIntoView({ block: "start", behavior: "auto" });
+        else if (attempts++ < 120) frame = window.requestAnimationFrame(scrollToTarget);
+      };
+      frame = window.requestAnimationFrame(scrollToTarget);
       void trackPageView(location);
       return () => window.cancelAnimationFrame(frame);
     }
@@ -92,5 +100,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><Router /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><Suspense fallback={<div className="min-h-screen" aria-busy="true" />}><Router /></Suspense></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }
