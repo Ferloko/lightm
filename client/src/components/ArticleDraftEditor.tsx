@@ -4,6 +4,7 @@ import type { ChangeEvent, CSSProperties, DragEvent, PointerEvent, TextareaHTMLA
 import type { EditorialArticle } from "@/lib/editorial";
 import type { GridLayout, PageBlock, PageBlockType } from "@/lib/pageBlocks";
 import CleanArticlePreview from "@/components/CleanArticlePreview";
+import { ImageUrlFrame } from "@/components/InlineEditing";
 
 type Props = { article: EditorialArticle; canPublish: boolean; notice: string; onChange: (patch: Partial<EditorialArticle>) => void; onSaveDraft: () => void; onPublish: () => void; onBack: () => void };
 type GridColumn = "left" | "right";
@@ -15,28 +16,6 @@ function AutoResizeTextarea({ value, onChange, className, ...props }: TextareaHT
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { const element = ref.current; if (!element) return; element.style.height = "auto"; element.style.height = `${element.scrollHeight}px`; }, [value]);
   return <textarea ref={ref} value={value} onChange={onChange} className={className} {...props} />;
-}
-
-/** Image frame with its URL built in: click the frame to paste or change the link. Warns when the URL cannot be loaded. */
-function ImageUrlFrame({ src, onChange, className, emptyLabel }: { src: string; onChange: (url: string) => void; className: string; emptyLabel: string }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(src);
-  const [failed, setFailed] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => setFailed(false), [src]);
-  useEffect(() => { if (editing) { setDraft(src); inputRef.current?.focus(); inputRef.current?.select(); } }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
-  const commit = () => { const url = draft.trim(); if (url !== src) onChange(url); setEditing(false); };
-  const hasImage = Boolean(src) && !failed;
-  return <div className={`${className} image-url-frame${editing ? " is-editing" : ""}${hasImage ? " has-image" : ""}${failed ? " is-broken" : ""}`}>
-    <button type="button" className="image-url-frame__trigger" onClick={() => setEditing(true)} aria-label={src ? "Cambiar imagen" : "Añadir imagen"}>
-      {hasImage ? <img src={src} alt="" onError={() => setFailed(true)} /> : <span className="image-url-frame__empty">{failed ? <><ImageOff size={24} /><span>No se pudo cargar la imagen. Haz clic y revisa que la URL sea directa (.jpg, .png, .webp).</span></> : <><Image size={24} /><span>{emptyLabel}</span></>}</span>}
-      {hasImage && !editing && <span className="image-url-frame__badge">Cambiar imagen</span>}
-    </button>
-    {editing && <form className="image-url-frame__form" onSubmit={(event) => { event.preventDefault(); commit(); }}>
-      <input ref={inputRef} value={draft} onChange={(event) => setDraft(event.target.value)} onBlur={commit} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setEditing(false); } }} placeholder="Pega la URL de la imagen: https://…" aria-label="URL de imagen" />
-      <button type="submit" onMouseDown={(event) => event.preventDefault()}>Listo</button>
-    </form>}
-  </div>;
 }
 
 function blockLabel(block: PageBlock) { return block.type === "paragraph" ? "Párrafo" : block.type === "heading" ? "Subtítulo" : block.type === "image" ? "Imagen" : block.type === "quote" ? "Cita" : block.type === "divider" ? "Separador" : block.type === "grid" ? "Cuadrícula" : "Botón"; }
