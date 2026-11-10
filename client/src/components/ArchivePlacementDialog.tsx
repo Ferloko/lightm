@@ -22,18 +22,29 @@ function SlotDiagram({ slot }: { slot: PlacementKey }) {
   return <span className={`placement-diagram placement-diagram--${slot}`} aria-hidden="true"><i /><i /><i /><i /></span>;
 }
 
-/** How the story looks in the chosen slot, with its own image and texts. */
+/** Neighbouring story in a preview: a muted placeholder so the current one stands out. */
+function Ghost({ className = "" }: { className?: string }) {
+  return <div className={`slot-mini__ghost ${className}`}><div className="slot-mini__img" /><i /><i /></div>;
+}
+
+/**
+ * Miniature of the real slot, built with the same composition the public page uses
+ * (Home: hero, feature-grid, story-grid; Archivo: spotlight, must-reads, latest grid).
+ */
 function SlotPreview({ slot, article }: { slot: Slot; article: EditorialArticle }) {
-  const image = article.image ? <img src={article.image} alt="" /> : <span className="placement-preview__empty">LIGHT</span>;
+  const img = article.image ? <img src={article.image} alt="" /> : <span className="slot-mini__noimg">LIGHT</span>;
   const title = article.title || "Sin título";
-  const kicker = <p className="placement-preview__kicker">{article.category || "Historia"}</p>;
+  const category = article.category || "Historia";
+  const excerpt = article.excerpt || "La bajada de la historia aparece aquí.";
+  const author = article.author || "LIGHT";
+  const date = article.date || "";
   const body = {
-    homeHero: <div className="placement-preview__hero"><div className="placement-preview__media">{image}</div><div>{kicker}<h4>{title}</h4>{article.excerpt && <p>{article.excerpt}</p>}</div></div>,
-    homeFeature: <div className="placement-preview__feature"><div className="placement-preview__media">{image}</div><div>{kicker}<h4>{title}</h4>{article.excerpt && <p>{article.excerpt}</p>}<span>Por {article.author || "LIGHT"}</span></div></div>,
-    homeSelection: <div className="placement-preview__grid"><div className="placement-preview__card is-current"><div className="placement-preview__media">{image}</div>{kicker}<h4>{title}</h4></div><div className="placement-preview__card"><div className="placement-preview__media" /><i /><i /></div><div className="placement-preview__card"><div className="placement-preview__media" /><i /><i /></div></div>,
-    spotlight: <div className="placement-preview__spotlight"><div className="placement-preview__media">{image}</div><div>{kicker}<h4>{title}</h4><span>Leer historia →</span></div></div>,
-    mustRead: <ol className="placement-preview__list"><li className="is-current"><b>01</b><div className="placement-preview__thumb">{image}</div><div>{kicker}<h4>{title}</h4></div></li><li><b>02</b><div className="placement-preview__thumb" /><div><i /><i /></div></li><li><b>03</b><div className="placement-preview__thumb" /><div><i /><i /></div></li></ol>,
-    latest: <div className="placement-preview__grid placement-preview__grid--four"><div className="placement-preview__card is-current"><div className="placement-preview__media">{image}</div>{kicker}<h4>{title}</h4></div>{[1, 2, 3].map((item) => <div className="placement-preview__card" key={item}><div className="placement-preview__media" /><i /><i /></div>)}</div>,
+    homeHero: <div className="slot-mini slot-mini--hero"><div className="slot-mini__copy"><p className="slot-mini__kicker"><i />{category} / Homepage</p><h4 className="slot-mini__display">{title}</h4><p className="slot-mini__dek">{excerpt}</p><span className="slot-mini__link">Descubrir la portada ↗</span></div><div className="slot-mini__frame"><div className="slot-mini__img">{img}</div><div className="slot-mini__caption"><span>01 — 01</span><span>{author}</span></div></div></div>,
+    homeFeature: <div className="slot-mini slot-mini--feature"><div><div className="slot-mini__img">{img}</div><div className="slot-mini__caption"><span>02</span><span>{title}</span></div></div><div className="slot-mini__copy"><p className="slot-mini__kicker"><i />{category}</p><h4 className="slot-mini__display">{title}</h4><p className="slot-mini__dek">{excerpt}</p><div className="slot-mini__meta"><span>Por {author}</span><span>{article.readingTime || "8 min"}</span></div><span className="slot-mini__link">Leer el artículo ↗</span></div><aside className="slot-mini__aside"><span>Estudio / 2026</span><q>La elegancia no es una respuesta…</q></aside></div>,
+    homeSelection: <div className="slot-mini slot-mini--selection"><p className="slot-mini__kicker"><i />Selección LIGHT</p><h4 className="slot-mini__section-title">Historias para <em>quedarse.</em></h4><div className="slot-mini__cards"><div className="slot-mini__card is-current"><div className="slot-mini__img">{img}</div><p className="slot-mini__label">{category}</p><h5>{title}</h5><span className="slot-mini__link">Leer historia ↗</span></div><Ghost /><Ghost /></div></div>,
+    spotlight: <div className="slot-mini slot-mini--spotlight"><div className="slot-mini__tilt"><div className="slot-mini__img">{img}</div></div><div className="slot-mini__copy"><p className="slot-mini__label">Spotlight / {category}</p><h4 className="slot-mini__display">{title}</h4><p className="slot-mini__dek">{excerpt}</p><span className="slot-mini__link">Abrir spotlight ↗</span></div></div>,
+    mustRead: <div className="slot-mini slot-mini--mustreads"><p className="slot-mini__label slot-mini__center">LIGHT / Selección editorial</p><h4 className="slot-mini__center slot-mini__caps">Must-Reads</h4><div className="slot-mini__mr"><div className="slot-mini__mr-lead is-current"><div className="slot-mini__img">{img}</div><p className="slot-mini__label">{category}{date && ` · ${date}`}</p><h5>{title}</h5><span className="slot-mini__by">By {author}</span></div><ol className="slot-mini__mr-list">{["02", "03", "04"].map((n) => <li key={n}><div className="slot-mini__img" /><div><i /><i /></div><b>{n}</b></li>)}</ol></div><p className="slot-mini__hint">Con orden 1 ocupa el lugar grande; con otro número pasa a la lista de la derecha.</p></div>,
+    latest: <div className="slot-mini slot-mini--latest"><div className="slot-mini__cards"><div className="slot-mini__card is-current"><div className="slot-mini__img">{img}<b>01</b></div><p className="slot-mini__label">{category}</p><h5>{title}</h5><span className="slot-mini__link">Leer historia ↗</span></div><Ghost className="is-tall" /><Ghost className="is-tall" /></div></div>,
   }[slot.key];
   return <div className="placement-preview"><div className="placement-preview__chrome"><span>{slot.group === "Homepage" ? "light / inicio" : "light / archivo"}</span><strong>{slot.group} · {slot.label}</strong></div><div className="placement-preview__page">{body}</div></div>;
 }

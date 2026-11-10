@@ -3436,3 +3436,18 @@ html.dark .image-url-frame.is-broken .image-url-frame__empty { color: #e08f84; }
 html.dark .image-url-frame__form { background: #222; }
 html.dark .image-url-frame__form input { background: #111 !important; color: #f3f0ea !important; border-color: rgba(243,240,234,.2) !important; }
 html.dark .image-url-frame__form button { background: #f3f0ea; color: #171717; }
+.footer-social-pending { display: inline-flex; align-items: center; gap: 8px; opacity: .75; }
+
+/* Dashboard: panel de Facebrowser (datos de la API). */
+.facebrowser-panel__badge { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.facebrowser-panel__kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.facebrowser-panel__kpis > div { display: grid; gap: 6px; padding: 18px 16px 4px 0; }
+.facebrowser-panel__kpis > div + div { padding-left: 16px; border-left: 1px solid var(--line); }
+.facebrowser-panel__kpis span { color: var(--muted); font: 9px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.facebrowser-panel__kpis strong { font: 500 34px/1 var(--serif); letter-spacing: -.04em; }
+.facebrowser-panel__kpis.is-pending strong { color: var(--muted); opacity: .5; }
+.facebrowser-panel__kpis small { font: 10px var(--sans); }
+.facebrowser-panel__kpis small.is-up { color: #3f7a4f; }
+.facebrowser-panel__kpis small.is-down { color: #9b3f35; }
+.facebrowser-panel__note { margin: 16px 0 0; max-width: 70ch; color: var(--muted); font: 12px/1.55 var(--sans); }
+@media (max-width: 700px) { .facebrowser-panel__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .facebrowser-panel__kpis > div:nth-child(3) { padding-left: 0; border-left: 0; } }

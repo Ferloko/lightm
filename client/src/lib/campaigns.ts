@@ -19,7 +19,7 @@ export type Campaign = CampaignMetrics & {
 };
 
 export const CAMPAIGN_CHANNELS: { id: CampaignChannel; label: string; detail: string }[] = [
-  { id: "social", label: "Social", detail: "Instagram · TikTok" },
+  { id: "social", label: "Facebrowser", detail: "Red social de GTA World" },
   { id: "search", label: "Search", detail: "Google · Direct" },
   { id: "email", label: "Email", detail: "Newsletter · CRM" },
   { id: "other", label: "Otros", detail: "Prensa · Eventos" },

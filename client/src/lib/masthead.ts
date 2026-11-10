@@ -11,7 +11,8 @@ export type MastheadPerson = {
   bio: string;
   location: string;
   agency: string;
-  instagram: string;
+  /** Perfil en Facebrowser (red social de GTA World): @usuario o URL. */
+  facebrowser: string;
   coverImage: string;
   gallery: string[];
   facts: MastheadFact[];
@@ -39,7 +40,7 @@ export function slugifyName(value: string) {
 }
 
 export function emptyPersonDetails(): Omit<MastheadPerson, "id" | "name" | "image"> {
-  return { slug: "", tagline: "", bio: "", location: "", agency: "", instagram: "", coverImage: "", gallery: [], facts: [] };
+  return { slug: "", tagline: "", bio: "", location: "", agency: "", facebrowser: "", coverImage: "", gallery: [], facts: [] };
 }
 
 function normalizePerson(person: unknown, index: number, memberId: string): MastheadPerson | null {
@@ -56,7 +57,8 @@ function normalizePerson(person: unknown, index: number, memberId: string): Mast
     bio: text(record.bio),
     location: text(record.location),
     agency: text(record.agency),
-    instagram: text(record.instagram),
+    // Los registros antiguos guardaban la red en "instagram": se reutiliza como Facebrowser.
+    facebrowser: text(record.facebrowser) || text(record.instagram),
     coverImage: text(record.coverImage),
     gallery: Array.isArray(record.gallery) ? record.gallery.filter((item): item is string => typeof item === "string" && item.trim() !== "") : [],
     facts: Array.isArray(record.facts) ? record.facts.filter((fact): fact is MastheadFact => Boolean(fact) && typeof fact === "object" && typeof (fact as MastheadFact).label === "string" && typeof (fact as MastheadFact).value === "string") : [],

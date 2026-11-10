@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowUpRight, Instagram, MapPin, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Globe, MapPin, UserRound } from "lucide-react";
+import { facebrowserLabel, facebrowserProfileUrl } from "@/lib/facebrowser";
 import { useEffect, useState } from "react";
 import { Link, useRoute } from "wouter";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
@@ -7,12 +8,6 @@ import { safeHref, safeImageUrl } from "@/lib/utils";
 import { PageSkeleton } from "@/components/EditorialSkeleton";
 import ImageLightbox, { type LightboxImage } from "@/components/ImageLightbox";
 
-function instagramUrl(value: string) {
-  const handle = value.trim().replace(/^@/, "");
-  if (!handle) return null;
-  if (/^https?:\/\//i.test(handle)) return safeHref(handle);
-  return `https://instagram.com/${encodeURIComponent(handle)}`;
-}
 
 /** Individual page of a Masthead person: model, editor or team member. */
 export default function MastheadPersonPage() {
@@ -38,7 +33,7 @@ export default function MastheadPersonPage() {
   const portrait = safeImageUrl(person.image);
   const cover = safeImageUrl(person.coverImage) || portrait;
   const gallery = person.gallery.map(safeImageUrl).filter(Boolean);
-  const instagram = instagramUrl(person.instagram);
+  const facebrowser = facebrowserProfileUrl(person.facebrowser);
   const colleagues = member.people.filter((item) => item.id !== person.id);
   // Everything the viewer can show: the portrait first, then the book (without repeating the portrait).
   const viewerImages: LightboxImage[] = [...(cover ? [{ src: cover, alt: `Retrato de ${person.name}`, caption: `${person.name} · ${member.role}` }] : []), ...gallery.filter((image) => image !== cover).map((image, index) => ({ src: image, alt: `${person.name}, imagen ${index + 1}`, caption: `${person.name} · Book` }))];
@@ -58,7 +53,7 @@ export default function MastheadPersonPage() {
             {person.agency && <div><dt>Agencia</dt><dd>{person.agency}</dd></div>}
             {person.facts.filter((fact) => fact.label.trim() && fact.value.trim()).map((fact, index) => <div key={`${fact.label}-${index}`}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
           </dl>
-          {instagram && <a className="person-hero__social" href={instagram} target="_blank" rel="noreferrer"><Instagram size={15} /> {person.instagram.startsWith("http") ? "Instagram" : `@${person.instagram.replace(/^@/, "")}`}</a>}
+          {person.facebrowser.trim() && (facebrowser ? <a className="person-hero__social" href={facebrowser} target="_blank" rel="noreferrer"><Globe size={15} /> Facebrowser · {facebrowserLabel(person.facebrowser)}</a> : <span className="person-hero__social"><Globe size={15} /> Facebrowser · {facebrowserLabel(person.facebrowser)}</span>)}
         </div>
         <figure className="person-hero__portrait">{cover ? <button type="button" className="lightbox-trigger" onClick={() => openViewer(cover)} aria-label={`Ver en grande el retrato de ${person.name}`}><img src={cover} alt={`Retrato de ${person.name}`} /></button> : <div className="masthead-person__placeholder"><UserRound size={40} strokeWidth={1.1} /><span>LIGHT</span></div>}<figcaption>LIGHT / {member.role.toUpperCase()}</figcaption></figure>
       </header>
