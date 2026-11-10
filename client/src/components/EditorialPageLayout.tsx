@@ -1,5 +1,5 @@
 import { ArrowUpRight, Mail, Menu, Search, X } from "lucide-react";
-import FacebrowserLink from "@/components/FacebrowserLink";
+import FollowLinks from "@/components/FollowLinks";
 import { useState } from "react";
 import { Link } from "wouter";
 import SiteMenuOverlay from "@/components/SiteMenuOverlay";
@@ -21,7 +21,7 @@ export function SiteFooter() {
     <div className="site-footer__columns">
       <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link><Link href="/runway">Runway</Link></div>
       <div><p className="footer-heading">LIGHT</p><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/about">About Us</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
-      <div><p className="footer-heading">Síguenos</p><FacebrowserLink /><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
+      <div><p className="footer-heading">Síguenos</p><FollowLinks /><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
       <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>
     </div>
     <div className="site-footer__bottom"><Link href="/privacidad">Privacidad</Link><Link href="/terminos">Términos</Link><Link href="/cookies">Cookies</Link><span className="footer-bottom__right">San Andreas, United States</span></div>
