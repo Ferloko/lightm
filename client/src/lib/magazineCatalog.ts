@@ -43,6 +43,8 @@ export function createMagazineEdition(existing: MagazineEdition[] = getMagazineE
     coverTitle: "Nueva mirada",
     coverNote: "Moda · Belleza · Ideas",
     coverImage: "",
+    heroImage: "",
+    heroPosition: "center",
     previewPages,
   };
 }
