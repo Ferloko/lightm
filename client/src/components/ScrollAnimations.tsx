@@ -31,6 +31,9 @@ export default function ScrollAnimations() {
     const prepare = (root: ParentNode = document) => {
       root.querySelectorAll<HTMLElement>(selector).forEach((element) => {
         if (element.classList.contains("scroll-ready")) return;
+        // Never animate the dashboard or dialogs: a transform on an ancestor turns every
+        // position:fixed child (modal backdrops, the article editor) into a box-local layer.
+        if (element.closest(".admin-shell, [role='dialog'], [aria-modal='true']")) return;
         element.classList.add("scroll-ready");
         observer.observe(element);
       });
