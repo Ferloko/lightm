@@ -5,11 +5,12 @@ import { supabase } from "@/lib/supabase";
  *
  * - VITE_FACEBROWSER_URL: dirección base de Facebrowser (para convertir @usuario en enlace).
  * - VITE_FACEBROWSER_LIGHT_PAGE: perfil de LIGHT en Facebrowser (enlace del pie de página).
+ *   Por defecto, la página oficial: https://face-es.gta.world/page/light
  *
  * Sin esas variables el nombre se muestra sin enlace: no inventamos direcciones.
  */
 export const FACEBROWSER_URL = String(import.meta.env.VITE_FACEBROWSER_URL || "").replace(/\/+$/, "");
-export const FACEBROWSER_LIGHT_PAGE = String(import.meta.env.VITE_FACEBROWSER_LIGHT_PAGE || "");
+export const FACEBROWSER_LIGHT_PAGE = String(import.meta.env.VITE_FACEBROWSER_LIGHT_PAGE || "https://face-es.gta.world/page/light");
 
 const safeHttp = (value: string) => /^https?:\/\//i.test(value) ? value : null;
 
