@@ -124,7 +124,7 @@ export async function fetchPublishedArticleSummaries(): Promise<EditorialArticle
 
 /** One published article by slug (or id), with its full page. */
 export async function fetchPublishedArticle(slugOrId: string): Promise<EditorialArticle | null> {
-  if (!supabase) return getDemoArticles().find((article) => article.status === "published" && (article.slug === slugOrId || article.id === slugOrId)) || null;
+  if (!supabase) return getDemoArticles().find((article) => article.status === "published" && article.isVisible !== false && (article.slug === slugOrId || article.id === slugOrId)) || null;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
   let query = supabase.from("articles").select(fullColumns).eq("status", "published").eq("is_visible", true);
   query = isUuid ? query.or(`slug.eq.${slugOrId},id.eq.${slugOrId}`) : query.eq("slug", slugOrId);

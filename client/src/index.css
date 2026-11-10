@@ -3141,3 +3141,18 @@ html.dark .masthead-hero::before {
   .article-engagement__like,
   .article-engagement__share { transition: none; }
 }
+
+/* Image frames in the article editor: the URL lives inside the frame. */
+.image-url-frame { position: relative; padding: 0; }
+.image-url-frame__trigger { display: block; width: 100%; min-height: inherit; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: center; }
+.image-url-frame__trigger img { display: block; width: 100%; }
+.image-url-frame__empty { display: flex; min-height: inherit; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.image-url-frame:not(.has-image) .image-url-frame__trigger { min-height: 160px; border: 1px dashed rgba(23,23,23,.22); transition: border-color .2s, background .2s; }
+.image-url-frame:not(.has-image) .image-url-frame__trigger:hover { border-color: rgba(23,23,23,.55); background: rgba(255,255,255,.25); }
+.image-url-frame__badge { position: absolute; top: 12px; right: 12px; padding: 7px 10px; background: rgba(23,23,23,.82); color: #f3f0ea; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: 0; transition: opacity .2s; }
+.image-url-frame__trigger:hover .image-url-frame__badge, .image-url-frame__trigger:focus-visible .image-url-frame__badge { opacity: 1; }
+.image-url-frame__form { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; display: flex; gap: 6px; padding: 6px; background: #f3f0ea; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.image-url-frame.has-image .image-url-frame__form { top: auto; }
+.image-url-frame:not(.has-image) .image-url-frame__form { top: 50%; bottom: auto; transform: translateY(-50%); }
+.image-url-frame__form input { flex: 1; min-width: 0; margin: 0 !important; padding: 8px 10px !important; border: 1px solid rgba(23,23,23,.18) !important; background: #fff !important; color: #171717 !important; font: 12px var(--sans) !important; outline: 0; }
+.image-url-frame__form button { padding: 0 14px; border: 0; background: #171717; color: #f3f0ea; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }

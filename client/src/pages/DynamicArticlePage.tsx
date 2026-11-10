@@ -19,7 +19,17 @@ export default function DynamicArticlePage() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
-  useEffect(() => { let active = true; setLoading(true); void fetchPublishedArticle(decodeURIComponent(params?.slug || "")).then((next) => { if (active) setArticle(next); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [params?.slug]);
+  useEffect(() => {
+    let active = true;
+    const slug = decodeURIComponent(params?.slug || "");
+    const load = () => fetchPublishedArticle(slug).then((next) => { if (active) setArticle(next); });
+    setLoading(true);
+    void load().finally(() => { if (active) setLoading(false); });
+    // Re-check when the reader comes back to the tab: a hidden article becomes the 404.
+    const onVisible = () => { if (document.visibilityState === "visible") void load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { active = false; document.removeEventListener("visibilitychange", onVisible); };
+  }, [params?.slug]);
   useEffect(() => { if (article) document.title = `${article.title} — LIGHT`; return () => { document.title = "LIGHT — Revista de estilo"; }; }, [article]);
   if (loading && !article) return <div className="dynamic-article-empty" aria-busy="true"><p className="eyebrow">LIGHT / Página</p><h1>Cargando historia…</h1></div>;
   if (!article) return <div className="dynamic-article-empty"><p className="eyebrow">LIGHT / Página</p><h1>Esta historia todavía no existe.</h1><Link href="/" className="story-link">Volver a la revista <ArrowUpRight size={15} /></Link></div>;
