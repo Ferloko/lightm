@@ -3,13 +3,13 @@ import { supabase } from "@/lib/supabase";
 /**
  * Facebrowser es la red social de GTA World, la única que usa LIGHT.
  *
- * - VITE_FACEBROWSER_URL: dirección base de Facebrowser (para convertir @usuario en enlace).
+ * - VITE_FACEBROWSER_URL: dirección base de Facebrowser (por defecto https://face-es.gta.world).
+ *   Un @usuario se convierte en {base}/profile/{usuario}, p. ej. https://face-es.gta.world/profile/snow
  * - VITE_FACEBROWSER_LIGHT_PAGE: perfil de LIGHT en Facebrowser (enlace del pie de página).
  *   Por defecto, la página oficial: https://face-es.gta.world/page/light
  *
- * Sin esas variables el nombre se muestra sin enlace: no inventamos direcciones.
  */
-export const FACEBROWSER_URL = String(import.meta.env.VITE_FACEBROWSER_URL || "").replace(/\/+$/, "");
+export const FACEBROWSER_URL = String(import.meta.env.VITE_FACEBROWSER_URL || "https://face-es.gta.world").replace(/\/+$/, "");
 export const FACEBROWSER_LIGHT_PAGE = String(import.meta.env.VITE_FACEBROWSER_LIGHT_PAGE || "https://face-es.gta.world/page/light");
 
 const safeHttp = (value: string) => /^https?:\/\//i.test(value) ? value : null;
@@ -20,7 +20,7 @@ export function facebrowserProfileUrl(value: string): string | null {
   if (!trimmed) return null;
   if (/^https?:\/\//i.test(trimmed)) return safeHttp(trimmed);
   const handle = trimmed.replace(/^@/, "");
-  return FACEBROWSER_URL && handle ? `${FACEBROWSER_URL}/${encodeURIComponent(handle)}` : null;
+  return FACEBROWSER_URL && handle ? `${FACEBROWSER_URL}/profile/${encodeURIComponent(handle)}` : null;
 }
 
 export function facebrowserLabel(value: string) {
