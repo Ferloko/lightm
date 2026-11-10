@@ -18,6 +18,10 @@ export type MagazineEdition = {
   coverTitle: string;
   coverNote: string;
   coverImage: string;
+  /** Imagen del hero (banner) de la página de la edición; se configura en Dashboard → Ediciones. */
+  heroImage?: string;
+  /** Parte de la imagen que queda visible en el hero. */
+  heroPosition?: "top" | "center" | "bottom";
   previewPages: MagazinePreviewPage[];
 };
 

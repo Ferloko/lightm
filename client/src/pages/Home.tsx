@@ -1,16 +1,15 @@
-import MenuThemeToggle from "@/components/MenuThemeToggle";
+import SiteMenuOverlay from "@/components/SiteMenuOverlay";
+import FollowLinks from "@/components/FollowLinks";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUp,
   ArrowUpRight,
-  Instagram,
   Mail,
   Menu,
   Search,
   X,
-  Youtube,
-} from "lucide-react";
+  } from "lucide-react";
 import { Link } from "wouter";
 import SiteSearch from "@/components/SiteSearch";
 import { fetchPublishedArticleSummaries, type EditorialArticle } from "@/lib/editorial";
@@ -19,6 +18,7 @@ import { subscribeToTable } from "@/lib/supabase";
 import { safeHref } from "@/lib/utils";
 import { subscribeToNewsletter } from "@/lib/newsletter";
 import { getHomepageFeature, useHomepageFeature, type HomepageFeatureContent } from "@/lib/homepageContent";
+import EditorialAccessLink from "@/components/EditorialAccessLink";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90",
@@ -31,12 +31,6 @@ const images = {
 };
 
 const navItems = ["Moda", "Belleza", "Eventos", "Living", "Runway"];
-
-const archiveItems = [
-  { date: "06.01", category: "Moda", image: images.hero, title: "El nuevo uniforme" },
-  { date: "05.18", category: "Belleza", image: images.beauty, title: "La piel como paisaje" },
-  { date: "04.02", category: "Eventos", image: images.culture, title: "Una noche para encontrarnos" },
-];
 
 function SectionLabel({ children, light = false }: { children: React.ReactNode; light?: boolean }) {
   return (
@@ -53,39 +47,8 @@ function StoryLink({ children, href = "/historias/vestirse-de-futuro" }: { child
   return external ? <a className="story-link" href={href} target="_blank" rel="noreferrer">{content}</a> : <Link className="story-link" href={href}>{content}</Link>;
 }
 
-function StoryCard({
-  image,
-  category,
-  title,
-  excerpt,
-  tone = "light",
-}: {
-  image: string;
-  category: string;
-  title: string;
-  excerpt?: string;
-  tone?: "light" | "dark";
-}) {
-  return (
-    <article className={`story-card story-card--${tone}`}>
-      <div className="story-card__image-wrap">
-        <img className="story-card__image" src={image} alt="" />
-        <span className="story-card__index">01</span>
-        <span className="image-hover-overlay"><strong>{title}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span>
-      </div>
-      <div className="story-card__body">
-        <p className="eyebrow">{category}</p>
-        <h3>{title}</h3>
-        {excerpt && <p className="story-card__excerpt">{excerpt}</p>}
-        <StoryLink>Leer historia</StoryLink>
-      </div>
-    </article>
-  );
-}
-
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("Todo");
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
@@ -178,7 +141,6 @@ export default function Home() {
 
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.silhouette, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : null;
-  const visibleArchiveItems = activeCategory === "Todo" ? archiveItems : archiveItems.filter((item) => item.category === activeCategory);
 
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -200,10 +162,10 @@ export default function Home() {
             <span>Menú</span>
           </button>
           <p>Antes de que esté de moda, está en Light</p>
-          <button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
+          <span className="topline__actions"><EditorialAccessLink /><button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
             <Search size={19} strokeWidth={1.4} />
             <span>Buscar</span>
-          </button>
+          </button></span>
         </div>
         <div className="brand-row">
           <Link href="/" className="wordmark" aria-label="LIGHT inicio">LIGHT</Link>
@@ -218,28 +180,7 @@ export default function Home() {
         </nav>
       </header>
 
-      {menuOpen && (
-        <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="Menú de navegación">
-          <div className="menu-overlay__top">
-            <span className="menu-overlay__edition">LIGHT</span>
-            <MenuThemeToggle />
-            <button className="close-button" type="button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú">
-              <X size={22} strokeWidth={1.3} />
-            </button>
-          </div>
-          <div className="menu-overlay__inner">
-            <p className="eyebrow">Explora la revista</p>
-            <div className="menu-overlay__links">
-              {["Inicio", ...navItems, "Masthead", "Business", "La revista", "Archivo", "Newsletter"].map((item, index) => (
-                <Link href={index === 0 ? "/" : item === "La revista" ? "/sobre-moda" : item === "Archivo" ? "/archivo" : item === "Newsletter" ? "/newsletter" : `/${item.toLowerCase()}`} key={item} onClick={() => setMenuOpen(false)}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>{item}<ArrowUpRight size={22} strokeWidth={1.2} />
-                </Link>
-              ))}
-            </div>
-            <p className="menu-overlay__note">Historias para mirar más de cerca.</p>
-          </div>
-        </div>
-      )}
+      {menuOpen && <SiteMenuOverlay onClose={() => setMenuOpen(false)} />}
 
       {searchOpen && <SiteSearch onClose={() => setSearchOpen(false)} />}
 
@@ -267,7 +208,7 @@ export default function Home() {
 
         <section className="feature-grid" id="belleza">
           <div className="feature-grid__lead">
-            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || homepageFeatureContent.image || images.silhouette} alt={homepageFeatureArticle?.title || homepageFeatureContent.title} /><span className="image-hover-overlay"><strong>{homepageFeatureArticle?.title || homepageFeatureContent.title}</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
+            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || homepageFeatureContent.image || images.silhouette} alt={homepageFeatureArticle?.title || homepageFeatureContent.title} /></div>
             <div className="feature-grid__lead-caption"><span>02</span><span>{homepageFeatureArticle?.title || homepageFeatureContent.title}</span></div>
           </div>
           <article className="feature-grid__story">
@@ -294,11 +235,11 @@ export default function Home() {
           <div className="story-grid">
             {publishedArticles.map((article) => (
               <article className="story-card story-card--published" key={article.id}>
-                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span><span className="image-hover-overlay"><strong>{article.title || "Sin título"}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span></div>
-                <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3>{article.title}</h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
+                <Link className="story-card__image-wrap" href={`/historias/${article.slug || article.id}`} aria-label={`Leer “${article.title || "Sin título"}”`}>{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span><span className="image-hover-overlay"><strong>{article.title || "Sin título"}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span></Link>
+                <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3><Link href={`/historias/${article.slug || article.id}`}>{article.title}</Link></h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
               </article>
             ))}
-            {articlesLoading && <div className="article-skeleton-grid" aria-label="Cargando historias">{[1, 2, 3].map((item) => <div className="article-skeleton-card" key={item}><div className="article-skeleton-card__image" /><div className="article-skeleton-card__line article-skeleton-card__line--short" /><div className="article-skeleton-card__line" /><div className="article-skeleton-card__line article-skeleton-card__line--medium" /></div>)}</div>} {!articlesLoading && !publishedArticles.length && <p className="editorial-empty-state">No hay historias publicadas todavía.</p>}
+            {articlesLoading && <div className="article-skeleton-grid" role="status" aria-label="Cargando historias">{[1, 2, 3].map((item) => <div className="article-skeleton-card" key={item}><div className="article-skeleton-card__image" /><div className="article-skeleton-card__line article-skeleton-card__line--short" /><div className="article-skeleton-card__line article-skeleton-card__line--title" /><div className="article-skeleton-card__line article-skeleton-card__line--title article-skeleton-card__line--medium" /><div className="article-skeleton-card__line article-skeleton-card__line--link" /></div>)}</div>} {!articlesLoading && !publishedArticles.length && <p className="editorial-empty-state">No hay historias publicadas todavía.</p>}
           </div>
         </section>
 
@@ -357,22 +298,14 @@ export default function Home() {
             )}
           </div>
         </section>
-
-        <section className="archive-section" id="archivo">
-          <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Eventos"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
-          <div className={`archive-strip archive-strip--${activeCategory.toLowerCase()}`}>
-            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><div className="archive-card__image-wrap"><img src={item.image} alt="" /><span className="image-hover-overlay"><strong>{item.title}</strong><small>Explorar historia <ArrowUpRight size={14} /></small></span></div><strong>{item.title}</strong></div>)}
-            {!visibleArchiveItems.length && <p className="archive-empty">Todavía no hay piezas en esta sección.</p>}
-          </div>
-        </section>
       </main>
 
       <footer className="site-footer">
         <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div>
         <div className="site-footer__columns">
           <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link></div>
-          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
-          <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
+          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/about">About Us</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
+          <div><p className="footer-heading">Síguenos</p><FollowLinks /><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
           <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>
         </div>
         <div className="site-footer__bottom"><Link href="/privacidad">Privacidad</Link><Link href="/terminos">Términos</Link><Link href="/cookies">Cookies</Link><span className="footer-bottom__right">San Andreas, United States</span></div>

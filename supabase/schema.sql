@@ -900,3 +900,248 @@ end;
 $$;
 
 notify pgrst, 'reload schema';
+
+-- LIGHT: métricas reales para los contadores del Resumen.
+-- 1) Cada campaña guarda canal, presupuesto e indicadores (inversión, impresiones, clics, conversiones, ingresos).
+--    Ad spend, Impressions, CTR, ROAS, Revenue y Conversions se calculan a partir de estas columnas.
+-- 2) Cada visita guarda un identificador anónimo de navegador para contar usuarios activos (únicos).
+-- Idempotente.
+
+alter table public.campaigns add column if not exists channel text not null default 'social';
+alter table public.campaigns add column if not exists budget numeric(14,2) not null default 0;
+alter table public.campaigns add column if not exists spend numeric(14,2) not null default 0;
+alter table public.campaigns add column if not exists impressions bigint not null default 0;
+alter table public.campaigns add column if not exists clicks bigint not null default 0;
+alter table public.campaigns add column if not exists conversions bigint not null default 0;
+alter table public.campaigns add column if not exists revenue numeric(14,2) not null default 0;
+
+do $$ begin
+  alter table public.campaigns add constraint campaigns_channel_check check (channel in ('social', 'search', 'email', 'other'));
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table public.campaigns add constraint campaigns_metrics_non_negative check (budget >= 0 and spend >= 0 and impressions >= 0 and clicks >= 0 and conversions >= 0 and revenue >= 0);
+exception when duplicate_object then null; end $$;
+
+alter table public.page_views add column if not exists visitor_id text;
+do $$ begin
+  alter table public.page_views add constraint page_views_visitor_id_length check (visitor_id is null or char_length(visitor_id) between 8 and 64);
+exception when duplicate_object then null; end $$;
+create index if not exists page_views_visitor_idx on public.page_views (visitor_id, viewed_at);
+
+-- Resumen agregado de visitas y usuarios únicos de los últimos p_days días, en tu zona horaria.
+create or replace function public.page_view_summary(p_days int default 30, p_tz text default 'UTC')
+returns table(views bigint, visitors bigint, today_views bigint)
+language plpgsql stable security definer set search_path = public
+as $$
+begin
+  if not public.can_dashboard('overview') then
+    raise exception 'No tienes acceso al Resumen.' using errcode = '42501';
+  end if;
+  return query
+  select
+    count(*)::bigint,
+    count(distinct v.visitor_id)::bigint,
+    count(*) filter (where (v.viewed_at at time zone p_tz)::date = (now() at time zone p_tz)::date)::bigint
+  from public.page_views v
+  where (v.viewed_at at time zone p_tz)::date >= (now() at time zone p_tz)::date - (greatest(p_days, 1) - 1);
+end;
+$$;
+revoke all on function public.page_view_summary(int, text) from public;
+revoke execute on function public.page_view_summary(int, text) from anon;
+grant execute on function public.page_view_summary(int, text) to authenticated;
+
+-- LIGHT: resumen de visitas acotado y honesto.
+-- 1) p_days se limita a 1–366 días en ambas funciones.
+-- 2) El filtro usa un rango sobre viewed_at (aprovecha page_views_viewed_at_idx) en lugar de convertir cada fila.
+-- 3) page_view_summary devuelve untracked_views: visitas registradas antes de que existiera visitor_id,
+--    que no se pueden atribuir a un visitante (antes contaban como 0 usuarios).
+-- Idempotente.
+
+drop function if exists public.page_view_summary(int, text);
+
+create function public.page_view_summary(p_days int default 30, p_tz text default 'UTC')
+returns table(views bigint, visitors bigint, untracked_views bigint, today_views bigint)
+language plpgsql stable security definer set search_path = public
+as $$
+declare
+  v_days int := least(greatest(coalesce(p_days, 30), 1), 366);
+  v_today date := (now() at time zone p_tz)::date;
+  v_from timestamptz := ((v_today - (v_days - 1))::timestamp at time zone p_tz);
+  v_today_from timestamptz := (v_today::timestamp at time zone p_tz);
+begin
+  if not public.can_dashboard('overview') then
+    raise exception 'No tienes acceso al Resumen.' using errcode = '42501';
+  end if;
+  return query
+  select
+    count(*)::bigint,
+    count(distinct v.visitor_id)::bigint,
+    count(*) filter (where v.visitor_id is null)::bigint,
+    count(*) filter (where v.viewed_at >= v_today_from)::bigint
+  from public.page_views v
+  where v.viewed_at >= v_from;
+end;
+$$;
+revoke all on function public.page_view_summary(int, text) from public;
+revoke execute on function public.page_view_summary(int, text) from anon;
+grant execute on function public.page_view_summary(int, text) to authenticated;
+
+-- Serie diaria con el mismo límite y un filtro por rango.
+create or replace function public.page_view_stats(p_days int default 15, p_tz text default 'UTC')
+returns table(day date, views bigint)
+language plpgsql stable security definer set search_path = public
+as $$
+declare
+  v_days int := least(greatest(coalesce(p_days, 15), 1), 366);
+  v_today date := (now() at time zone p_tz)::date;
+begin
+  if not public.can_dashboard('overview') then
+    raise exception 'No tienes acceso al Resumen.' using errcode = '42501';
+  end if;
+  return query
+  with days as (
+    select generate_series(v_today - (v_days - 1), v_today, interval '1 day')::date as day
+  ),
+  recent as (
+    select (pv.viewed_at at time zone p_tz)::date as day
+    from public.page_views pv
+    where pv.viewed_at >= ((v_today - (v_days - 1))::timestamp at time zone p_tz)
+  )
+  select d.day, count(r.day)::bigint
+  from days d
+  left join recent r on r.day = d.day
+  group by d.day order by d.day;
+end;
+$$;
+revoke all on function public.page_view_stats(int, text) from public;
+revoke execute on function public.page_view_stats(int, text) from anon;
+grant execute on function public.page_view_stats(int, text) to authenticated;
+
+-- Facebrowser (red social de GTA World): métricas que registra la Edge Function facebrowser-ingest.
+create table if not exists public.facebrowser_metrics (
+  id uuid primary key default gen_random_uuid(),
+  captured_at timestamptz not null default now(),
+  account text not null default 'light',          -- perfil medido (LIGHT u otro)
+  followers integer check (followers >= 0),
+  posts integer check (posts >= 0),
+  impressions integer check (impressions >= 0),
+  interactions integer check (interactions >= 0),  -- me gusta + comentarios + compartidos
+  profile_visits integer check (profile_visits >= 0),
+  source text not null default 'api',             -- 'api', 'manual'…
+  raw jsonb,                                      -- respuesta original, por si la API cambia
+  created_at timestamptz not null default now()
+);
+
+create index if not exists facebrowser_metrics_account_captured_idx
+  on public.facebrowser_metrics (account, captured_at desc);
+
+alter table public.facebrowser_metrics enable row level security;
+
+-- Lectura: quien puede ver el Resumen del Dashboard. Escritura: solo la clave de servicio
+-- (la Edge Function), por eso no hay políticas de insert/update/delete.
+drop policy if exists "Dashboard can read Facebrowser metrics" on public.facebrowser_metrics;
+create policy "Dashboard can read Facebrowser metrics" on public.facebrowser_metrics
+  for select to authenticated using (public.can_dashboard('overview'));
+
+-- Estadísticas por artículo (ver supabase/migrations/20261114_article_analytics.sql).
+create table if not exists public.article_events (
+  id bigint generated always as identity primary key,
+  article_key text not null check (char_length(article_key) between 1 and 200), -- slug o id del artículo
+  event text not null check (event in ('impression', 'click', 'read_50', 'read_100', 'share', 'time')),
+  source text check (source is null or char_length(source) between 1 and 40),  -- dónde estaba la tarjeta
+  visitor_id uuid,
+  value integer check (value is null or value between 0 and 3600),              -- segundos (evento 'time')
+  created_at timestamptz not null default now()
+);
+
+create index if not exists article_events_key_created_idx on public.article_events (lower(article_key), created_at);
+create index if not exists article_events_created_idx on public.article_events (created_at);
+create index if not exists page_views_lower_path_idx on public.page_views (lower(path));
+
+alter table public.article_events enable row level security;
+revoke all on table public.article_events from public, anon, authenticated;
+grant insert on table public.article_events to anon, authenticated;
+
+drop policy if exists "Anyone can record article events" on public.article_events;
+create policy "Anyone can record article events" on public.article_events
+  for insert to anon, authenticated with check (true);
+
+-- Estadísticas de los últimos p_days días por artículo. Solo para quien puede ver el Resumen.
+-- Une eventos y visitas por slug o id sin distinguir mayúsculas (/historias/Test2 = /historias/test2).
+create or replace function public.article_stats(p_days int default 30)
+returns table(
+  article_id uuid,
+  impressions bigint,
+  clicks bigint,
+  views bigint,
+  visitors bigint,
+  reads_50 bigint,
+  reads_100 bigint,
+  avg_seconds numeric,
+  shares bigint,
+  likes bigint,
+  click_sources jsonb
+)
+language plpgsql stable security definer set search_path = public
+as $$
+declare
+  v_from timestamptz := now() - make_interval(days => least(greatest(coalesce(p_days, 30), 1), 366));
+begin
+  if not public.can_dashboard('overview') then
+    raise exception 'No tienes permiso para ver las estadísticas.' using errcode = '42501';
+  end if;
+
+  return query
+  with keys as (
+    select distinct a.id, k.key
+    from public.articles a
+    cross join lateral (values (lower(nullif(btrim(a.slug), ''))), (a.id::text)) as k(key)
+    where k.key is not null
+  ),
+  ev as (
+    select k.id, e.event, e.source, e.value
+    from public.article_events e
+    join keys k on lower(e.article_key) = k.key
+    where e.created_at >= v_from
+  ),
+  ev_totals as (
+    select ev.id,
+      count(*) filter (where ev.event = 'impression') as impressions,
+      count(*) filter (where ev.event = 'click') as clicks,
+      count(*) filter (where ev.event = 'read_50') as reads_50,
+      count(*) filter (where ev.event = 'read_100') as reads_100,
+      count(*) filter (where ev.event = 'share') as shares,
+      coalesce(sum(ev.value) filter (where ev.event = 'time'), 0) as seconds
+    from ev group by ev.id
+  ),
+  sources as (
+    select s.id, jsonb_object_agg(s.source, s.n) as click_sources
+    from (select ev.id, coalesce(ev.source, 'otro') as source, count(*) as n from ev where ev.event = 'click' group by 1, 2) s
+    group by s.id
+  ),
+  pv as (
+    select k.id, count(*) as views, count(distinct p.visitor_id) as visitors
+    from public.page_views p
+    join keys k on lower(p.path) = '/historias/' || k.key
+    where p.viewed_at >= v_from
+    group by k.id
+  ),
+  lk as (
+    select l.article_key, count(*) as likes from public.article_likes l group by l.article_key
+  )
+  select a.id,
+    coalesce(t.impressions, 0), coalesce(t.clicks, 0), coalesce(pv.views, 0), coalesce(pv.visitors, 0),
+    coalesce(t.reads_50, 0), coalesce(t.reads_100, 0),
+    case when coalesce(pv.views, 0) > 0 then round(coalesce(t.seconds, 0)::numeric / pv.views, 0) else 0 end,
+    coalesce(t.shares, 0), coalesce(lk.likes, 0), coalesce(s.click_sources, '{}'::jsonb)
+  from public.articles a
+  left join ev_totals t on t.id = a.id
+  left join sources s on s.id = a.id
+  left join pv on pv.id = a.id
+  left join lk on lk.article_key = a.id::text
+  where a.status = 'published';
+end;
+$$;
+
+revoke all on function public.article_stats(int) from public, anon;
+grant execute on function public.article_stats(int) to authenticated;
