@@ -15,6 +15,8 @@ const selectors = [
   ".magazine-card",
   ".info-marquee",
   ".masthead-person",
+  ".masthead-grid > li",
+  ".about-pillar",
   ".archive-article-card",
 ];
 

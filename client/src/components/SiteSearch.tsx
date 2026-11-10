@@ -12,6 +12,7 @@ const searchable = [
   ["Business", "/business", "Colaboraciones y oportunidades"],
   ["Archivo", "/archivo", "Historias LIGHT"],
   ["La revista", "/sobre-moda", "Ediciones LIGHT"],
+  ["About Us", "/about", "Quiénes somos"],
   ["Belleza", "/belleza", "Cuidado y belleza"],
   ["Eventos", "/eventos", "Crónicas y encuentros"],
   ["Sociedad", "/sociedad", "Voces y personas"],

@@ -23,6 +23,7 @@ import LivingPage from "./pages/LivingPage";
 import MastheadPage from "./pages/MastheadPage";
 import MastheadPersonPage from "./pages/MastheadPersonPage";
 import BusinessPage from "./pages/BusinessPage";
+import AboutPage from "./pages/AboutPage";
 import ComingSoonGate from "./components/ComingSoonGate";
 
 function PageViewTracker() {
@@ -89,6 +90,7 @@ function Router() {
       <Route path="/masthead" component={MastheadPage} />
       <Route path="/masthead/:slug" component={MastheadPersonPage} />
       <Route path="/business" component={BusinessPage} />
+      <Route path="/about" component={AboutPage} />
       <Route path="/runway" component={() => <ComingSoonGate path="/runway"><RunwayPage /></ComingSoonGate>} />
       <Route path="/runway/:brand" component={BrandPage} />
       <Route path="/revista/:number" component={MagazineEditionPage} />

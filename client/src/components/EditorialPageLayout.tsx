@@ -1,7 +1,7 @@
 import { ArrowUpRight, Instagram, Mail, Menu, Search, X, Youtube } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
-import MenuThemeToggle from "@/components/MenuThemeToggle";
+import SiteMenuOverlay from "@/components/SiteMenuOverlay";
 import SiteSearch from "@/components/SiteSearch";
 
 const navigation = [
@@ -18,7 +18,7 @@ export function SiteFooter() {
     <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div>
     <div className="site-footer__columns">
       <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link><Link href="/runway">Runway</Link></div>
-      <div><p className="footer-heading">LIGHT</p><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
+      <div><p className="footer-heading">LIGHT</p><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/about">About Us</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
       <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
       <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>
     </div>
@@ -36,7 +36,7 @@ export default function EditorialPageLayout({ activePath, children }: { activePa
       <nav className="main-nav" aria-label="Navegación principal">{navigation.map(([label, href]) => <Link className={activePath === href ? "nav-active" : ""} href={href} key={href}>{label}</Link>)}</nav>
     </header>
     {searchOpen && <SiteSearch onClose={() => setSearchOpen(false)} />}
-    {menuOpen && <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="Menú de navegación"><div className="menu-overlay__top"><span className="menu-overlay__edition">LIGHT</span><MenuThemeToggle /><button className="close-button" type="button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú"><X size={22} /></button></div><div className="menu-overlay__inner"><p className="eyebrow">Explora la revista</p><div className="menu-overlay__links">{[["Inicio", "/"], ...navigation.slice(0, 5), ["Masthead", "/masthead"], ["Business", "/business"], ...navigation.slice(5), ["Archivo", "/archivo"], ["Newsletter", "/newsletter"]].map(([label, href], index) => <Link href={href} key={href} onClick={() => setMenuOpen(false)}><span>{String(index + 1).padStart(2, "0")}</span>{label}<ArrowUpRight size={22} /></Link>)}</div></div></div>}
+    {menuOpen && <SiteMenuOverlay onClose={() => setMenuOpen(false)} />}
     <main>{children}</main>
     <SiteFooter />
   </div>;

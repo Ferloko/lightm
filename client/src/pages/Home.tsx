@@ -1,4 +1,4 @@
-import MenuThemeToggle from "@/components/MenuThemeToggle";
+import SiteMenuOverlay from "@/components/SiteMenuOverlay";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownRight,
@@ -218,28 +218,7 @@ export default function Home() {
         </nav>
       </header>
 
-      {menuOpen && (
-        <div className="menu-overlay" role="dialog" aria-modal="true" aria-label="Menú de navegación">
-          <div className="menu-overlay__top">
-            <span className="menu-overlay__edition">LIGHT</span>
-            <MenuThemeToggle />
-            <button className="close-button" type="button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú">
-              <X size={22} strokeWidth={1.3} />
-            </button>
-          </div>
-          <div className="menu-overlay__inner">
-            <p className="eyebrow">Explora la revista</p>
-            <div className="menu-overlay__links">
-              {["Inicio", ...navItems, "Masthead", "Business", "La revista", "Archivo", "Newsletter"].map((item, index) => (
-                <Link href={index === 0 ? "/" : item === "La revista" ? "/sobre-moda" : item === "Archivo" ? "/archivo" : item === "Newsletter" ? "/newsletter" : `/${item.toLowerCase()}`} key={item} onClick={() => setMenuOpen(false)}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>{item}<ArrowUpRight size={22} strokeWidth={1.2} />
-                </Link>
-              ))}
-            </div>
-            <p className="menu-overlay__note">Historias para mirar más de cerca.</p>
-          </div>
-        </div>
-      )}
+      {menuOpen && <SiteMenuOverlay onClose={() => setMenuOpen(false)} />}
 
       {searchOpen && <SiteSearch onClose={() => setSearchOpen(false)} />}
 
@@ -371,7 +350,7 @@ export default function Home() {
         <div className="site-footer__top"><Link href="/" className="wordmark wordmark--footer">LIGHT</Link><p>Una revista sobre lo que nos mueve.</p></div>
         <div className="site-footer__columns">
           <div><p className="footer-heading">Explora</p><Link href="/moda">Moda</Link><Link href="/belleza">Belleza</Link><Link href="/eventos">Eventos</Link><Link href="/living">Living</Link></div>
-          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/sobre-moda">Sobre LIGHT</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
+          <div><p className="footer-heading">La revista</p><Link href="/archivo">Archivo</Link><Link href="/newsletter">Newsletter</Link><Link href="/masthead">Masthead</Link><Link href="/business">Business</Link><Link href="/about">About Us</Link><Link href="/business#colaboraciones">Colaboraciones</Link></div>
           <div><p className="footer-heading">Síguenos</p><a href="https://instagram.com" target="_blank" rel="noreferrer"><Instagram size={15} /> Instagram</a><a href="https://youtube.com" target="_blank" rel="noreferrer"><Youtube size={15} /> YouTube</a><Link href="/business#colaboraciones"><Mail size={15} /> Correo</Link></div>
           <div className="footer-signoff"><p>Hecho para mirar<br /><em>más de cerca.</em></p><span>© LIGHT 2026</span></div>
         </div>
