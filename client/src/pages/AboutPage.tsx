@@ -2,6 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useEffect } from "react";
 import { Link } from "wouter";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
+import HeroArt from "@/components/HeroArt";
 
 const pillars: { number: string; title: string; body: string; href: string; cta: string }[] = [
   { number: "01", title: "Moda y Belleza", body: "Siluetas, oficios, rituales y gestos que definen cómo nos vemos y cómo queremos ser vistos.", href: "/moda", cta: "Leer Moda" },
@@ -19,10 +20,13 @@ const principles: { title: string; body: string }[] = [
 export default function AboutPage() {
   useEffect(() => { document.title = "About Us — LIGHT"; return () => { document.title = "LIGHT — Revista de estilo"; }; }, []);
   return <EditorialPageLayout activePath="/about">
-    <section className="about-hero">
-      <p className="eyebrow">LIGHT / About Us</p>
-      <h1>Antes de que esté de moda, <em>está en LIGHT.</em></h1>
-      <div className="about-hero__foot"><p>LIGHT es una revista digital sobre estilo, belleza, cultura y las ideas que mueven la conversación.</p><span>About Us</span></div>
+    <section className="about-hero about-hero--art">
+      <div className="about-hero__copy">
+        <p className="eyebrow">LIGHT / About Us</p>
+        <h1>Antes de que esté de moda, <em>está en LIGHT.</em></h1>
+        <div className="about-hero__foot"><p>LIGHT es una revista digital sobre estilo, belleza, cultura y las ideas que mueven la conversación.</p><span>About Us</span></div>
+      </div>
+      <HeroArt src="/images/GTA51.webp" caption="LIGHT / Quiénes somos" position="center 25%" />
     </section>
 
     <section className="about-manifesto">

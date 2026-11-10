@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import SiteMenuOverlay from "@/components/SiteMenuOverlay";
 import SiteSearch from "@/components/SiteSearch";
+import EditorialAccessLink from "@/components/EditorialAccessLink";
 
 const navigation = [
   ["Moda", "/moda"],
@@ -31,7 +32,7 @@ export default function EditorialPageLayout({ activePath, children }: { activePa
   const [searchOpen, setSearchOpen] = useState(false);
   return <div className="site-shell editorial-page">
     <header className="site-header">
-      <div className="topline"><button className="header-action" type="button" onClick={() => setMenuOpen(true)}><Menu size={19} /><span>Menú</span></button><p>Antes de que esté de moda, está en LIGHT</p><button className="header-action" type="button" onClick={() => setSearchOpen(true)}><Search size={18} /><span>Buscar</span></button></div>
+      <div className="topline"><button className="header-action" type="button" onClick={() => setMenuOpen(true)}><Menu size={19} /><span>Menú</span></button><p>Antes de que esté de moda, está en LIGHT</p><span className="topline__actions"><EditorialAccessLink /><button className="header-action" type="button" onClick={() => setSearchOpen(true)}><Search size={18} /><span>Buscar</span></button></span></div>
       <div className="brand-row"><Link href="/" className="wordmark" aria-label="LIGHT inicio">LIGHT</Link></div>
       <nav className="main-nav" aria-label="Navegación principal">{navigation.map(([label, href]) => <Link className={activePath === href ? "nav-active" : ""} href={href} key={href}>{label}</Link>)}</nav>
     </header>

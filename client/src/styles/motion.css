@@ -12,9 +12,7 @@
 }
 html.dark { --sk-base: #262722; --sk-shine: rgba(255, 255, 255, .06); }
 
-/* 1 · Intro: mientras el telón está bajado, la página espera para entrar en el momento justo. */
-html.light-intro-active body * { animation-play-state: paused !important; }
-html.light-intro-active .scroll-ready.is-scroll-visible { opacity: 0; translate: 0 34px; }
+/* 1 · Revelado al hacer scroll */
 /* Ya revelado por scroll: su animación de entrada original no debe repetirse al soltar la clase. */
 [data-scroll-revealed] { animation: none !important; }
 
@@ -65,7 +63,7 @@ html.has-navigated .site-header { animation: none; } /* la cabecera no vuelve a 
 /* 4 · Hovers: más finos, coherentes y sin saltos. */
 /* Navegación principal: subrayado que se dibuja de izquierda a derecha, en lugar de un salto. */
 .main-nav a { position: relative; transition: color .3s var(--ease-soft); }
-.main-nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform .45s var(--ease-editorial); }
+.main-nav a::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% + .95em); bottom: auto; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform .45s var(--ease-editorial); }
 .main-nav a:hover { transform: none; }
 .main-nav a:hover::after, .main-nav a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 /* Botones de formularios y filtros: nada de girar; un leve desplazamiento elegante. */

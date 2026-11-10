@@ -27,8 +27,9 @@ export default function MastheadPage() {
     return () => { active = false; unsubscribe(); };
   }, []);
 
-  // One card per person, in masthead order, each with the role it belongs to.
-  const people = team.flatMap((member) => member.people.map((person) => ({ person, role: member.role })));
+  // Grouped by role, as in the LIGHT masthead; roles without people yet are left out.
+  const staffed = team.filter((member) => member.people.length > 0);
+  const peopleCount = staffed.reduce((total, member) => total + member.people.length, 0);
 
   return <EditorialPageLayout activePath="/masthead">
     <section className="masthead-hero">
@@ -40,18 +41,25 @@ export default function MastheadPage() {
     <section className="masthead-grid-section" aria-labelledby="masthead-roster-title">
       <div className="masthead-grid__head">
         <div><p className="eyebrow">La revista / El equipo</p><h2 id="masthead-roster-title">Masthead</h2></div>
-        <span>{loading ? "Actualizando equipo" : `${people.length} ${people.length === 1 ? "integrante" : "integrantes"}`}</span>
+        <span>{loading ? "Actualizando equipo" : `${staffed.length} ${staffed.length === 1 ? "cargo" : "cargos"} · ${peopleCount} ${peopleCount === 1 ? "integrante" : "integrantes"}`}</span>
       </div>
-      {people.length ? <ul className="masthead-grid">
-        {people.map(({ person, role }, index) => { const image = safeImageUrl(person.image); return <li key={person.id} style={{ "--card-index": index } as CSSProperties}>
-          <Link className="masthead-card" href={`/masthead/${person.slug}`} aria-label={`${person.name}, ${role}. Ver perfil`}>
-            <span className="masthead-card__portrait">{image ? <img src={image} alt="" loading="lazy" /> : <span className="masthead-card__placeholder"><UserRound size={30} strokeWidth={1.1} /></span>}</span>
+      {staffed.length ? staffed.map((member, groupIndex) => <section className="mh-group" key={member.id} aria-labelledby={`mh-${member.id}`}>
+        <header className="mh-group__head"><span className="mh-group__index">{String(groupIndex + 1).padStart(2, "0")}</span><h3 id={`mh-${member.id}`}>{member.role}</h3><small>{member.people.length} {member.people.length === 1 ? "persona" : "personas"}</small></header>
+        <ul className="masthead-grid">{member.people.map((person, index) => { const image = safeImageUrl(person.image); return <li key={person.id} style={{ "--card-index": index } as CSSProperties}>
+          <Link className="masthead-card" href={`/masthead/${person.slug}`} aria-label={`${person.name}, ${member.role}. Ver perfil`}>
+            <span className="masthead-card__portrait">{image ? <img src={image} alt="" loading="lazy" /> : <span className="masthead-card__placeholder"><UserRound size={30} strokeWidth={1.1} /></span>}<span className="masthead-card__cta">Ver perfil</span></span>
             <span className="masthead-card__name">{person.name}</span>
-            <span className="masthead-card__role">{role}</span>
+            <span className="masthead-card__role">{member.role}</span>
+            {person.tagline && <span className="masthead-card__tagline">{person.tagline}</span>}
           </Link>
-        </li>; })}
-      </ul> : <p className="masthead-grid__empty">Integrantes por presentar.</p>}
-      <p className="masthead-roster__note">Una publicación se construye en equipo: con criterio, conversación y atención a cada detalle.</p>
+        </li>; })}</ul>
+      </section>) : <p className="masthead-grid__empty">Integrantes por presentar.</p>}
     </section>
+    {staffed.length > 0 && <section className="mh-credits" aria-label="Créditos del masthead">
+      <p className="eyebrow">LIGHT / Masthead {new Date().getFullYear()}</p>
+      <div className="mh-credits__leads">{staffed.slice(0, 2).map((member) => <div key={member.id}><strong>{member.people.map((person) => person.name).join(", ")}</strong><span>{member.role}</span></div>)}</div>
+      <div className="mh-credits__list">{staffed.slice(2).map((member) => <p key={member.id}><em>{member.role}:</em> {member.people.map((person) => <Link href={`/masthead/${person.slug}`} key={person.id}>{person.name}</Link>).reduce<React.ReactNode[]>((all, item, index) => index ? [...all, ", ", item] : [item], [])}</p>)}</div>
+      <p className="masthead-roster__note">Una publicación se construye en equipo: con criterio, conversación y atención a cada detalle.</p>
+    </section>}
   </EditorialPageLayout>;
 }

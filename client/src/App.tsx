@@ -41,14 +41,6 @@ function PageViewTracker() {
   return null;
 }
 
-declare global { interface Window { __lightIntroReady?: () => void } }
-
-/** Tells the static intro in index.html that the app has mounted and can be revealed. */
-function IntroReadySignal() {
-  useEffect(() => { window.__lightIntroReady?.(); }, []);
-  return null;
-}
-
 /** Fades each new page in (opacity only: a transform here would break fixed menus and dialogs) and draws a hairline progress bar. */
 function PageTransition({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -111,5 +103,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><IntroReadySignal /><PageTransition><Router /></PageTransition></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><PageTransition><Router /></PageTransition></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }

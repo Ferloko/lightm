@@ -19,6 +19,7 @@ import { subscribeToTable } from "@/lib/supabase";
 import { safeHref } from "@/lib/utils";
 import { subscribeToNewsletter } from "@/lib/newsletter";
 import { getHomepageFeature, useHomepageFeature, type HomepageFeatureContent } from "@/lib/homepageContent";
+import EditorialAccessLink from "@/components/EditorialAccessLink";
 
 const images = {
   hero: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90",
@@ -51,36 +52,6 @@ function StoryLink({ children, href = "/historias/vestirse-de-futuro" }: { child
   const external = /^https?:\/\//i.test(href);
   const content = <>{children}<ArrowUpRight size={16} strokeWidth={1.5} /></>;
   return external ? <a className="story-link" href={href} target="_blank" rel="noreferrer">{content}</a> : <Link className="story-link" href={href}>{content}</Link>;
-}
-
-function StoryCard({
-  image,
-  category,
-  title,
-  excerpt,
-  tone = "light",
-}: {
-  image: string;
-  category: string;
-  title: string;
-  excerpt?: string;
-  tone?: "light" | "dark";
-}) {
-  return (
-    <article className={`story-card story-card--${tone}`}>
-      <div className="story-card__image-wrap">
-        <img className="story-card__image" src={image} alt="" />
-        <span className="story-card__index">01</span>
-        <span className="image-hover-overlay"><strong>{title}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span>
-      </div>
-      <div className="story-card__body">
-        <p className="eyebrow">{category}</p>
-        <h3>{title}</h3>
-        {excerpt && <p className="story-card__excerpt">{excerpt}</p>}
-        <StoryLink>Leer historia</StoryLink>
-      </div>
-    </article>
-  );
 }
 
 export default function Home() {
@@ -200,10 +171,10 @@ export default function Home() {
             <span>Menú</span>
           </button>
           <p>Antes de que esté de moda, está en Light</p>
-          <button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
+          <span className="topline__actions"><EditorialAccessLink /><button className="header-action" type="button" aria-label="Buscar" onClick={() => setSearchOpen(true)}>
             <Search size={19} strokeWidth={1.4} />
             <span>Buscar</span>
-          </button>
+          </button></span>
         </div>
         <div className="brand-row">
           <Link href="/" className="wordmark" aria-label="LIGHT inicio">LIGHT</Link>
@@ -246,7 +217,7 @@ export default function Home() {
 
         <section className="feature-grid" id="belleza">
           <div className="feature-grid__lead">
-            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || homepageFeatureContent.image || images.silhouette} alt={homepageFeatureArticle?.title || homepageFeatureContent.title} /><span className="image-hover-overlay"><strong>{homepageFeatureArticle?.title || homepageFeatureContent.title}</strong><small>Leer artículo <ArrowUpRight size={14} /></small></span></div>
+            <div className="feature-grid__image-wrap"><img src={homepageFeatureArticle?.image || homepageFeatureContent.image || images.silhouette} alt={homepageFeatureArticle?.title || homepageFeatureContent.title} /></div>
             <div className="feature-grid__lead-caption"><span>02</span><span>{homepageFeatureArticle?.title || homepageFeatureContent.title}</span></div>
           </div>
           <article className="feature-grid__story">
@@ -273,11 +244,11 @@ export default function Home() {
           <div className="story-grid">
             {publishedArticles.map((article) => (
               <article className="story-card story-card--published" key={article.id}>
-                <div className="story-card__image-wrap">{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span><span className="image-hover-overlay"><strong>{article.title || "Sin título"}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span></div>
-                <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3>{article.title}</h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
+                <Link className="story-card__image-wrap" href={`/historias/${article.slug || article.id}`} aria-label={`Leer “${article.title || "Sin título"}”`}>{article.image ? <img className="story-card__image" src={article.image} alt="" /> : <div className="story-card__image story-card__image--empty">LIGHT</div>}<span className="story-card__index">{article.isFeatured ? "FEATURED" : "NEW"}</span><span className="image-hover-overlay"><strong>{article.title || "Sin título"}</strong><small>Leer historia <ArrowUpRight size={14} /></small></span></Link>
+                <div className="story-card__body"><p className="eyebrow">{article.category}</p><h3><Link href={`/historias/${article.slug || article.id}`}>{article.title}</Link></h3>{article.excerpt && <p className="story-card__excerpt">{article.excerpt}</p>}<StoryLink href={`/historias/${article.slug || article.id}`}>Leer historia</StoryLink></div>
               </article>
             ))}
-            {articlesLoading && <div className="article-skeleton-grid" aria-label="Cargando historias">{[1, 2, 3].map((item) => <div className="article-skeleton-card" key={item}><div className="article-skeleton-card__image" /><div className="article-skeleton-card__line article-skeleton-card__line--short" /><div className="article-skeleton-card__line" /><div className="article-skeleton-card__line article-skeleton-card__line--medium" /></div>)}</div>} {!articlesLoading && !publishedArticles.length && <p className="editorial-empty-state">No hay historias publicadas todavía.</p>}
+            {articlesLoading && <div className="article-skeleton-grid" role="status" aria-label="Cargando historias">{[1, 2, 3].map((item) => <div className="article-skeleton-card" key={item}><div className="article-skeleton-card__image" /><div className="article-skeleton-card__line article-skeleton-card__line--short" /><div className="article-skeleton-card__line article-skeleton-card__line--title" /><div className="article-skeleton-card__line article-skeleton-card__line--title article-skeleton-card__line--medium" /><div className="article-skeleton-card__line article-skeleton-card__line--link" /></div>)}</div>} {!articlesLoading && !publishedArticles.length && <p className="editorial-empty-state">No hay historias publicadas todavía.</p>}
           </div>
         </section>
 
@@ -340,7 +311,7 @@ export default function Home() {
         <section className="archive-section" id="archivo">
           <div className="archive-section__top"><SectionLabel>Archivo visual</SectionLabel><div className="filter-row">{["Todo", "Moda", "Belleza", "Eventos"].map((item) => <button type="button" className={activeCategory === item ? "is-active" : ""} onClick={() => setActiveCategory(item)} key={item}>{item}</button>)}</div></div>
           <div className={`archive-strip archive-strip--${activeCategory.toLowerCase()}`}>
-            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><div className="archive-card__image-wrap"><img src={item.image} alt="" /><span className="image-hover-overlay"><strong>{item.title}</strong><small>Explorar historia <ArrowUpRight size={14} /></small></span></div><strong>{item.title}</strong></div>)}
+            {visibleArchiveItems.map((item, index) => <div className={`archive-card${index === 1 ? " archive-card--offset" : ""}`} key={item.title}><span>{item.date}</span><div className="archive-card__image-wrap"><img src={item.image} alt="" /></div><strong>{item.title}</strong></div>)}
             {!visibleArchiveItems.length && <p className="archive-empty">Todavía no hay piezas en esta sección.</p>}
           </div>
         </section>

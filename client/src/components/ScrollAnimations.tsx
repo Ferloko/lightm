@@ -17,6 +17,9 @@ const selectors = [
   ".masthead-person",
   ".masthead-grid > li",
   ".about-pillar",
+  ".lg-review",
+  ".lg-rank",
+  ".lg-night",
   ".archive-article-card",
 ];
 
@@ -26,7 +29,6 @@ const REVEAL_MS = 1000;
 
 export default function ScrollAnimations() {
   useEffect(() => {
-    const root = document.documentElement;
     const selector = selectors.join(",");
     const timers = new Set<number>();
 
@@ -39,8 +41,7 @@ export default function ScrollAnimations() {
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        // While the intro curtain is down, keep everything waiting so it enters as the curtain lifts.
-        if (!entry.isIntersecting || root.classList.contains("light-intro-active")) return;
+        if (!entry.isIntersecting) return;
         const element = entry.target as HTMLElement;
         element.classList.add("is-scroll-visible");
         observer.unobserve(element);
@@ -66,17 +67,28 @@ export default function ScrollAnimations() {
       });
     };
 
-    // When the intro finishes, re-check what is already on screen.
-    const introObserver = new MutationObserver(() => {
-      if (root.classList.contains("light-intro-active")) return;
-      introObserver.disconnect();
-      document.querySelectorAll<HTMLElement>(".scroll-ready:not(.is-scroll-visible)").forEach((element) => { observer.unobserve(element); observer.observe(element); });
-    });
-    if (root.classList.contains("light-intro-active")) introObserver.observe(root, { attributes: true, attributeFilter: ["class"] });
-
     prepare();
     const mutationObserver = new MutationObserver(() => prepare());
     mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    // The compact header is much shorter than the full one. If the page lost that height, every block
+    // below would jump up, the browser would pull the scroll back under the threshold and the header
+    // would flicker between both states. While compact, the header keeps the lost height as margin.
+    const headerSelector = ".site-header, .dynamic-article__header";
+    const expandedHeights = new WeakMap<HTMLElement, number>();
+    const syncHeaderSpace = () => {
+      const compact = document.body.classList.contains("is-scrolling-down");
+      document.querySelectorAll<HTMLElement>(headerSelector).forEach((header) => {
+        if (!compact) { header.style.marginBottom = ""; expandedHeights.set(header, header.offsetHeight); return; }
+        const expanded = expandedHeights.get(header);
+        if (expanded) header.style.marginBottom = `${Math.max(0, expanded - header.offsetHeight)}px`;
+      });
+    };
+    const headerResize = new ResizeObserver(syncHeaderSpace);
+    const watchHeaders = () => document.querySelectorAll<HTMLElement>(headerSelector).forEach((header) => { if (!header.dataset.heightWatched) { header.dataset.heightWatched = "1"; headerResize.observe(header); } });
+    watchHeaders();
+    const headerObserver = new MutationObserver(watchHeaders);
+    headerObserver.observe(document.body, { childList: true, subtree: true });
 
     let compactNav = window.scrollY > 180;
     let ticking = false;
@@ -86,7 +98,11 @@ export default function ScrollAnimations() {
       // touchpad rebounds cannot make the navigation flash or get stuck.
       if (currentScrollY > 180) compactNav = true;
       if (currentScrollY < 80) compactNav = false;
-      document.body.classList.toggle("is-scrolling-down", compactNav);
+      if (compactNav !== document.body.classList.contains("is-scrolling-down")) {
+        if (compactNav) syncHeaderSpace(); // remember the full height before shrinking
+        document.body.classList.toggle("is-scrolling-down", compactNav);
+        syncHeaderSpace();
+      }
       document.body.classList.toggle("is-scrolling-up", false);
       ticking = false;
     };
@@ -100,10 +116,11 @@ export default function ScrollAnimations() {
 
     return () => {
       mutationObserver.disconnect();
-      introObserver.disconnect();
       observer.disconnect();
       timers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("scroll", onScroll);
+      headerResize.disconnect();
+      headerObserver.disconnect();
       document.body.classList.remove("is-scrolling-down", "is-scrolling-up");
     };
   }, []);

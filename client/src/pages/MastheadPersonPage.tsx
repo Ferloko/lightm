@@ -5,6 +5,7 @@ import EditorialPageLayout from "@/components/EditorialPageLayout";
 import { fetchMastheadTeam, findMastheadPerson, onMastheadChange, type MastheadMember } from "@/lib/masthead";
 import { safeHref, safeImageUrl } from "@/lib/utils";
 import { PageSkeleton } from "@/components/EditorialSkeleton";
+import ImageLightbox, { type LightboxImage } from "@/components/ImageLightbox";
 
 function instagramUrl(value: string) {
   const handle = value.trim().replace(/^@/, "");
@@ -17,6 +18,7 @@ function instagramUrl(value: string) {
 export default function MastheadPersonPage() {
   const [, params] = useRoute<{ slug: string }>("/masthead/:slug");
   const [team, setTeam] = useState<MastheadMember[] | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -38,6 +40,9 @@ export default function MastheadPersonPage() {
   const gallery = person.gallery.map(safeImageUrl).filter(Boolean);
   const instagram = instagramUrl(person.instagram);
   const colleagues = member.people.filter((item) => item.id !== person.id);
+  // Everything the viewer can show: the portrait first, then the book (without repeating the portrait).
+  const viewerImages: LightboxImage[] = [...(cover ? [{ src: cover, alt: `Retrato de ${person.name}`, caption: `${person.name} · ${member.role}` }] : []), ...gallery.filter((image) => image !== cover).map((image, index) => ({ src: image, alt: `${person.name}, imagen ${index + 1}`, caption: `${person.name} · Book` }))];
+  const openViewer = (src: string) => setViewerIndex(Math.max(0, viewerImages.findIndex((image) => image.src === src)));
   const paragraphs = person.bio.split(/\n{2,}|\r\n\r\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
 
   return <EditorialPageLayout activePath="/masthead">
@@ -55,16 +60,17 @@ export default function MastheadPersonPage() {
           </dl>
           {instagram && <a className="person-hero__social" href={instagram} target="_blank" rel="noreferrer"><Instagram size={15} /> {person.instagram.startsWith("http") ? "Instagram" : `@${person.instagram.replace(/^@/, "")}`}</a>}
         </div>
-        <figure className="person-hero__portrait">{cover ? <img src={cover} alt={`Retrato de ${person.name}`} /> : <div className="masthead-person__placeholder"><UserRound size={40} strokeWidth={1.1} /><span>LIGHT</span></div>}<figcaption>LIGHT / {member.role.toUpperCase()}</figcaption></figure>
+        <figure className="person-hero__portrait">{cover ? <button type="button" className="lightbox-trigger" onClick={() => openViewer(cover)} aria-label={`Ver en grande el retrato de ${person.name}`}><img src={cover} alt={`Retrato de ${person.name}`} /></button> : <div className="masthead-person__placeholder"><UserRound size={40} strokeWidth={1.1} /><span>LIGHT</span></div>}<figcaption>LIGHT / {member.role.toUpperCase()}</figcaption></figure>
       </header>
 
       {paragraphs.length > 0 && <section className="person-bio"><p className="eyebrow">Perfil</p><div>{paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div></section>}
 
-      {gallery.length > 0 && <section className="person-gallery" aria-label={`Galería de ${person.name}`}><div className="person-gallery__head"><p className="eyebrow">Book</p><span>{gallery.length} imágenes</span></div><div className="person-gallery__grid">{gallery.map((image, index) => <figure key={`${image}-${index}`}><img src={image} alt={`${person.name}, imagen ${index + 1}`} loading="lazy" /></figure>)}</div></section>}
+      {gallery.length > 0 && <section className="person-gallery" aria-label={`Galería de ${person.name}`}><div className="person-gallery__head"><p className="eyebrow">Book</p><span>{gallery.length} imágenes</span></div><div className="person-gallery__grid">{gallery.map((image, index) => <figure key={`${image}-${index}`}><button type="button" className="lightbox-trigger" onClick={() => openViewer(image)} aria-label={`Ver en grande la imagen ${index + 1}`}><img src={image} alt={`${person.name}, imagen ${index + 1}`} loading="lazy" /></button></figure>)}</div></section>}
 
       {colleagues.length > 0 && <section className="person-colleagues"><p className="eyebrow">También en {member.role}</p><div className="masthead-people">{colleagues.map((item) => { const image = safeImageUrl(item.image); return <Link className="masthead-person" key={item.id} href={`/masthead/${item.slug}`}><div className="masthead-person__portrait">{image ? <img src={image} alt={`Retrato de ${item.name}`} loading="lazy" /> : <div className="masthead-person__placeholder"><UserRound size={27} strokeWidth={1.2} /><span>LIGHT</span></div>}<span className="masthead-person__cta">Ver perfil <ArrowUpRight size={13} /></span></div><span className="masthead-person__name">{item.name}</span></Link>; })}</div></section>}
 
       <div className="person-page__end"><Link href="/masthead" className="story-link">Todo el equipo <ArrowUpRight size={15} /></Link></div>
     </article>
+    {viewerIndex !== null && viewerImages.length > 0 && <ImageLightbox images={viewerImages} index={Math.min(viewerIndex, viewerImages.length - 1)} onIndexChange={setViewerIndex} onClose={() => setViewerIndex(null)} />}
   </EditorialPageLayout>;
 }

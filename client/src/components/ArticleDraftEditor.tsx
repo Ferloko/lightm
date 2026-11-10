@@ -34,7 +34,6 @@ export default function ArticleDraftEditor({ article, canPublish, notice, onChan
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
   const editorRef = useRef<HTMLElement>(null);
-  const [railTop, setRailTop] = useState(74);
 
   // Unsaved changes: compare against the last saved version (a save always stamps a new updatedAt).
   const snapshot = (value: EditorialArticle) => JSON.stringify({ ...value, updatedAt: "" });
@@ -44,15 +43,6 @@ export default function ArticleDraftEditor({ article, canPublish, notice, onChan
   const words = countWords(article);
   const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const updateRailPosition = () => setRailTop(editor.scrollTop + (window.innerWidth <= 700 ? 62 : window.innerWidth <= 1050 ? 68 : 74));
-    updateRailPosition();
-    editor.addEventListener("scroll", updateRailPosition, { passive: true });
-    window.addEventListener("resize", updateRailPosition);
-    return () => { editor.removeEventListener("scroll", updateRailPosition); window.removeEventListener("resize", updateRailPosition); };
-  }, []);
   // Ctrl/Cmd + S saves the draft; closing the tab with unsaved changes asks first.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); onSaveDraft(); } };
@@ -81,7 +71,8 @@ export default function ArticleDraftEditor({ article, canPublish, notice, onChan
   const placeInGrid = (gridId: string, column: GridColumn) => { if (!draggedBlockId || draggedBlockId === gridId) return; const grid = article.blocks.find((block) => block.id === gridId); if (!grid) return; const nextColumns = { left: grid.gridColumns?.left.filter((id) => id !== draggedBlockId) || [], right: grid.gridColumns?.right.filter((id) => id !== draggedBlockId) || [] }; nextColumns[column] = [...nextColumns[column], draggedBlockId]; onChange({ blocks: article.blocks.map((block) => block.type === "grid" ? { ...block, gridColumns: block.id === gridId ? nextColumns : { left: block.gridColumns?.left.filter((id) => id !== draggedBlockId) || [], right: block.gridColumns?.right.filter((id) => id !== draggedBlockId) || [] } } : block) }); setDraggedBlockId(null); };
   const placedInGrid = new Set(article.blocks.flatMap((block) => block.type === "grid" && block.gridColumns ? [...block.gridColumns.left, ...block.gridColumns.right] : []));
   const topLevelBlocks = article.blocks.filter((block) => !placedInGrid.has(block.id));
-  const meta = <div className="article-draft-meta"><label>Categoría<select value={article.category || "Moda"} onChange={(event) => onChange({ category: event.target.value, eyebrow: `${event.target.value} / HISTORIA` })}>{article.category === "Cultura" && <option value="Cultura" disabled>Cultura (histórico)</option>}<option>Moda</option><option>Belleza</option><option>Eventos</option><option>Sociedad</option><option>Living</option><option>Archivo</option></select></label><label>Autoría<input value={article.author} readOnly aria-label="Autor original del artículo" /><small>La autoría se fija al crear el artículo.</small></label><label>Tiempo de lectura<span className="article-draft-meta__row"><input value={article.readingTime || ""} placeholder={`${minutes} min de lectura`} onChange={(event) => onChange({ readingTime: event.target.value })} /><button type="button" onClick={() => onChange({ readingTime: `${minutes} min de lectura` })} title={`Calcular a partir de ${words} palabras`}>Calcular · {minutes} min</button></span></label><label>Fecha<input type="date" value={article.date || ""} onChange={(event) => onChange({ date: event.target.value })} /></label></div>;
+  // Category was chosen before opening the editor and authorship is fixed at creation: both are shown, not edited.
+  const meta = <dl className="article-draft-meta"><div><dt>Sección</dt><dd>{article.category || "Moda"}</dd></div><div><dt>Autoría</dt><dd>{article.author || "LIGHT"}</dd></div><div><dt>Lectura</dt><dd className="article-draft-meta__row"><input value={article.readingTime || ""} placeholder={`${minutes} min de lectura`} onChange={(event) => onChange({ readingTime: event.target.value })} aria-label="Tiempo de lectura" /><button type="button" onClick={() => onChange({ readingTime: `${minutes} min de lectura` })} title={`Calcular a partir de ${words} palabras`}>Calcular · {minutes} min</button></dd></div><div><dt>Fecha</dt><dd><input type="date" value={article.date || ""} onChange={(event) => onChange({ date: event.target.value })} aria-label="Fecha" /></dd></div></dl>;
 
   const renderGrid = (grid: PageBlock) => { const split = Math.min(78, Math.max(22, grid.gridSplit || (grid.gridLayout === "left" ? 58 : 42))); return <div className="draft-grid-shell"><p className="draft-grid-shell__hint">Arrastra bloques de la página a cada columna. Usa el separador central para ajustar el ancho.</p><div className={`draft-grid draft-grid--${grid.gridLayout || "left"}`} style={{ "--grid-split": `${split}%` } as CSSProperties}><GridColumnEditor label="Cuadro izquierda" ids={grid.gridColumns?.left || []} blocks={article.blocks} gridId={grid.id} column="left" dragging={Boolean(draggedBlockId && draggedBlockId !== grid.id)} onDrop={placeInGrid} onRemove={removeFromGrid} onChange={updateBlock} onDragBlock={setDraggedBlockId} /><GridColumnEditor label="Cuadro derecha" ids={grid.gridColumns?.right || []} blocks={article.blocks} gridId={grid.id} column="right" dragging={Boolean(draggedBlockId && draggedBlockId !== grid.id)} onDrop={placeInGrid} onRemove={removeFromGrid} onChange={updateBlock} onDragBlock={setDraggedBlockId} /></div><GridResizeHandle split={split} onResize={(next) => updateBlock(grid.id, { gridSplit: next })} /></div>; };
 
@@ -92,7 +83,7 @@ export default function ArticleDraftEditor({ article, canPublish, notice, onChan
       <div className="article-draft-toolbar__actions"><button className="admin-secondary" onClick={() => setPreviewOpen(true)}>Vista previa limpia</button><button className="admin-secondary" onClick={onSaveDraft} title="Guardar (Ctrl+S)"><Save size={15} /> Guardar edición</button><button className="admin-primary" disabled={!canPublish} onClick={onPublish}>{canPublish ? "Publicar página" : "Solo Owner / Admin"}</button></div>
     </header>
     <div className="article-draft-layout">
-      <aside className="article-draft-controls" style={{ top: railTop }}>
+      <aside className="article-draft-controls">
         <p className="eyebrow">Edición</p><h2>Vista previa real.</h2><p className="article-draft-hint">La página que ves aquí es la misma estructura que se publicará en LIGHT.</p>
         <div className="article-draft-add"><button onClick={() => addBlock("heading")}><Type size={15} /> Subtítulo</button><button onClick={() => addBlock("paragraph")}><Type size={15} /> Párrafo</button><button onClick={() => addBlock("image")}><Image size={15} /> Imagen</button><button onClick={() => setGridDialogOpen(true)}><LayoutGrid size={15} /> Cuadrícula</button><button onClick={() => addBlock("quote")}><Quote size={15} /> Cita</button><button onClick={() => addBlock("divider")}><Minus size={15} /> Separador</button></div>
         <dl className="article-draft-stats"><div><dt>Palabras</dt><dd>{words.toLocaleString("es-ES")}</dd></div><div><dt>Lectura</dt><dd>~{minutes} min</dd></div><div><dt>Bloques</dt><dd>{article.blocks.length}</dd></div></dl>

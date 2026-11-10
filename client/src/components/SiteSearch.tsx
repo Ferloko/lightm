@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { getEditorialUser } from "@/lib/editorial";
 import { isDemoMode, supabase } from "@/lib/supabase";
+import { resetEditorialAccess } from "@/components/EditorialAccessLink";
 
 const searchable = [
   ["Vestirse de futuro", "/historias/vestirse-de-futuro", "Moda"],
@@ -76,6 +77,7 @@ export default function SiteSearch({ onClose }: { onClose?: () => void }) {
       if (!isDemoMode) { setError("El acceso editorial no está configurado en este sitio."); return; }
       if (password.trim().length < 4) { setError("En preview demo, usa una contraseña de al menos 4 caracteres."); return; }
       localStorage.setItem("light.demo.editorial-auth", "1");
+      resetEditorialAccess();
       setLoginOpen(false);
       setPassword("");
       onClose?.();
