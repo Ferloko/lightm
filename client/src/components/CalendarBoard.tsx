@@ -44,6 +44,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
   const [showCampaigns, setShowCampaigns] = useState(readShowCampaigns);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const days = useMemo(() => buildDays(month), [month]);
   const today = todayKey();
   const selecting = useRef(false);
@@ -57,9 +58,17 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
     return () => { active = false; unsubscribe(); };
   }, [controlledEvents]);
 
-  const persist = async (next: CalendarEvent, previous: CalendarEvent[] | null, replaceId?: string) => {
-    try { const saved = await saveCalendarEvent({ ...next, id: next.id || undefined }); setEvents((current) => [...current.filter((item) => item.id !== saved.id && item.id !== next.id && item.id !== replaceId), saved]); return saved; }
-    catch (cause) { if (previous) setEvents(() => previous); setError(`No se pudo guardar el evento: ${describeError(cause)}`); return null; }
+  /**
+   * Saves one event. On failure only that event is rolled back (its previous version is restored,
+   * or its optimistic placeholder removed), so edits or live updates made meanwhile are kept.
+   */
+  const persist = async (next: CalendarEvent, rollback: { before?: CalendarEvent; placeholderId?: string } = {}) => {
+    try { const saved = await saveCalendarEvent({ ...next, id: next.id || undefined }); setEvents((current) => [...current.filter((item) => item.id !== saved.id && item.id !== next.id && item.id !== rollback.placeholderId), saved]); return saved; }
+    catch (cause) {
+      if (rollback.placeholderId) setEvents((current) => current.filter((item) => item.id !== rollback.placeholderId));
+      else if (rollback.before) { const before = rollback.before; setEvents((current) => current.map((item) => item.id === before.id ? before : item)); }
+      setError(`No se pudo guardar el evento: ${describeError(cause)}`); return null;
+    }
   };
 
   // Notion-style layout: per week, campaigns and multi-day events keep a fixed lane so their bars line up across days.
@@ -99,33 +108,36 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
     if (openAfter || !title) { if (openAfter) openPeek(draft); else setQuick(null); return; }
     setQuick(null);
     const temp: CalendarEvent = { ...draft, id: `event-pending-${Date.now()}`, title, description: "", endAt: draft.endAt ?? null, allDay: true, color: "acid" };
-    const previous = eventsRef.current; setEvents((current) => [...current, temp]);
-    await persist({ ...temp, id: "" }, previous, temp.id);
+    setEvents((current) => [...current, temp]);
+    await persist({ ...temp, id: "" }, { placeholderId: temp.id });
   };
 
   const savePeek = async () => {
+    // One save at a time: closing again (Esc, backdrop, button) while a new event is being stored must not create copies.
+    if (savingRef.current) return;
     if (!peek || readOnly) { setPeek(null); return; }
     const dirty = JSON.stringify(peek) !== peekOriginal;
     if (!peek.title?.trim()) { if (!peek.id) { setPeek(null); return; } setError("El evento necesita un título."); return; }
-    if (!dirty) { setPeek(null); return; }
+    // A new event (no id yet) is always saved, even when it arrives already titled from the quick form.
+    if (peek.id && !dirty) { setPeek(null); return; }
     const endAt = peek.endAt && dayOf(peek.endAt) > dayOf(peek.startAt) ? peek.endAt : peek.allDay ? null : peek.endAt && peek.endAt > peek.startAt ? peek.endAt : null;
-    setSaving(true);
+    savingRef.current = true; setSaving(true);
     const next: CalendarEvent = { id: peek.id || "", title: peek.title.trim(), description: peek.description || "", startAt: peek.startAt, endAt, allDay: peek.allDay ?? true, color: peek.color || "acid" };
-    const previous = events;
+    const before = next.id ? eventsRef.current.find((item) => item.id === next.id) : undefined;
     if (next.id) setEvents((current) => current.map((item) => item.id === next.id ? next : item));
-    const saved = await persist(next, next.id ? previous : null);
-    setSaving(false);
+    const saved = await persist(next, { before });
+    savingRef.current = false; setSaving(false);
     if (saved) setPeek(null);
   };
-  const removePeek = async () => { if (!peek?.id || readOnly || !window.confirm("¿Eliminar este evento?")) return; const previous = events; const id = peek.id; setEvents((current) => current.filter((item) => item.id !== id)); setPeek(null); try { await deleteCalendarEvent(id); } catch (cause) { setEvents(() => previous); setError(`No se pudo eliminar: ${describeError(cause)}`); } };
+  const removePeek = async () => { if (!peek?.id || readOnly || !window.confirm("¿Eliminar este evento?")) return; const id = peek.id; const removed = eventsRef.current.find((item) => item.id === id); setEvents((current) => current.filter((item) => item.id !== id)); setPeek(null); try { await deleteCalendarEvent(id); } catch (cause) { if (removed) setEvents((current) => current.some((item) => item.id === id) ? current : [...current, removed]); setError(`No se pudo eliminar: ${describeError(cause)}`); } };
 
   const moveEvent = async (id: string, grabDay: string, targetDay: string) => {
     const event = events.find((item) => item.id === id); if (!event) return;
     const delta = daysBetween(grabDay, targetDay); if (!delta) return;
     const shift = (value: string) => `${addDaysKey(dayOf(value), delta)}${value.slice(10, 16) ? value.slice(10, 16) : "T10:00"}`;
     const next: CalendarEvent = { ...event, startAt: shift(event.startAt), endAt: event.endAt ? shift(event.endAt) : null };
-    const previous = events; setEvents((current) => current.map((item) => item.id === id ? next : item));
-    await persist(next, previous);
+    setEvents((current) => current.map((item) => item.id === id ? next : item));
+    await persist(next, { before: event });
   };
 
   // Keyboard: Esc closes, ← → change month, T jumps to today.

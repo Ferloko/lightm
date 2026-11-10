@@ -5,7 +5,7 @@ import { addDaysKey, CAMPAIGN_CHANNELS, campaignCtr, campaignMetricsAvailable, c
 
 const colors = ["acid", "blue", "soft"];
 type Filter = CampaignStatus | "all";
-type Props = { campaigns: Campaign[]; onChange: (campaigns: Campaign[]) => void; readOnly?: boolean; focus?: { id: string | null; nonce: number } | null };
+type Props = { campaigns: Campaign[]; onChange: (campaigns: Campaign[]) => void; readOnly?: boolean; focus?: { id: string | null; nonce: number } | null; onFocusHandled?: () => void };
 
 const integer = new Intl.NumberFormat("es-ES", { useGrouping: "always" } as Intl.NumberFormatOptions);
 const money = (value: number) => `$${integer.format(Math.round(value))}`;
@@ -19,7 +19,7 @@ const metricFields: { key: keyof CampaignMetrics; label: string; prefix?: string
 ];
 const shortDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }).replace(".", "");
 
-export default function CampaignBoard({ campaigns, onChange, readOnly = false, focus }: Props) {
+export default function CampaignBoard({ campaigns, onChange, readOnly = false, focus, onFocusHandled }: Props) {
   const [draft, setDraft] = useState<Partial<Campaign> | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [error, setError] = useState("");
@@ -31,11 +31,13 @@ export default function CampaignBoard({ campaigns, onChange, readOnly = false, f
   const openNew = () => { if (readOnly) return; const today = todayKey(); setError(""); setDraft({ name: "", description: "", startDate: today, endDate: addDaysKey(today, 30), color: "acid", channel: "social", ...emptyMetrics }); };
   const openCampaign = (campaign: Campaign) => { setError(""); setDraft(campaign); };
 
-  // Opened from the overview, the sidebar or the calendar.
+  // Opened from the overview, the sidebar or the calendar. The request is consumed once, so coming back
+  // to Campañas later does not reopen the same campaign (or a blank draft).
   useEffect(() => {
     if (!focus) return;
     if (focus.id) { const target = campaigns.find((campaign) => campaign.id === focus.id); if (target) openCampaign(target); }
     else openNew();
+    onFocusHandled?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus?.nonce]);
   useEffect(() => { if (!draft) return; const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setDraft(null); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [draft]);

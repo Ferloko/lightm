@@ -100,3 +100,20 @@ export function summarizeCampaigns(campaigns: Campaign[]): CampaignSummary {
 
 export function campaignCtr(campaign: Campaign) { return campaign.impressions ? campaign.clicks / campaign.impressions : null; }
 export function campaignRoas(campaign: Campaign) { return campaign.spend ? campaign.revenue / campaign.spend : null; }
+
+function dayCount(from: string, to: string) { return to < from ? 0 : Math.round((new Date(`${to}T12:00:00`).getTime() - new Date(`${from}T12:00:00`).getTime()) / 86400000) + 1; }
+
+/**
+ * Campaign metrics are stored as running totals, not per day. To report a period without counting results from
+ * outside it, results are spread evenly over the days the campaign has run so far, and the budget over its whole window.
+ */
+export function prorateCampaign(campaign: Campaign, from: string, to: string, today = todayKey()): Campaign {
+  const ranEnd = campaign.endDate < today ? campaign.endDate : today;
+  const ranDays = dayCount(campaign.startDate, ranEnd);
+  const overlapStart = campaign.startDate > from ? campaign.startDate : from;
+  const resultShare = ranDays ? dayCount(overlapStart, ranEnd < to ? ranEnd : to) / ranDays : 0;
+  const totalDays = dayCount(campaign.startDate, campaign.endDate);
+  const budgetShare = totalDays ? dayCount(overlapStart, campaign.endDate < to ? campaign.endDate : to) / totalDays : 0;
+  const scale = (value: number) => value * resultShare;
+  return { ...campaign, spend: scale(campaign.spend), impressions: scale(campaign.impressions), clicks: scale(campaign.clicks), conversions: scale(campaign.conversions), revenue: scale(campaign.revenue), budget: campaign.budget * budgetShare };
+}

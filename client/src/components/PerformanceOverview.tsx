@@ -1,7 +1,7 @@
 import { ArrowUpRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchPageViewSeries, fetchPageViewSummary, type PageViewPoint, type PageViewSummary } from "@/lib/analytics";
-import { addDaysKey, CAMPAIGN_CHANNELS, campaignOverlaps, campaignStatus, campaignStatusLabel, sortCampaigns, summarizeCampaigns, todayKey, type Campaign, type CampaignChannel } from "@/lib/campaigns";
+import { addDaysKey, CAMPAIGN_CHANNELS, campaignOverlaps, prorateCampaign, campaignStatus, campaignStatusLabel, sortCampaigns, summarizeCampaigns, todayKey, type Campaign, type CampaignChannel } from "@/lib/campaigns";
 import type { CalendarEvent } from "@/lib/calendar";
 import type { EditorialArticle } from "@/lib/editorial";
 import type { NewsletterSubscriber } from "@/lib/newsletter";
@@ -12,7 +12,8 @@ const ranges = [7, 30, 90] as const;
 type Range = typeof ranges[number];
 type ChannelFilter = CampaignChannel | "all";
 
-const integer = new Intl.NumberFormat("es-ES", { useGrouping: "always" } as Intl.NumberFormatOptions);
+const PRORATE_NOTE = "estimado según los días de cada campaña dentro del periodo";
+const integer = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
 const compact = new Intl.NumberFormat("es-ES", { notation: "compact", maximumFractionDigits: 1 });
 const money = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, useGrouping: "always" } as Intl.NumberFormatOptions);
 const formatMoney = (value: number) => `$${money.format(value)}`;
@@ -53,23 +54,25 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
   const [channel, setChannel] = useState<ChannelFilter>(() => readStored<ChannelFilter>(CHANNEL_KEY, ["all", ...CAMPAIGN_CHANNELS.map((item) => item.id)], "all"));
   const [summary, setSummary] = useState<PageViewSummary | null>(null);
   const [series, setSeries] = useState<PageViewPoint[]>([]);
+  const [analyticsError, setAnalyticsError] = useState(false);
   const trafficRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let active = true;
     const chartDays = Math.min(range, 30);
+    setAnalyticsError(false);
     Promise.all([fetchPageViewSummary(range), fetchPageViewSeries(chartDays)])
       .then(([nextSummary, nextSeries]) => { if (active) { setSummary(nextSummary); setSeries(nextSeries); } })
-      .catch((error) => console.warn("[LIGHT] Overview analytics", error));
+      .catch((error) => { console.warn("[LIGHT] Overview analytics", error); if (active) { setSummary(null); setSeries([]); setAnalyticsError(true); } });
     return () => { active = false; };
   }, [range]);
 
   const today = todayKey();
   const from = addDaysKey(today, -(range - 1));
   const matchesChannel = (campaign: Campaign) => channel === "all" || campaign.channel === channel;
-  const periodCampaigns = useMemo(() => campaigns.filter((campaign) => campaignOverlaps(campaign, from, today) && (channel === "all" || campaign.channel === channel)), [campaigns, from, today, channel]);
+  const periodCampaigns = useMemo(() => campaigns.filter((campaign) => campaignOverlaps(campaign, from, today) && (channel === "all" || campaign.channel === channel)).map((campaign) => prorateCampaign(campaign, from, today)), [campaigns, from, today, channel]);
   const totals = useMemo(() => summarizeCampaigns(periodCampaigns), [periodCampaigns]);
-  const channelTotals = useMemo(() => summarizeCampaigns(campaigns.filter((campaign) => campaignOverlaps(campaign, from, today))), [campaigns, from, today]);
+  const channelTotals = useMemo(() => summarizeCampaigns(campaigns.filter((campaign) => campaignOverlaps(campaign, from, today)).map((campaign) => prorateCampaign(campaign, from, today))), [campaigns, from, today]);
   const newSubscribers = subscribers.filter((subscriber) => subscriber.subscribedAt.slice(0, 10) >= from).length;
   const countsSubscribers = channel === "all" || channel === "email";
   const conversions = totals.conversions + (countsSubscribers ? newSubscribers : 0);
@@ -80,14 +83,14 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
   const emptyNote = (text: string) => hasMetrics ? text : canOpen("campaigns") ? "Registra métricas en Campañas" : "Sin métricas en el periodo";
 
   const kpis: Kpi[] = [
-    { key: "visits", label: "Visitas hoy", value: summary ? integer.format(summary.todayViews) : "…", note: <><b>{summary ? integer.format(summary.views) : "…"}</b> en {periodLabel}</>, hint: "Ver la evolución diaria de visitas", tone: "accent", onClick: scrollToTraffic },
-    { key: "spend", label: "Ad spend", value: formatMoney(totals.spend), note: totals.budget ? <><b>{percent(totals.spend / totals.budget, 0)}</b> de {formatMoney(totals.budget)} presupuesto</> : emptyNote(`${totals.count} campañas en el periodo`), hint: "Inversión registrada en las campañas del periodo", onClick: campaignsAction },
-    { key: "impressions", label: "Impressions", value: formatCompact(totals.impressions), note: <><b>{totals.count}</b> {emptyNote(totals.count === 1 ? "campaña en el periodo" : "campañas en el periodo")}</>, hint: "Impresiones registradas en las campañas", onClick: campaignsAction },
-    { key: "ctr", label: "CTR", value: percent(totals.ctr, 2), note: <><b>{integer.format(totals.clicks)}</b> clics / {formatCompact(totals.impressions)} impresiones</>, hint: "Clics ÷ impresiones", onClick: campaignsAction },
-    { key: "roas", label: "ROAS", value: totals.roas === null ? "—" : `${totals.roas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`, note: <><b>{formatMoney(totals.revenue)}</b> / {formatMoney(totals.spend)} invertidos</>, hint: "Ingresos ÷ inversión", onClick: campaignsAction },
-    { key: "revenue", label: "Revenue", value: formatMoney(totals.revenue), note: totals.spend ? <><b>{formatMoney(totals.revenue - totals.spend)}</b> margen sobre inversión</> : emptyNote("Ingresos atribuidos"), hint: "Ingresos atribuidos a campañas", onClick: campaignsAction },
-    { key: "users", label: "Active users", value: summary ? summary.visitors === null ? "—" : integer.format(summary.visitors) : "…", note: summary?.visitors === null ? "Requiere la migración de visitantes" : <><b>Únicos</b> en {periodLabel}</>, hint: "Navegadores distintos que visitaron LIGHT", onClick: scrollToTraffic },
-    { key: "conversions", label: "Conversions", value: integer.format(conversions), note: <><b>{integer.format(totals.conversions)}</b> campañas{countsSubscribers ? ` · ${integer.format(newSubscribers)} suscripciones` : ""}</>, hint: "Conversiones de campañas + nuevas suscripciones", onClick: campaignsAction || (canOpen("subscribers") ? () => onNavigate("subscribers") : undefined) },
+    { key: "visits", label: "Visitas hoy", value: analyticsError ? "—" : summary ? integer.format(summary.todayViews) : "…", note: analyticsError ? "No se pudieron cargar las visitas" : <><b>{summary ? integer.format(summary.views) : "…"}</b> en {periodLabel}</>, hint: "Ver la evolución diaria de visitas", tone: "accent", onClick: scrollToTraffic },
+    { key: "spend", label: "Ad spend", value: formatMoney(totals.spend), note: totals.budget ? <><b>{percent(totals.spend / totals.budget, 0)}</b> de {formatMoney(totals.budget)} presupuesto</> : emptyNote(`${totals.count} campañas en el periodo`), hint: `${"Inversión registrada en las campañas del periodo"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "impressions", label: "Impressions", value: formatCompact(totals.impressions), note: <><b>{totals.count}</b> {emptyNote(totals.count === 1 ? "campaña en el periodo" : "campañas en el periodo")}</>, hint: `${"Impresiones registradas en las campañas"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "ctr", label: "CTR", value: percent(totals.ctr, 2), note: <><b>{integer.format(totals.clicks)}</b> clics / {formatCompact(totals.impressions)} impresiones</>, hint: `${"Clics ÷ impresiones"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "roas", label: "ROAS", value: totals.roas === null ? "—" : `${totals.roas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`, note: <><b>{formatMoney(totals.revenue)}</b> / {formatMoney(totals.spend)} invertidos</>, hint: `${"Ingresos ÷ inversión"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "revenue", label: "Revenue", value: formatMoney(totals.revenue), note: totals.spend ? <><b>{formatMoney(totals.revenue - totals.spend)}</b> margen sobre inversión</> : emptyNote("Ingresos atribuidos"), hint: `${"Ingresos atribuidos a campañas"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "users", label: "Active users", value: analyticsError ? "—" : !summary ? "…" : summary.visitors === null || (summary.visitors === 0 && summary.untrackedViews > 0) ? "—" : integer.format(summary.visitors), note: analyticsError ? "No se pudieron cargar las visitas" : summary?.visitors === null ? "Requiere la migración de visitantes" : summary && summary.untrackedViews > 0 ? <><b>{integer.format(summary.untrackedViews)}</b> visitas anteriores sin identificar</> : <><b>Únicos</b> en {periodLabel}</>, hint: "Navegadores distintos que visitaron LIGHT", onClick: scrollToTraffic },
+    { key: "conversions", label: "Conversions", value: integer.format(conversions), note: <><b>{integer.format(totals.conversions)}</b> campañas{countsSubscribers ? ` · ${integer.format(newSubscribers)} suscripciones` : ""}</>, hint: `${"Conversiones de campañas + nuevas suscripciones"} · ${PRORATE_NOTE}`, onClick: campaignsAction || (canOpen("subscribers") ? () => onNavigate("subscribers") : undefined) },
     { key: "subscribers", label: "Suscriptores", value: integer.format(subscriberCount), note: <><b>+{integer.format(newSubscribers)}</b> en {periodLabel}</>, hint: "Abrir la lista de suscriptores", tone: "newsletter", onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined },
   ];
 
@@ -104,7 +107,7 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
   const activity: Activity[] = [
     ...articles.map((article): Activity => { const isPublished = article.status === "published"; return { id: `article-${article.id}`, at: (isPublished && article.publishedAt) || article.updatedAt, icon: isPublished ? "↗" : "✎", tone: isPublished ? "acid" : "blue", title: article.title || "Sin título", text: isPublished ? "está publicada en LIGHT" : "se guardó como borrador", meta: `${article.category || "Página"} · ${article.author || "LIGHT"}`, onClick: () => onOpenArticle(article) }; }),
     ...campaigns.filter((campaign) => campaign.createdAt).map((campaign): Activity => ({ id: `campaign-${campaign.id}`, at: campaign.createdAt as string, icon: "◎", tone: "soft", title: campaign.name, text: `campaña ${campaignStatusLabel[campaignStatus(campaign)].toLowerCase()}`, meta: `Campaña · ${formatScheduleDate(campaign.startDate)} — ${formatScheduleDate(campaign.endDate)}`, onClick: canOpen("campaigns") ? () => onOpenCampaign(campaign) : undefined })),
-    ...subscribers.slice(0, 20).map((subscriber): Activity => ({ id: `subscriber-${subscriber.id}`, at: subscriber.subscribedAt, icon: "+", tone: "soft", title: "Nueva suscripción", text: "a Correspondencia LIGHT", meta: `Newsletter · ${subscriber.source}`, onClick: () => onNavigate("subscribers") })),
+    ...subscribers.slice(0, 20).map((subscriber): Activity => ({ id: `subscriber-${subscriber.id}`, at: subscriber.subscribedAt, icon: "+", tone: "soft", title: "Nueva suscripción", text: "a Correspondencia LIGHT", meta: `Newsletter · ${subscriber.source}`, onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined })),
   ].filter((item) => item.at && Number.isFinite(new Date(item.at).getTime())).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5);
 
   return <section className="performance-dashboard">
@@ -119,8 +122,9 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
     <div className="performance-kpis">
       {kpis.map((kpi) => <button type="button" key={kpi.key} className={`performance-kpi${kpi.tone ? ` performance-kpi--${kpi.tone}` : ""}`} onClick={kpi.onClick} disabled={!kpi.onClick} title={kpi.hint}><span>{kpi.label}</span><strong>{kpi.value}</strong><small>{kpi.note}</small>{kpi.onClick && <i>↗</i>}</button>)}
     </div>
+    {hasMetrics && <p className="performance-footnote">Las métricas de campaña se reparten por días: el periodo solo suma la parte de cada campaña que cae dentro de él.</p>}
 
-    <article className="performance-panel performance-panel--traffic" ref={trafficRef}><div className="performance-panel__head"><div><p className="eyebrow">Audiencia LIGHT</p><h2>Visitas de los últimos {series.length || Math.min(range, 30)} días.</h2></div><span className="performance-panel__metric">{integer.format(series.reduce((total, point) => total + point.count, 0))} <small>visitas</small></span></div><div className={`traffic-chart${series.length > 15 ? " traffic-chart--dense" : ""}`} aria-label="Visitas diarias">{series.map((point) => { const max = Math.max(...series.map((item) => item.count), 1); return <div className="traffic-chart__bar" key={point.date} title={`${point.label}: ${point.count} visitas`}><i style={{ height: `${Math.max(5, (point.count / max) * 100)}%` }} /><span>{point.label}</span></div>; })}</div></article>
+    <article className="performance-panel performance-panel--traffic" ref={trafficRef}><div className="performance-panel__head"><div><p className="eyebrow">Audiencia LIGHT</p><h2>Visitas de los últimos {series.length || Math.min(range, 30)} días.</h2></div><span className="performance-panel__metric">{integer.format(series.reduce((total, point) => total + point.count, 0))} <small>visitas</small></span></div>{analyticsError && <p className="campaign-table__empty" role="alert">No se pudieron cargar las visitas. Recarga la página para intentarlo de nuevo.</p>}<div className={`traffic-chart${series.length > 15 ? " traffic-chart--dense" : ""}`} aria-label="Visitas diarias">{series.map((point) => { const max = Math.max(...series.map((item) => item.count), 1); return <div className="traffic-chart__bar" key={point.date} title={`${point.label}: ${point.count} visitas`}><i style={{ height: `${Math.max(5, (point.count / max) * 100)}%` }} /><span>{point.label}</span></div>; })}</div></article>
 
     <div className="performance-grid performance-grid--charts">
       <article className="performance-panel performance-panel--chart"><div className="performance-panel__head"><div><p className="eyebrow">Canales · {periodLabel}</p><h2>Rendimiento por canal.</h2></div><span className="performance-panel__metric">{formatCompact(channelTotals.impressions)} <small>impresiones</small></span></div>
