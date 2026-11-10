@@ -7,8 +7,89 @@
     <meta name="description" content="LIGHT — una revista digital sobre estilo, belleza, cultura y las ideas que mueven la conversación." />
     <title>LIGHT — Revista de estilo</title>
     <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap" />
+    <script>
+      // Apply the saved theme before first paint so neither the intro nor the page flashes.
+      try { if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark"); } catch (e) {}
+    </script>
+    <style>
+      /* LIGHT intro: shown once per session, before the app bundle has even loaded. */
+      #light-intro { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; background: #f3f0ea; color: #171717; clip-path: inset(0 0 0 0); transition: clip-path 1s cubic-bezier(.76,0,.24,1); }
+      html.dark #light-intro { background: #121311; color: #f1eee7; }
+      #light-intro .li-inner { display: grid; justify-items: center; gap: 22px; width: min(1100px, 88vw); transition: transform 1s cubic-bezier(.76,0,.24,1), opacity .6s ease; }
+      #light-intro .li-kicker, #light-intro .li-tag { margin: 0; font: 400 10px/1 "DM Mono", ui-monospace, monospace; letter-spacing: .32em; text-transform: uppercase; opacity: 0; transition: opacity .9s ease .2s; }
+      #light-intro .li-kicker { display: flex; gap: 28px; }
+      #light-intro .li-word { display: flex; margin: 0; font: 500 clamp(96px, 21vw, 300px)/.78 "Playfair Display", Georgia, serif; letter-spacing: -.09em; }
+      #light-intro .li-word > span { display: block; overflow: hidden; padding: 0 .045em .06em; }
+      #light-intro .li-word > span > span { display: block; transform: translateY(105%); transition: transform 1.05s cubic-bezier(.19,1,.22,1); }
+      #light-intro .li-word > span:nth-child(2) > span { transition-delay: .07s; }
+      #light-intro .li-word > span:nth-child(3) > span { transition-delay: .14s; }
+      #light-intro .li-word > span:nth-child(4) > span { transition-delay: .21s; }
+      #light-intro .li-word > span:nth-child(5) > span { transition-delay: .28s; }
+      #light-intro .li-line { position: relative; width: min(420px, 60vw); height: 1px; overflow: hidden; background: currentColor; opacity: .14; }
+      #light-intro .li-line i { position: absolute; inset: 0; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 1.6s cubic-bezier(.65,0,.35,1) .35s; }
+      #light-intro.is-go .li-word > span > span { transform: none; }
+      #light-intro.is-go .li-kicker, #light-intro.is-go .li-tag { opacity: .62; }
+      #light-intro.is-go .li-line { opacity: 1; background: rgba(127,127,127,.25); }
+      #light-intro.is-go .li-line i { transform: scaleX(1); }
+      #light-intro.is-done { clip-path: inset(0 0 100% 0); pointer-events: none; }
+      #light-intro.is-done .li-inner { transform: translateY(-9vh); opacity: 0; }
+      /* Reduced motion: the same intro, as fades only (no rising letters, no curtain). */
+      @media (prefers-reduced-motion: reduce) {
+        #light-intro { transition: opacity .7s ease; }
+        #light-intro .li-word > span > span { transform: none; opacity: 0; transition: opacity .9s ease; }
+        #light-intro.is-go .li-word > span > span { opacity: 1; }
+        #light-intro .li-line i { transition: opacity .9s ease .3s; transform: none; opacity: 0; }
+        #light-intro.is-go .li-line i { opacity: 1; }
+        #light-intro.is-done { clip-path: none; opacity: 0; }
+        #light-intro.is-done .li-inner { transform: none; }
+      }
+    </style>
   </head>
   <body>
+    <div id="light-intro" aria-hidden="true">
+      <div class="li-inner">
+        <p class="li-kicker"><span>Revista de estilo</span><span>Moda · Belleza · Living</span></p>
+        <p class="li-word"><span><span>L</span></span><span><span>I</span></span><span><span>G</span></span><span><span>H</span></span><span><span>T</span></span></p>
+        <div class="li-line"><i></i></div>
+        <p class="li-tag">Antes de que esté de moda, está en LIGHT</p>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var intro = document.getElementById("light-intro");
+        if (!intro) return;
+        var seen = false;
+        try { seen = sessionStorage.getItem("light.intro.seen") === "1"; } catch (e) {}
+        // Once per session, and never in the editorial dashboard.
+        if (seen || location.pathname.indexOf("/admin") === 0) { intro.remove(); window.__lightIntroReady = function () {}; return; }
+        try { sessionStorage.setItem("light.intro.seen", "1"); } catch (e) {}
+        document.documentElement.style.overflow = "hidden";
+        document.documentElement.classList.add("light-intro-active");
+        var start = Date.now(), appReady = false, finished = false;
+        var MIN = 2100, MAX = 4200;
+        var go = function () { intro.classList.add("is-go"); };
+        // Animate as soon as the display face is ready (or after a short grace period).
+        if (document.fonts && document.fonts.load) {
+          var fallback = setTimeout(go, 650);
+          document.fonts.load('500 120px "Playfair Display"').then(function () { clearTimeout(fallback); requestAnimationFrame(go); }, go);
+        } else { setTimeout(go, 60); }
+        var finish = function () {
+          if (finished) return; finished = true;
+          intro.classList.add("is-done");
+          document.documentElement.style.overflow = "";
+          // Let the page's own entrance animations start as the curtain lifts.
+          setTimeout(function () { document.documentElement.classList.remove("light-intro-active"); }, 180);
+          setTimeout(function () { intro.remove(); }, 1100);
+        };
+        var check = function () { var elapsed = Date.now() - start; if ((appReady && elapsed >= MIN) || elapsed >= MAX) finish(); else setTimeout(check, 80); };
+        window.__lightIntroReady = function () { appReady = true; };
+        intro.addEventListener("click", function () { if (Date.now() - start > 900) finish(); });
+        setTimeout(check, 80);
+      })();
+    </script>
     <div id="root"></div>
     <script src="/api/platform/config.js"></script>
     <script type="module" src="/src/main.tsx"></script>

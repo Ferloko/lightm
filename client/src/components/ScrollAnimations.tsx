@@ -14,30 +14,63 @@ const selectors = [
   ".magazine-catalog",
   ".magazine-card",
   ".info-marquee",
+  ".masthead-person",
+  ".archive-article-card",
 ];
+
+const STAGGER_MS = 90;
+const MAX_STAGGER = 4;
+const REVEAL_MS = 1000;
 
 export default function ScrollAnimations() {
   useEffect(() => {
+    const root = document.documentElement;
     const selector = selectors.join(",");
+    const timers = new Set<number>();
+
+    // Once revealed, the element goes back to its own styles so its hover transitions are not slowed down.
+    const release = (element: HTMLElement) => {
+      const delay = Number.parseFloat(element.style.getPropertyValue("--reveal-delay")) || 0;
+      const timer = window.setTimeout(() => { timers.delete(timer); element.dataset.scrollRevealed = "1"; element.classList.remove("scroll-ready", "is-scroll-visible"); element.style.removeProperty("--reveal-delay"); }, REVEAL_MS + delay);
+      timers.add(timer);
+    };
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-scroll-visible");
-          observer.unobserve(entry.target);
-        }
+        // While the intro curtain is down, keep everything waiting so it enters as the curtain lifts.
+        if (!entry.isIntersecting || root.classList.contains("light-intro-active")) return;
+        const element = entry.target as HTMLElement;
+        element.classList.add("is-scroll-visible");
+        observer.unobserve(element);
+        release(element);
       });
-    }, { threshold: 0.12, rootMargin: "0px 0px -7% 0px" });
+    // Reveal once the top edge crosses 88% of the viewport. Unlike a visibility ratio, this also
+    // works for blocks taller than the screen (long article bodies), which could never reach 12%.
+    }, { threshold: 0, rootMargin: "0px 0px -12% 0px" });
 
     const prepare = (root: ParentNode = document) => {
       root.querySelectorAll<HTMLElement>(selector).forEach((element) => {
-        if (element.classList.contains("scroll-ready")) return;
-        // Never animate the dashboard or dialogs: a transform on an ancestor turns every
+        if (element.dataset.revealed) return;
+        element.dataset.revealed = "1";
+        // Reduced motion is handled in CSS (fades only). Never animate the dashboard or dialogs: a transform on an ancestor turns every
         // position:fixed child (modal backdrops, the article editor) into a box-local layer.
         if (element.closest(".admin-shell, [role='dialog'], [aria-modal='true']")) return;
+        // Siblings revealed together enter one after another.
+        const siblings = element.parentElement ? [...element.parentElement.children].filter((child) => child.matches(selector)) : [];
+        const index = Math.max(0, siblings.indexOf(element));
+        if (index) element.style.setProperty("--reveal-delay", `${(index % MAX_STAGGER) * STAGGER_MS}ms`);
         element.classList.add("scroll-ready");
         observer.observe(element);
       });
     };
+
+    // When the intro finishes, re-check what is already on screen.
+    const introObserver = new MutationObserver(() => {
+      if (root.classList.contains("light-intro-active")) return;
+      introObserver.disconnect();
+      document.querySelectorAll<HTMLElement>(".scroll-ready:not(.is-scroll-visible)").forEach((element) => { observer.unobserve(element); observer.observe(element); });
+    });
+    if (root.classList.contains("light-intro-active")) introObserver.observe(root, { attributes: true, attributeFilter: ["class"] });
 
     prepare();
     const mutationObserver = new MutationObserver(() => prepare());
@@ -65,7 +98,9 @@ export default function ScrollAnimations() {
 
     return () => {
       mutationObserver.disconnect();
+      introObserver.disconnect();
       observer.disconnect();
+      timers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("scroll", onScroll);
       document.body.classList.remove("is-scrolling-down", "is-scrolling-up");
     };

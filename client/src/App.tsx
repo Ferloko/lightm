@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trackPageView } from "@/lib/analytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -38,6 +38,23 @@ function PageViewTracker() {
     void trackPageView(location);
   }, [location]);
   return null;
+}
+
+declare global { interface Window { __lightIntroReady?: () => void } }
+
+/** Tells the static intro in index.html that the app has mounted and can be revealed. */
+function IntroReadySignal() {
+  useEffect(() => { window.__lightIntroReady?.(); }, []);
+  return null;
+}
+
+/** Fades each new page in (opacity only: a transform here would break fixed menus and dialogs) and draws a hairline progress bar. */
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const first = useRef(true);
+  const [navigations, setNavigations] = useState(0);
+  useEffect(() => { if (first.current) { first.current = false; return; } document.documentElement.classList.add("has-navigated"); setNavigations((count) => count + 1); }, [location]);
+  return <>{navigations > 0 && <div className="route-progress" key={navigations} aria-hidden="true" />}<div className="page-transition" key={location}>{children}</div></>;
 }
 
 function GlobalSearchLayer() {
@@ -92,5 +109,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><Router /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><IntroReadySignal /><PageTransition><Router /></PageTransition></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }

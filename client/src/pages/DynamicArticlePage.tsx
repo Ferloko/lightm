@@ -7,6 +7,7 @@ import { Link, useRoute } from "wouter";
 import SiteSearch from "@/components/SiteSearch";
 import { fetchPublishedArticle, type EditorialArticle } from "@/lib/editorial";
 import type { PageBlock } from "@/lib/pageBlocks";
+import { ArticleSkeleton } from "@/components/EditorialSkeleton";
 
 const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Sociedad", "Runway", "La revista", "Archivo", "Newsletter"];
 
@@ -21,7 +22,7 @@ export default function DynamicArticlePage() {
   const [loading, setLoading] = useState(true);
   useEffect(() => { let active = true; setLoading(true); void fetchPublishedArticle(decodeURIComponent(params?.slug || "")).then((next) => { if (active) setArticle(next); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [params?.slug]);
   useEffect(() => { if (article) document.title = `${article.title} — LIGHT`; return () => { document.title = "LIGHT — Revista de estilo"; }; }, [article]);
-  if (loading && !article) return <div className="dynamic-article-empty" aria-busy="true"><p className="eyebrow">LIGHT / Página</p><h1>Cargando historia…</h1></div>;
+  if (loading && !article) return <ArticleSkeleton />;
   if (!article) return <div className="dynamic-article-empty"><p className="eyebrow">LIGHT / Página</p><h1>Esta historia todavía no existe.</h1><Link href="/" className="story-link">Volver a la revista <ArrowUpRight size={15} /></Link></div>;
 
   const blocks = article.blocks || [];
