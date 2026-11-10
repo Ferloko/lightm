@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "@/components/ui/sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { trackPageView } from "@/lib/analytics";
+import { startArticleTracking } from "@/lib/articleAnalytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Redirect, Route, Switch, useLocation } from "wouter";
@@ -28,6 +29,7 @@ import ComingSoonGate from "./components/ComingSoonGate";
 
 function PageViewTracker() {
   const [location] = useLocation();
+  useEffect(() => startArticleTracking(), []);
   useEffect(() => {
     const targetId = window.location.hash.slice(1);
     if (targetId) {

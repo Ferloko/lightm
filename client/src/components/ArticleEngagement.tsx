@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { trackArticleEvent } from "@/lib/articleAnalytics";
 import { Heart, Link2 } from "lucide-react";
 import { fetchArticleLikeState, setArticleLiked, type ArticleLikeState } from "@/lib/articleLikes";
 
@@ -67,6 +68,7 @@ export default function ArticleEngagement({ articleKey }: Props) {
   const share = async () => {
     try {
       await copyCurrentUrl();
+      trackArticleEvent(articleKey, "share");
       showNotice("Enlace copiado!");
     } catch {
       showNotice("No se pudo copiar el enlace.");

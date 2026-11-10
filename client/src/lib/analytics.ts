@@ -13,7 +13,7 @@ export type PageViewSummary = { views: number; visitors: number | null; untracke
 function isMissingFunction(error: { code?: string; message?: string } | null) { return Boolean(error && (error.code === "PGRST202" || error.code === "42883" || /could not find the function/i.test(error.message || ""))); }
 
 /** Anonymous, random per-browser id used only to count unique visitors (no personal data). */
-function getVisitorId() {
+export function getVisitorId() {
   try {
     let id = localStorage.getItem(VISITOR_KEY);
     if (!id) { id = (crypto.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`); localStorage.setItem(VISITOR_KEY, id); }
@@ -32,6 +32,7 @@ function readLocalViews(): LocalView[] {
 
 export async function trackPageView(path: string) {
   if (path.startsWith("/admin") || path.startsWith("/404")) return;
+  if (/^\/historias\//i.test(path)) path = path.toLowerCase();
   if (supabase) {
     const visitorId = getVisitorId();
     let { error } = await supabase.from("page_views").insert({ path: path.slice(0, 300), ...(visitorId ? { visitor_id: visitorId } : {}) });

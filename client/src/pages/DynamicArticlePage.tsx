@@ -11,6 +11,7 @@ import type { PageBlock } from "@/lib/pageBlocks";
 import { ArticleSkeleton } from "@/components/EditorialSkeleton";
 import EditorialAccessLink from "@/components/EditorialAccessLink";
 import PublicArticleView from "@/components/PublicArticleView";
+import { articleKeyFromPath, useArticleReadTracking } from "@/lib/articleAnalytics";
 
 const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Sociedad", "Runway", "La revista", "Archivo", "Newsletter"];
 
@@ -21,6 +22,8 @@ export default function DynamicArticlePage() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  // Lectura (50 % / final) y tiempo activo, solo cuando el artículo existe y es público.
+  useArticleReadTracking(article ? articleKeyFromPath(`/historias/${params?.slug || ""}`) : null);
   useEffect(() => {
     let active = true;
     const slug = decodeURIComponent(params?.slug || "");
