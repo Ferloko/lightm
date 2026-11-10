@@ -33,17 +33,22 @@ function PageViewTracker() {
   useEffect(() => {
     const targetId = window.location.hash.slice(1);
     if (targetId) {
-      // Pages load lazily, so the anchor may not exist yet: retry for ~2s.
+      // Pages load lazily (a slow connection can take a while): wait until the anchor exists,
+      // up to 10 s, and stop if the reader navigates away first.
       let frame = 0;
-      let attempts = 0;
-      const scrollToTarget = () => {
+      const stop = () => { observer.disconnect(); window.clearTimeout(timeout); window.cancelAnimationFrame(frame); };
+      const tryScroll = () => {
         const target = document.getElementById(targetId);
-        if (target) target.scrollIntoView({ block: "start", behavior: "auto" });
-        else if (attempts++ < 120) frame = window.requestAnimationFrame(scrollToTarget);
+        if (!target) return false;
+        stop();
+        frame = window.requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: "auto" }));
+        return true;
       };
-      frame = window.requestAnimationFrame(scrollToTarget);
+      const observer = new MutationObserver(() => { tryScroll(); });
+      const timeout = window.setTimeout(stop, 10000);
+      if (!tryScroll()) observer.observe(document.body, { childList: true, subtree: true });
       void trackPageView(location);
-      return () => window.cancelAnimationFrame(frame);
+      return stop;
     }
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     void trackPageView(location);
