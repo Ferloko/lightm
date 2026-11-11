@@ -28,7 +28,7 @@ type DayLayout = { strips: (Chip | null)[]; stack: (Chip | null)[] };
 type Chip = { kind: "event"; event: CalendarEvent; isStart: boolean; isEnd: boolean } | { kind: "campaign"; campaign: Campaign; isStart: boolean; isEnd: boolean };
 
 export default function CalendarBoard({ readOnly = false, events: controlledEvents, onEventsChange, campaigns = [], onOpenCampaign }: Props) {
-  const [month, setMonth] = useState(() => { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), 1); });
+  const [month, setMonth] = useState(() => { const now = new Date(); return new Date(now.getUTCFullYear(), now.getUTCMonth(), 1); });
   const [localEvents, setLocalEvents] = useState<CalendarEvent[]>(controlledEvents || []);
   const events = controlledEvents ?? localEvents;
   // Always apply updates to the latest list, even across awaits (optimistic updates + server replies).
@@ -149,7 +149,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
       if (typing || peek || event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "ArrowLeft") setMonth((value) => new Date(value.getFullYear(), value.getMonth() - 1, 1));
       if (event.key === "ArrowRight") setMonth((value) => new Date(value.getFullYear(), value.getMonth() + 1, 1));
-      if (event.key.toLowerCase() === "t") { const now = new Date(); setMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }
+      if (event.key.toLowerCase() === "t") { const now = new Date(); setMonth(new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)); }
     };
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
   });
@@ -167,7 +167,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
       <div className="calendar-toolbar__nav">
         {campaigns.length > 0 && <label className="calendar-toggle"><input type="checkbox" checked={showCampaigns} onChange={(event) => { setShowCampaigns(event.target.checked); try { localStorage.setItem(SHOW_CAMPAIGNS_KEY, event.target.checked ? "1" : "0"); } catch { /* ignore */ } }} /> Campañas</label>}
         <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Mes anterior" title="Mes anterior (←)"><ChevronLeft size={16} /></button>
-        <button className="calendar-today" type="button" onClick={() => { const now = new Date(); setMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }} title="Hoy (T)">Hoy</button>
+        <button className="calendar-today" type="button" onClick={() => { const now = new Date(); setMonth(new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)); }} title="Hoy (T)">Hoy</button>
         <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Mes siguiente" title="Mes siguiente (→)"><ChevronRight size={16} /></button>
       </div>
     </div>
@@ -232,6 +232,6 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
 function LocalTimeLine({ start, end }: { start: string; end: string | null }) {
   const from = describeLocal(start);
   const to = end ? describeLocal(end) : null;
-  if (from.isUtc) return <p className="calendar-local-line">Tu zona ya es UTC: la hora que escribes es tu hora.</p>;
-  return <p className="calendar-local-line"><span>En tu hora</span><strong>{from.sameDay ? "" : `${from.day}, `}{from.time}{to ? ` → ${to.localDay === from.localDay ? "" : `${to.day}, `}${to.time}` : ""}</strong><small>{from.zone}</small></p>;
+  if (from.isUtc && (!to || to.isUtc)) return <p className="calendar-local-line">Tu zona ya es UTC: la hora que escribes es tu hora.</p>;
+  return <p className="calendar-local-line"><span>En tu hora</span><strong>{from.sameDay ? "" : `${from.day}, `}{from.time}{to ? ` → ${to.localDay === from.localDay ? "" : `${to.day}, `}${to.time}` : ""}</strong><small>{from.zone}{to && to.zone !== from.zone ? ` → ${to.zone}` : ""}</small></p>;
 }
