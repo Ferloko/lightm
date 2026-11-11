@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight, Maximize2, Plus, Target, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { deleteCalendarEvent, fetchCalendarEvents, saveCalendarEvent, type CalendarEvent } from "@/lib/calendar";
+import { deleteCalendarEvent, fetchCalendarEvents, saveCalendarEvent, utcTodayKey, type CalendarEvent } from "@/lib/calendar";
+import UtcTime, { describeLocal, localZoneLabel } from "@/components/UtcTime";
 import { addDaysKey, campaignStatus, todayKey, type Campaign } from "@/lib/campaigns";
 import { describeError, subscribeToTable } from "@/lib/supabase";
 
@@ -10,7 +11,7 @@ const colors = ["acid", "blue", "soft"];
 const MAX_VISIBLE = 3;
 const SHOW_CAMPAIGNS_KEY = "light.calendar.show-campaigns";
 
-/** Event times are wall-clock strings ("YYYY-MM-DDTHH:mm"); we never shift them through UTC. */
+/** Event times are UTC wall-clock strings ("YYYY-MM-DDTHH:mm"): the grid and the inputs are in UTC; UtcTime shows each viewer their local time. */
 const dayOf = (value: string) => value.slice(0, 10);
 const timeOf = (value: string) => value.slice(11, 16) || "10:00";
 const endDayOf = (event: Pick<CalendarEvent, "startAt" | "endAt">) => { const end = event.endAt ? dayOf(event.endAt) : dayOf(event.startAt); return end < dayOf(event.startAt) ? dayOf(event.startAt) : end; };
@@ -27,7 +28,7 @@ type DayLayout = { strips: (Chip | null)[]; stack: (Chip | null)[] };
 type Chip = { kind: "event"; event: CalendarEvent; isStart: boolean; isEnd: boolean } | { kind: "campaign"; campaign: Campaign; isStart: boolean; isEnd: boolean };
 
 export default function CalendarBoard({ readOnly = false, events: controlledEvents, onEventsChange, campaigns = [], onOpenCampaign }: Props) {
-  const [month, setMonth] = useState(() => { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), 1); });
+  const [month, setMonth] = useState(() => { const now = new Date(); return new Date(now.getUTCFullYear(), now.getUTCMonth(), 1); });
   const [localEvents, setLocalEvents] = useState<CalendarEvent[]>(controlledEvents || []);
   const events = controlledEvents ?? localEvents;
   // Always apply updates to the latest list, even across awaits (optimistic updates + server replies).
@@ -46,7 +47,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const days = useMemo(() => buildDays(month), [month]);
-  const today = todayKey();
+  const today = utcTodayKey(); // el calendario va en UTC
   const selecting = useRef(false);
 
   // Standalone use (no parent state): load and stay live by itself.
@@ -148,7 +149,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
       if (typing || peek || event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "ArrowLeft") setMonth((value) => new Date(value.getFullYear(), value.getMonth() - 1, 1));
       if (event.key === "ArrowRight") setMonth((value) => new Date(value.getFullYear(), value.getMonth() + 1, 1));
-      if (event.key.toLowerCase() === "t") { const now = new Date(); setMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }
+      if (event.key.toLowerCase() === "t") { const now = new Date(); setMonth(new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)); }
     };
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
   });
@@ -158,7 +159,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
   const activeCampaigns = campaigns.filter((campaign) => campaignStatus(campaign) === "active").length;
 
   return <section className={`calendar-board${peek ? " has-peek" : ""}`}>
-    <div className="calendar-heading"><div><p className="eyebrow">LIGHT / Equipo editorial</p><h2>Calendario.</h2><p>Arrastra para mover, selecciona varios días para crear un evento largo y haz clic para abrirlo en el panel lateral. Todo se comparte en directo con el equipo.</p></div>{!readOnly && <button className="admin-primary" type="button" onClick={() => openPeek({ title: "", description: "", startAt: `${today}T10:00`, endAt: null, allDay: true, color: "acid" })}><Plus size={15} /> Nuevo evento</button>}</div>
+    <div className="calendar-heading"><div><p className="eyebrow">LIGHT / Equipo editorial</p><h2>Calendario.</h2><p className="calendar-utc-note">Las horas se escriben y se ven en <strong>UTC</strong>. Pasa el ratón por una hora para ver la tuya ({localZoneLabel()}).</p><p>Arrastra para mover, selecciona varios días para crear un evento largo y haz clic para abrirlo en el panel lateral. Todo se comparte en directo con el equipo.</p></div>{!readOnly && <button className="admin-primary" type="button" onClick={() => openPeek({ title: "", description: "", startAt: `${today}T10:00`, endAt: null, allDay: true, color: "acid" })}><Plus size={15} /> Nuevo evento</button>}</div>
     {error && <p className="admin-notice admin-notice--error" role="alert">{error} <button type="button" className="calendar-inline-link" onClick={() => setError("")}>Cerrar</button></p>}
     <div className="calendar-toolbar">
       <strong>{monthLabel(month)}</strong>
@@ -166,7 +167,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
       <div className="calendar-toolbar__nav">
         {campaigns.length > 0 && <label className="calendar-toggle"><input type="checkbox" checked={showCampaigns} onChange={(event) => { setShowCampaigns(event.target.checked); try { localStorage.setItem(SHOW_CAMPAIGNS_KEY, event.target.checked ? "1" : "0"); } catch { /* ignore */ } }} /> Campañas</label>}
         <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Mes anterior" title="Mes anterior (←)"><ChevronLeft size={16} /></button>
-        <button className="calendar-today" type="button" onClick={() => { const now = new Date(); setMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }} title="Hoy (T)">Hoy</button>
+        <button className="calendar-today" type="button" onClick={() => { const now = new Date(); setMonth(new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)); }} title="Hoy (T)">Hoy</button>
         <button type="button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Mes siguiente" title="Mes siguiente (→)"><ChevronRight size={16} /></button>
       </div>
     </div>
@@ -194,7 +195,7 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
               return <button type="button" key={`e-${event.id}`} className={`calendar-event calendar-event--${event.color}${edge}${dragging?.id === event.id ? " is-dragging" : ""}${pending ? " is-pending" : ""}`}
                 draggable={!readOnly && !pending} onDragStart={(drag) => { drag.dataTransfer.effectAllowed = "move"; drag.dataTransfer.setData("text/plain", event.id); setDragging({ id: event.id, grabDay: key }); }} onDragEnd={() => { setDragging(null); setDropDay(null); }}
                 onClick={() => !pending && openEvent(event)} title={event.title}>
-                {(chip.isStart || index % 7 === 0) ? <>{!event.allDay && chip.isStart && <time>{timeOf(event.startAt)}</time>}{event.title || "Sin título"}</> : " "}
+                {(chip.isStart || index % 7 === 0) ? <>{!event.allDay && chip.isStart && <UtcTime value={event.startAt} />}{event.title || "Sin título"}</> : " "}
               </button>;
             })}
             {(hiddenCount > 0 || expanded) && <button type="button" className="calendar-more" onClick={() => setExpandedDay(expanded ? null : key)}>{expanded ? "Mostrar menos" : `+${hiddenCount} más`}</button>}
@@ -213,14 +214,24 @@ export default function CalendarBoard({ readOnly = false, events: controlledEven
         <textarea className="calendar-peek__title" autoFocus={!peek.id} rows={1} value={peek.title || ""} placeholder="Sin título" onChange={(event) => setPeek({ ...peek, title: event.target.value.replace(/\n/g, "") })} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void savePeek(); } }} />
         <div className="calendar-peek__props">
           <span>Todo el día</span><label className="calendar-switch"><input type="checkbox" checked={peek.allDay ?? true} onChange={(event) => setPeek({ ...peek, allDay: event.target.checked })} /><i /></label>
-          <span>Inicio</span><div className="calendar-peek__when"><input type="date" value={dayOf(peek.startAt)} onChange={(event) => { if (!event.target.value) return; const delta = daysBetween(dayOf(peek.startAt), event.target.value); setPeek({ ...peek, startAt: `${event.target.value}T${timeOf(peek.startAt)}`, endAt: peek.endAt ? `${addDaysKey(dayOf(peek.endAt), delta)}T${timeOf(peek.endAt)}` : null }); }} />{!(peek.allDay ?? true) && <input type="time" value={timeOf(peek.startAt)} onChange={(event) => setPeek({ ...peek, startAt: `${dayOf(peek.startAt)}T${event.target.value || "10:00"}` })} />}</div>
-          <span>Final</span><div className="calendar-peek__when"><input type="date" min={dayOf(peek.startAt)} value={peek.endAt ? dayOf(peek.endAt) : ""} onChange={(event) => setPeek({ ...peek, endAt: event.target.value ? `${event.target.value}T${peek.endAt ? timeOf(peek.endAt) : timeOf(peek.startAt)}` : null })} />{!(peek.allDay ?? true) && peek.endAt && <input type="time" value={timeOf(peek.endAt)} onChange={(event) => setPeek({ ...peek, endAt: `${dayOf(peek.endAt || peek.startAt)}T${event.target.value || "11:00"}` })} />}{peek.endAt && <button type="button" className="calendar-inline-link" onClick={() => setPeek({ ...peek, endAt: null })}>Quitar</button>}</div>
+          <span>Inicio <small className="calendar-utc-tag">UTC</small></span><div className="calendar-peek__when"><input type="date" value={dayOf(peek.startAt)} onChange={(event) => { if (!event.target.value) return; const delta = daysBetween(dayOf(peek.startAt), event.target.value); setPeek({ ...peek, startAt: `${event.target.value}T${timeOf(peek.startAt)}`, endAt: peek.endAt ? `${addDaysKey(dayOf(peek.endAt), delta)}T${timeOf(peek.endAt)}` : null }); }} />{!(peek.allDay ?? true) && <input type="time" value={timeOf(peek.startAt)} onChange={(event) => setPeek({ ...peek, startAt: `${dayOf(peek.startAt)}T${event.target.value || "10:00"}` })} />}</div>
+          <span>Final <small className="calendar-utc-tag">UTC</small></span><div className="calendar-peek__when"><input type="date" min={dayOf(peek.startAt)} value={peek.endAt ? dayOf(peek.endAt) : ""} onChange={(event) => setPeek({ ...peek, endAt: event.target.value ? `${event.target.value}T${peek.endAt ? timeOf(peek.endAt) : timeOf(peek.startAt)}` : null })} />{!(peek.allDay ?? true) && peek.endAt && <input type="time" value={timeOf(peek.endAt)} onChange={(event) => setPeek({ ...peek, endAt: `${dayOf(peek.endAt || peek.startAt)}T${event.target.value || "11:00"}` })} />}{peek.endAt && <button type="button" className="calendar-inline-link" onClick={() => setPeek({ ...peek, endAt: null })}>Quitar</button>}</div>
           <span>Color</span><div className="calendar-modal__colors">{colors.map((color) => <button type="button" key={color} className={`calendar-color calendar-color--${color} ${(peek.color || "acid") === color ? "is-active" : ""}`} onClick={() => setPeek({ ...peek, color })} aria-label={`Color ${color}`} />)}</div>
         </div>
+        {!(peek.allDay ?? true) && <LocalTimeLine start={peek.startAt} end={peek.endAt ?? null} />}
         <textarea className="calendar-peek__notes" value={peek.description || ""} onChange={(event) => setPeek({ ...peek, description: event.target.value })} placeholder="Añade notas para el equipo…" rows={8} />
       </fieldset>
       {!readOnly && <div className="calendar-peek__actions"><button className="admin-secondary" type="button" onClick={() => setPeek(null)}>Descartar</button><button className="admin-primary" type="button" disabled={saving || !peek.title?.trim()} onClick={() => void savePeek()}>{saving ? "Guardando…" : peek.id ? "Guardar" : "Crear evento"}</button></div>}
       <p className="calendar-peek__hint">{longDay(dayOf(peek.startAt))}{peek.endAt && dayOf(peek.endAt) !== dayOf(peek.startAt) ? ` → ${longDay(dayOf(peek.endAt))}` : ""}</p>
     </aside></div>, document.body)}
   </section>;
+}
+
+
+/** En la ficha: la hora UTC elegida convertida en directo a la hora local de quien la edita. */
+function LocalTimeLine({ start, end }: { start: string; end: string | null }) {
+  const from = describeLocal(start);
+  const to = end ? describeLocal(end) : null;
+  if (from.isUtc && (!to || to.isUtc)) return <p className="calendar-local-line">Tu zona ya es UTC: la hora que escribes es tu hora.</p>;
+  return <p className="calendar-local-line"><span>En tu hora</span><strong>{from.sameDay ? "" : `${from.day}, `}{from.time}{to ? ` → ${to.localDay === from.localDay ? "" : `${to.day}, `}${to.time}` : ""}</strong><small>{from.zone}{to && to.zone !== from.zone ? ` → ${to.zone}` : ""}</small></p>;
 }
