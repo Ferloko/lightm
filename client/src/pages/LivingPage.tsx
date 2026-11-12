@@ -1,4 +1,5 @@
 import SiteMenuOverlay from "@/components/SiteMenuOverlay";
+import { usePageBanner } from "@/lib/pageBanners";
 import { ArrowUpRight, Menu, Search } from "lucide-react";
 import { useState } from "react";
 import type { CSSProperties } from "react";
@@ -43,9 +44,10 @@ function Rating({ value, size = "md" }: { value: number; size?: "sm" | "md" | "l
   return <span className={`living-rating living-rating--${size}`} aria-label={`${fmt(value)} sobre 5`}><strong>{fmt(value)}</strong><span className="living-rating__marks" aria-hidden="true">{[1, 2, 3, 4, 5].map((mark) => <i key={mark} style={{ "--fill": `${Math.max(0, Math.min(1, value - mark + 1)) * 100}%` } as CSSProperties} />)}</span></span>;
 }
 const Price = ({ level }: { level: number }) => <span className="living-price" aria-label={`Precio ${level} de 4`}>{[1, 2, 3, 4].map((step) => <b key={step} className={step <= level ? "is-on" : ""}>$</b>)}</span>;
-function GuideImage({ src, alt = "" }: { src: string; alt?: string }) { return <img src={src} alt={alt} loading="lazy" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} />; }
+function GuideImage({ src, alt = "", position }: { src: string; alt?: string; position?: string }) { return <img src={src} alt={alt} loading="lazy" style={position ? { objectPosition: position } : undefined} onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} />; }
 
 export default function LivingPage() {
+  const banner = usePageBanner("living");
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("todo");
   const [cover, ...resortGrid] = resorts;
@@ -56,7 +58,7 @@ export default function LivingPage() {
     {menuOpen && <SiteMenuOverlay onClose={() => setMenuOpen(false)} />}
     <main>
       <section className="lg-hero">
-        <div className="lg-hero__media"><GuideImage src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=2200&q=90" alt="Piscina de un resort frente al mar al atardecer" /></div>
+        <div className="lg-hero__media"><GuideImage src={banner.image} position={banner.position} alt="Piscina de un resort frente al mar al atardecer" /></div>
         <div className="lg-hero__copy">
           <p className="lg-hero__kicker">LIGHT Living · The Guide · Edición 2026</p>
           <h1>Donde <em>quedarse,</em><br />dónde cenar,<br />qué <em>no perderse.</em></h1>

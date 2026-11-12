@@ -100,7 +100,7 @@ export async function getEditorialUser(): Promise<EditorialUser | null> {
 }
 
 export function createArticle(author: string): EditorialArticle {
-  return { id: crypto.randomUUID(), slug: "", eyebrow: "LIGHT / PORTADA", title: "", category: "Moda", excerpt: "", lead: "", readingTime: "8 min de lectura", date: new Date().toISOString().slice(0, 10), body: "", blocks: starterBlocks(), image: "", imageCaption: "", status: "draft", isVisible: true, isFeatured: false, featuredOrder: 99, author, updatedAt: new Date().toISOString() };
+  return { id: crypto.randomUUID(), slug: "", eyebrow: "LIGHT / PORTADA", title: "", category: "Moda", excerpt: "", lead: "", readingTime: "", date: new Date().toISOString().slice(0, 10), body: "", blocks: starterBlocks(), image: "", imageCaption: "", status: "draft", isVisible: true, isFeatured: false, featuredOrder: 99, author, updatedAt: new Date().toISOString() };
 }
 
 const fullColumns = "id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,published_at,updated_at,author_id,author_name";

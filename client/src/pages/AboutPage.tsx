@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
+import { usePageBanner } from "@/lib/pageBanners";
 import { useEffect } from "react";
 import { Link } from "wouter";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
@@ -18,6 +19,7 @@ const principles: { title: string; body: string }[] = [
 ];
 
 export default function AboutPage() {
+  const banner = usePageBanner("about");
   useEffect(() => { document.title = "About Us — LIGHT"; return () => { document.title = "LIGHT — Revista de estilo"; }; }, []);
   return <EditorialPageLayout activePath="/about">
     <section className="about-hero about-hero--art">
@@ -26,7 +28,7 @@ export default function AboutPage() {
         <h1>Antes de que esté de moda, <em>está en LIGHT.</em></h1>
         <div className="about-hero__foot"><p>LIGHT es una revista digital sobre estilo, belleza, cultura y las ideas que mueven la conversación.</p><span>About Us</span></div>
       </div>
-      <HeroArt src="/images/GTA51.webp" caption="LIGHT / Quiénes somos" position="center 25%" />
+      <HeroArt src={banner.image} position={banner.position} caption="LIGHT / Quiénes somos" />
     </section>
 
     <section className="about-manifesto">
