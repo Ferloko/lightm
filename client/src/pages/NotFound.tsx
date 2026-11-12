@@ -28,7 +28,7 @@ export default function NotFound() {
     robots.name = "robots";
     robots.content = "noindex";
     document.head.appendChild(robots);
-    document.title = "Página no encontrada — LIGHT";
+    document.title = "LIGHT Website - Revista de estilo";
 
     // Full-page navigation: a client-side route change sends no request, so no 404 status.
     // The path the visitor tried is kept so the page can still name it after the redirect.
@@ -39,7 +39,7 @@ export default function NotFound() {
       try { setMissingPath(sessionStorage.getItem(MISSING_PATH_KEY)); sessionStorage.removeItem(MISSING_PATH_KEY); } catch { /* optional */ }
     }
 
-    return () => { robots.remove(); document.title = "LIGHT — Revista de estilo"; };
+    return () => { robots.remove(); document.title = "LIGHT Website - Revista de estilo"; };
   }, []);
 
   return <EditorialPageLayout activePath="">

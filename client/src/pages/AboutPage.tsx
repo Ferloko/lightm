@@ -20,7 +20,7 @@ const principles: { title: string; body: string }[] = [
 
 export default function AboutPage() {
   const banner = usePageBanner("about");
-  useEffect(() => { document.title = "About Us — LIGHT"; return () => { document.title = "LIGHT — Revista de estilo"; }; }, []);
+  useEffect(() => { document.title = "LIGHT Website - Revista de estilo"; return () => { document.title = "LIGHT Website - Revista de estilo"; }; }, []);
   return <EditorialPageLayout activePath="/about">
     <section className="about-hero about-hero--art">
       <div className="about-hero__copy">
