@@ -34,7 +34,7 @@ export default function MastheadPage() {
   const peopleCount = staffed.reduce((total, member) => total + member.people.length, 0);
 
   return <EditorialPageLayout activePath="/masthead">
-    <section className="masthead-hero" style={banner.custom ? { backgroundImage: `url(${JSON.stringify(banner.image)})`, backgroundPosition: banner.position } : undefined}>
+    <section className="masthead-hero" style={!banner.ready ? { backgroundImage: "none" } : banner.custom ? { backgroundImage: `url(${JSON.stringify(banner.image)})`, backgroundPosition: banner.position } : undefined}>
       <p className="eyebrow">LIGHT / PEOPLE</p>
       <h1>Las personas<br /><em>detrás de la mirada.</em></h1>
       <p>El equipo que imagina, edita y acompaña las historias de LIGHT.</p>

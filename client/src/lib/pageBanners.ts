@@ -1,4 +1,4 @@
-import { getContentSetting, saveContentSetting, useContentSetting } from "./contentSettings";
+import { getContentSetting, readCachedSetting, saveContentSetting, useContentSetting } from "./contentSettings";
 import { safeImageUrl } from "./utils";
 
 /**
@@ -8,7 +8,15 @@ import { safeImageUrl } from "./utils";
  */
 export type BannerKey = "moda" | "belleza" | "eventos" | "sociedad" | "living" | "runway" | "archivo" | "masthead" | "business" | "about" | "sobre-moda" | "newsletter" | "privacidad" | "terminos" | "cookies" | "not-found";
 export type BannerOverride = { image: string; focus: number };          // focus: encuadre vertical 0–100 %
-export type PageBanner = { image: string; position: string; custom: boolean };
+export type PageBanner = { image: string; position: string; custom: boolean; ready: boolean };
+
+/** Solo https:// o rutas del propio sitio (/images/…): nada de http:// (contenido mixto). */
+export function safeBannerUrl(value: string | null | undefined): string {
+  const url = safeImageUrl(value);
+  return url && (url.startsWith("/") || url.startsWith("https://")) ? url : "";
+}
+
+const TRANSPARENT = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 export type BannerPage = { key: BannerKey; label: string; path: string; group: string; image: string; focus: number };
 
 const unsplash = (id: string, width = 1600) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=88`;
@@ -52,16 +60,33 @@ function normalize(value: unknown): PageBannerOverrides {
 export function bannerFor(key: BannerKey, overrides: PageBannerOverrides): PageBanner {
   const page = bannerPages.find((item) => item.key === key)!;
   const override = overrides[key];
-  const image = safeImageUrl(override?.image) || page.image;
+  const image = safeBannerUrl(override?.image) || page.image;
   const focus = override ? override.focus : page.focus;
-  return { image, position: `center ${focus}%`, custom: Boolean(override && (safeImageUrl(override.image) || override.focus !== page.focus)) };
+  return { image, position: `center ${focus}%`, custom: Boolean(override && (safeBannerUrl(override.image) || override.focus !== page.focus)), ready: true };
 }
 
 /** Banner vigente de una hoja (original o el elegido en el Dashboard), en directo. */
 export function usePageBanner(key: BannerKey): PageBanner {
-  const [overrides] = useContentSetting<PageBannerOverrides>(pageBannersKey, {}, normalize);
+  const [overrides, loading] = useContentSetting<PageBannerOverrides>(pageBannersKey, {}, normalize);
+  // Primera visita (sin caché): no enseñar la imagen original mientras llega la elegida en el Dashboard.
+  if (loading && readCachedSetting(pageBannersKey) === null) return { image: TRANSPARENT, position: "center", custom: false, ready: false };
   return bannerFor(key, overrides);
 }
 
 export async function fetchPageBanners(): Promise<PageBannerOverrides> { return normalize(await getContentSetting<unknown>(pageBannersKey, {})); }
 export async function savePageBanners(overrides: PageBannerOverrides) { return saveContentSetting(pageBannersKey, normalize(overrides)); }
+
+/**
+ * Guarda solo las hojas que cambiaron respecto a `base` (lo que se cargó), encima de lo último que
+ * hay en la base: si otra persona cambió otra hoja mientras tanto, su cambio se conserva.
+ */
+export async function savePageBannerChanges(base: PageBannerOverrides, next: PageBannerOverrides): Promise<PageBannerOverrides> {
+  const latest = await fetchPageBanners();
+  const merged: PageBannerOverrides = { ...latest };
+  for (const page of bannerPages) {
+    if (JSON.stringify(base[page.key]) === JSON.stringify(next[page.key])) continue;
+    if (next[page.key]) merged[page.key] = next[page.key]; else delete merged[page.key];
+  }
+  await savePageBanners(merged);
+  return normalize(merged);
+}

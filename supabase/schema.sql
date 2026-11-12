@@ -1172,3 +1172,18 @@ as $$
   from (values ('overview'), ('editions'), ('runway'), ('masthead'), ('homepage-feature'), ('banners'), ('coming-soon'),
                ('calendar'), ('campaigns'), ('subscribers'), ('comments'), ('deletion-requests'), ('team')) as s(section)
 $$;
+
+-- Tiempo de lectura automático (ver supabase/migrations/20261116_reading_time_auto.sql).
+alter table public.articles add column if not exists reading_time_auto boolean not null default true;
+
+create or replace function public.article_reading_minutes(p_title text, p_excerpt text, p_lead text, p_blocks jsonb)
+returns int language sql immutable set search_path = public as $$
+  select greatest(1, round((
+    select count(*) from regexp_matches(
+      concat_ws(' ', p_title, p_excerpt, p_lead, (
+        select string_agg(b->>'content', ' ')
+        from jsonb_array_elements(case when jsonb_typeof(p_blocks) = 'array' then p_blocks else '[]'::jsonb end) b
+        where b->>'type' in ('paragraph', 'heading', 'quote'))),
+      '[[:alnum:]’'']+', 'g')
+  ) / 220.0))::int
+$$;

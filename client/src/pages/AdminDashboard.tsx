@@ -32,7 +32,7 @@ import { resetEditorialAccess } from "@/components/EditorialAccessLink";
 import BannersManager from "@/components/BannersManager";
 import ArticleStatsPanel, { ArticleRowStats } from "@/components/ArticleStatsPanel";
 import { useArticleStats } from "@/lib/articleAnalytics";
-import { resolveReadingTime } from "@/lib/readingTime";
+import { isAutoReadingTime, resolveReadingTime } from "@/lib/readingTime";
 
 
 function SubscribersView({ subscribers, canEdit, onDelete }: { subscribers: NewsletterSubscriber[]; canEdit: boolean; onDelete: (subscriber: NewsletterSubscriber) => void }) {
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     if (status === "published" && !session.canPublish) { setNotice("Solo Owner y Admin pueden publicar páginas."); return; }
     const stored = articles.find((article) => article.id === editing.id);
     const wasPublished = Boolean(stored?.publishedAt || stored?.status === "published");
-    const next = { ...editing, readingTime: resolveReadingTime(editing), slug: resolveArticleSlug(editing, wasPublished), status, updatedAt: new Date().toISOString() };
+    const next = { ...editing, readingTime: resolveReadingTime(editing), readingTimeAuto: isAutoReadingTime(editing), slug: resolveArticleSlug(editing, wasPublished), status, updatedAt: new Date().toISOString() };
     try {
       const saved = await saveRemoteArticle(next);
       if (!saved) { setNotice(status === "published" ? "No se pudo publicar la página." : "No se pudo guardar la edición."); return; }
