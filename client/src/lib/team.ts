@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 import type { EditorialRole } from "./editorial";
 
-export type DashboardSection = "overview" | "editions" | "runway" | "masthead" | "homepage-feature" | "coming-soon" | "calendar" | "campaigns" | "subscribers" | "comments" | "deletion-requests" | "team";
+export type DashboardSection = "overview" | "editions" | "runway" | "masthead" | "homepage-feature" | "banners" | "coming-soon" | "calendar" | "campaigns" | "subscribers" | "comments" | "deletion-requests" | "team";
 export type SectionAccess = { view: boolean; edit: boolean };
 export type DashboardPermissions = Record<DashboardSection, SectionAccess>;
 export type DbRole = "owner" | "admin" | "staff_writer";
@@ -12,6 +12,7 @@ export const dashboardSections: { key: DashboardSection; label: string; help: st
   { key: "runway", label: "Runway", help: "Firmas y pasarelas." },
   { key: "masthead", label: "Masthead", help: "Equipo, modelos y sus hojas." },
   { key: "homepage-feature", label: "Destacado", help: "Destacado del homepage y ubicaciones en portada/Archivo." },
+  { key: "banners", label: "Banners", help: "Imagen de cabecera de cada hoja pública." },
   { key: "coming-soon", label: "Próximamente", help: "Cerrar o abrir secciones al público." },
   { key: "calendar", label: "Calendario", help: "Eventos compartidos." },
   { key: "campaigns", label: "Campañas", help: "Ventanas de campaña." },
@@ -31,7 +32,7 @@ const noAccess = (): DashboardPermissions => Object.fromEntries(dashboardSection
 function legacyPermissions(role: EditorialRole): DashboardPermissions {
   if (role !== "Staff Writer") return { ...allAccess(), team: { view: role === "Owner", edit: role === "Owner" } };
   const result = noAccess();
-  (["overview", "editions", "runway", "homepage-feature", "coming-soon", "calendar", "campaigns", "subscribers"] as DashboardSection[]).forEach((key) => { result[key] = { view: true, edit: false }; });
+  (["overview", "editions", "runway", "homepage-feature", "banners", "coming-soon", "calendar", "campaigns", "subscribers"] as DashboardSection[]).forEach((key) => { result[key] = { view: true, edit: false }; });
   return result;
 }
 

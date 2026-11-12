@@ -1,4 +1,5 @@
 import { ArrowUpRight, Search } from "lucide-react";
+import { usePageBanner } from "@/lib/pageBanners";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
@@ -19,6 +20,7 @@ const suggestions: [string, string, string][] = [
 // Render for unknown routes and for items the server confirmed missing (e.g. `/page/:id`).
 // The redirect is irreversible: never render while loading, on other errors, or before auth resolves.
 export default function NotFound() {
+  const banner = usePageBanner("not-found");
   const [missingPath, setMissingPath] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function NotFound() {
     robots.name = "robots";
     robots.content = "noindex";
     document.head.appendChild(robots);
-    document.title = "Página no encontrada — LIGHT";
+    document.title = "LIGHT Website - Revista de estilo";
 
     // Full-page navigation: a client-side route change sends no request, so no 404 status.
     // The path the visitor tried is kept so the page can still name it after the redirect.
@@ -37,12 +39,12 @@ export default function NotFound() {
       try { setMissingPath(sessionStorage.getItem(MISSING_PATH_KEY)); sessionStorage.removeItem(MISSING_PATH_KEY); } catch { /* optional */ }
     }
 
-    return () => { robots.remove(); document.title = "LIGHT — Revista de estilo"; };
+    return () => { robots.remove(); document.title = "LIGHT Website - Revista de estilo"; };
   }, []);
 
   return <EditorialPageLayout activePath="">
     <section className="not-found">
-      <div className="not-found__top"><div className="not-found__number" aria-hidden="true"><span>4</span><em>0</em><span>4</span></div><HeroArt src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1400&q=85" caption="LIGHT / Fuera de edición" position="center 30%" /></div>
+      <div className="not-found__top"><div className="not-found__number" aria-hidden="true"><span>4</span><em>0</em><span>4</span></div><HeroArt src={banner.image} position={banner.position} caption="LIGHT / Fuera de edición" /></div>
       <div className="not-found__copy">
         <p className="eyebrow">LIGHT / Fuera de edición</p>
         <h1>Esta página no está <em>en ninguna edición.</em></h1>

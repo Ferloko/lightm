@@ -35,7 +35,7 @@ export default function DynamicArticlePage() {
     document.addEventListener("visibilitychange", onVisible);
     return () => { active = false; document.removeEventListener("visibilitychange", onVisible); };
   }, [params?.slug]);
-  useEffect(() => { if (article) document.title = `${article.title} — LIGHT`; return () => { document.title = "LIGHT — Revista de estilo"; }; }, [article]);
+  useEffect(() => { if (article) document.title = `${article.title} — LIGHT Website - Revista de estilo`; return () => { document.title = "LIGHT Website - Revista de estilo"; }; }, [article]);
   if (loading && !article) return <ArticleSkeleton />;
   if (!article) return <div className="dynamic-article-empty"><p className="eyebrow">LIGHT / Página</p><h1>Esta historia todavía no existe.</h1><Link href="/" className="story-link">Volver a la revista <ArrowUpRight size={15} /></Link></div>;
 

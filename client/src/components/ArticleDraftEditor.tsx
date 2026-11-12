@@ -5,11 +5,13 @@ import type { EditorialArticle } from "@/lib/editorial";
 import type { GridLayout, PageBlock, PageBlockType } from "@/lib/pageBlocks";
 import CleanArticlePreview from "@/components/CleanArticlePreview";
 import { ImageUrlFrame } from "@/components/InlineEditing";
+import { countArticleWords, formatReadingTime, isAutoReadingTime, readingMinutes, WORDS_PER_MINUTE } from "@/lib/readingTime";
+
+const WORDS_PER_MINUTE_LABEL = `${WORDS_PER_MINUTE} palabras por minuto`;
 
 type Props = { article: EditorialArticle; canPublish: boolean; notice: string; onChange: (patch: Partial<EditorialArticle>) => void; onSaveDraft: () => void; onPublish: () => void; onBack: () => void };
 type GridColumn = "left" | "right";
 
-const WORDS_PER_MINUTE = 220;
 const placeholders: Partial<Record<PageBlockType, string>> = { heading: "Escribe un subtítulo…", paragraph: "Escribe el siguiente párrafo de tu historia…", quote: "Una frase que merece espacio…" };
 
 function AutoResizeTextarea({ value, onChange, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -19,7 +21,6 @@ function AutoResizeTextarea({ value, onChange, className, ...props }: TextareaHT
 }
 
 function blockLabel(block: PageBlock) { return block.type === "paragraph" ? "Párrafo" : block.type === "heading" ? "Subtítulo" : block.type === "image" ? "Imagen" : block.type === "quote" ? "Cita" : block.type === "divider" ? "Separador" : block.type === "grid" ? "Cuadrícula" : "Botón"; }
-function countWords(article: EditorialArticle) { const text = [article.title, article.excerpt, article.lead, ...article.blocks.filter((block) => ["paragraph", "heading", "quote"].includes(block.type)).map((block) => block.content)].join(" "); return (text.match(/[\p{L}\p{N}’']+/gu) || []).length; }
 function useEscape(onEscape: () => void, active = true) { useEffect(() => { if (!active) return; const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onEscape(); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onEscape, active]); }
 
 export default function ArticleDraftEditor({ article, canPublish, notice, onChange, onSaveDraft, onPublish, onBack }: Props) {
@@ -34,8 +35,9 @@ export default function ArticleDraftEditor({ article, canPublish, notice, onChan
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot(article));
   useEffect(() => { setSavedSnapshot(snapshot(article)); }, [article.id, article.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   const dirty = snapshot(article) !== savedSnapshot;
-  const words = countWords(article);
-  const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+  const words = countArticleWords(article);
+  const minutes = readingMinutes(words);
+  const autoReading = isAutoReadingTime(article);
 
   // Ctrl/Cmd + S saves the draft; closing the tab with unsaved changes asks first.
   useEffect(() => {
@@ -66,7 +68,7 @@ export default function ArticleDraftEditor({ article, canPublish, notice, onChan
   const placedInGrid = new Set(article.blocks.flatMap((block) => block.type === "grid" && block.gridColumns ? [...block.gridColumns.left, ...block.gridColumns.right] : []));
   const topLevelBlocks = article.blocks.filter((block) => !placedInGrid.has(block.id));
   // The section is chosen before opening the editor, so it is not shown here; authorship is fixed at creation.
-  const meta = <dl className="article-draft-meta"><div><dt>Autoría</dt><dd>{article.author || "LIGHT"}</dd></div><div><dt>Lectura</dt><dd className="article-draft-meta__row"><input value={article.readingTime || ""} placeholder={`${minutes} min de lectura`} onChange={(event) => onChange({ readingTime: event.target.value })} aria-label="Tiempo de lectura" /><button type="button" onClick={() => onChange({ readingTime: `${minutes} min de lectura` })} title={`Calcular a partir de ${words} palabras`}>Calcular · {minutes} min</button></dd></div><div><dt>Fecha</dt><dd><input type="date" value={article.date || ""} onChange={(event) => onChange({ date: event.target.value })} aria-label="Fecha" /></dd></div></dl>;
+  const meta = <dl className="article-draft-meta"><div><dt>Autoría</dt><dd>{article.author || "LIGHT"}</dd></div><div><dt>Lectura</dt><dd className="article-draft-meta__row">{autoReading ? <><span className="reading-auto" title={`${words} palabras · ${WORDS_PER_MINUTE_LABEL}`}>{formatReadingTime(minutes)}<small>Automático · {words} palabras</small></span><button type="button" onClick={() => onChange({ readingTimeAuto: false, readingTime: formatReadingTime(minutes) })}>Escribir a mano</button></> : <><input value={article.readingTime} onChange={(event) => onChange({ readingTime: event.target.value })} aria-label="Tiempo de lectura" placeholder={formatReadingTime(minutes)} /><button type="button" onClick={() => onChange({ readingTimeAuto: true, readingTime: formatReadingTime(minutes) })} title={`Calcular a partir de ${words} palabras`}>Automático · {minutes} min</button></>}</dd></div><div><dt>Fecha</dt><dd><input type="date" value={article.date || ""} onChange={(event) => onChange({ date: event.target.value })} aria-label="Fecha" /></dd></div></dl>;
 
   const renderGrid = (grid: PageBlock) => { const split = Math.min(78, Math.max(22, grid.gridSplit || (grid.gridLayout === "left" ? 58 : 42))); return <div className="draft-grid-shell"><p className="draft-grid-shell__hint">Arrastra bloques de la página a cada columna. Usa el separador central para ajustar el ancho.</p><div className={`draft-grid draft-grid--${grid.gridLayout || "left"}`} style={{ "--grid-split": `${split}%` } as CSSProperties}><GridColumnEditor label="Cuadro izquierda" ids={grid.gridColumns?.left || []} blocks={article.blocks} gridId={grid.id} column="left" dragging={Boolean(draggedBlockId && draggedBlockId !== grid.id)} onDrop={placeInGrid} onRemove={removeFromGrid} onChange={updateBlock} onDragBlock={setDraggedBlockId} /><GridColumnEditor label="Cuadro derecha" ids={grid.gridColumns?.right || []} blocks={article.blocks} gridId={grid.id} column="right" dragging={Boolean(draggedBlockId && draggedBlockId !== grid.id)} onDrop={placeInGrid} onRemove={removeFromGrid} onChange={updateBlock} onDragBlock={setDraggedBlockId} /></div><GridResizeHandle split={split} onResize={(next) => updateBlock(grid.id, { gridSplit: next })} /></div>; };
 

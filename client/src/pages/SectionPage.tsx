@@ -1,4 +1,5 @@
 import SiteMenuOverlay from "@/components/SiteMenuOverlay";
+import { usePageBanner } from "@/lib/pageBanners";
 import FollowLinks from "@/components/FollowLinks";
 import { ArrowUpRight, Mail, Menu, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ export default function SectionPage({ section }: { section: SectionKey }) {
   const [articles, setArticles] = useState<EditorialArticle[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
   const current = sections[section];
+  const banner = usePageBanner(section);
 
   useEffect(() => {
     let active = true;
@@ -60,7 +62,7 @@ export default function SectionPage({ section }: { section: SectionKey }) {
     {menuOpen && <SiteMenuOverlay onClose={() => setMenuOpen(false)} />}
     <main>
       <section className="subpage-hero subpage-hero--living-layout">
-        <div className="subpage-hero__image"><img src={current.image} alt={`${current.label}, selección editorial LIGHT`} /><span>LIGHT / {current.label.toUpperCase()}</span></div>
+        <div className="subpage-hero__image"><img src={banner.image} style={{ objectPosition: banner.position }} alt={`${current.label}, selección editorial LIGHT`} /><span>LIGHT / {current.label.toUpperCase()}</span></div>
         <div className="subpage-hero__copy"><SectionLabel>{current.label} / </SectionLabel><h1>{current.title}</h1><p>{current.dek}</p><a className="story-link" href="#historias">Explorar historias <ArrowUpRight size={16} /></a></div>
       </section>
       <section className={`subpage-intro${section === "eventos" ? " subpage-intro--events" : ""}`}><p className="eyebrow">{section === "eventos" ? "Cobertura / Encuentros" : "La edición"}</p><p>{current.intro}</p></section>

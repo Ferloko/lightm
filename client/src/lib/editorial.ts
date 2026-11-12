@@ -21,6 +21,8 @@ export type EditorialArticle = {
   excerpt: string;
   lead: string;
   readingTime: string;
+  /** true: el tiempo se recalcula con las palabras al guardar. false: texto escrito a mano. */
+  readingTimeAuto?: boolean;
   date: string;
   body: string;
   blocks: PageBlock[];
@@ -100,11 +102,11 @@ export async function getEditorialUser(): Promise<EditorialUser | null> {
 }
 
 export function createArticle(author: string): EditorialArticle {
-  return { id: crypto.randomUUID(), slug: "", eyebrow: "LIGHT / PORTADA", title: "", category: "Moda", excerpt: "", lead: "", readingTime: "8 min de lectura", date: new Date().toISOString().slice(0, 10), body: "", blocks: starterBlocks(), image: "", imageCaption: "", status: "draft", isVisible: true, isFeatured: false, featuredOrder: 99, author, updatedAt: new Date().toISOString() };
+  return { id: crypto.randomUUID(), slug: "", eyebrow: "LIGHT / PORTADA", title: "", category: "Moda", excerpt: "", lead: "", readingTime: "", readingTimeAuto: true, date: new Date().toISOString().slice(0, 10), body: "", blocks: starterBlocks(), image: "", imageCaption: "", status: "draft", isVisible: true, isFeatured: false, featuredOrder: 99, author, updatedAt: new Date().toISOString() };
 }
 
-const fullColumns = "id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,published_at,updated_at,author_id,author_name";
-const summaryColumns = "id,slug,eyebrow,title,category,excerpt,lead,reading_time,date,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,published_at,updated_at,author_id,author_name";
+const fullColumns = "id,slug,eyebrow,title,category,excerpt,lead,reading_time,reading_time_auto,date,body,page_blocks,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,published_at,updated_at,author_id,author_name";
+const summaryColumns = "id,slug,eyebrow,title,category,excerpt,lead,reading_time,reading_time_auto,date,cover_image_path,cover_caption,status,is_visible,is_featured,featured_order,published_at,updated_at,author_id,author_name";
 
 /** Every article the current session may read (Dashboard). */
 export async function fetchRemoteArticles(): Promise<EditorialArticle[]> {
@@ -134,7 +136,7 @@ export async function fetchPublishedArticle(slugOrId: string): Promise<Editorial
 }
 
 function fromArticleRow(row: any): EditorialArticle {
-  return ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body || "", blocks: parsePageBlocks(row.page_blocks), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, isVisible: row.is_visible !== false, isFeatured: row.is_featured === true, featuredOrder: Number(row.featured_order || 99), author: row.author_name || row.profiles?.display_name || "LIGHT", authorId: row.author_id || undefined, publishedAt: row.published_at || undefined, updatedAt: row.updated_at });
+  return ({ id: row.id, slug: row.slug || row.id, eyebrow: row.eyebrow || `${row.category} / HISTORIA`, title: row.title, category: row.category, excerpt: row.excerpt, lead: row.lead || "", readingTime: row.reading_time || "8 min de lectura", readingTimeAuto: row.reading_time_auto !== false, date: row.date || row.updated_at?.slice(0, 10) || "", body: row.body || "", blocks: parsePageBlocks(row.page_blocks), image: row.cover_image_path || "", imageCaption: row.cover_caption || "", status: row.status, isVisible: row.is_visible !== false, isFeatured: row.is_featured === true, featuredOrder: Number(row.featured_order || 99), author: row.author_name || row.profiles?.display_name || "LIGHT", authorId: row.author_id || undefined, publishedAt: row.published_at || undefined, updatedAt: row.updated_at });
 }
 
 function parsePageBlocks(value: unknown): PageBlock[] {
@@ -178,7 +180,7 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<Edit
   const { data: existing, error: lookupError } = await supabase.from("articles").select("id,published_at").eq("id", article.id).maybeSingle();
   if (lookupError) throw new Error(errorText(lookupError));
   // published_at is owned by the database (trigger keep_article_published_at); it is only sent on first insert.
-  const payload = { slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, updated_at: article.updatedAt };
+  const payload = { slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, reading_time_auto: article.readingTimeAuto !== false, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, updated_at: article.updatedAt };
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slug = attempt === 0 ? payload.slug : `${payload.slug}-${Math.random().toString(36).slice(2, 6)}`;
     if (existing) {

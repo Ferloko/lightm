@@ -1,4 +1,5 @@
 import { UserRound } from "lucide-react";
+import { usePageBanner } from "@/lib/pageBanners";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link } from "wouter";
@@ -7,6 +8,7 @@ import { defaultMastheadTeam, fetchMastheadTeam, onMastheadChange, type Masthead
 import { safeImageUrl } from "@/lib/utils";
 
 export default function MastheadPage() {
+  const banner = usePageBanner("masthead");
   const [team, setTeam] = useState<MastheadMember[]>(defaultMastheadTeam);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +34,7 @@ export default function MastheadPage() {
   const peopleCount = staffed.reduce((total, member) => total + member.people.length, 0);
 
   return <EditorialPageLayout activePath="/masthead">
-    <section className="masthead-hero">
+    <section className="masthead-hero" style={!banner.ready ? { backgroundImage: "none" } : banner.custom ? { backgroundImage: `url(${JSON.stringify(banner.image)})`, backgroundPosition: banner.position } : undefined}>
       <p className="eyebrow">LIGHT / PEOPLE</p>
       <h1>Las personas<br /><em>detrás de la mirada.</em></h1>
       <p>El equipo que imagina, edita y acompaña las historias de LIGHT.</p>

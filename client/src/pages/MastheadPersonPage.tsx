@@ -24,7 +24,7 @@ export default function MastheadPersonPage() {
   }, []);
 
   const found = team && params?.slug ? findMastheadPerson(team, decodeURIComponent(params.slug)) : null;
-  useEffect(() => { if (found) document.title = `${found.person.name} — LIGHT Masthead`; return () => { document.title = "LIGHT — Revista de estilo"; }; }, [found?.person.name]);
+  useEffect(() => { if (found) document.title = `${found.person.name} — LIGHT Website - Revista de estilo`; return () => { document.title = "LIGHT Website - Revista de estilo"; }; }, [found?.person.name]);
 
   if (!team) return <EditorialPageLayout activePath="/masthead"><PageSkeleton label="Cargando perfil" /></EditorialPageLayout>;
   if (!found) return <EditorialPageLayout activePath="/masthead"><section className="person-page person-page--missing"><p className="eyebrow">LIGHT / Masthead</p><h1>Este perfil no existe.</h1><Link href="/masthead" className="story-link">Volver al Masthead <ArrowUpRight size={15} /></Link></section></EditorialPageLayout>;
