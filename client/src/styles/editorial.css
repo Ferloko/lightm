@@ -418,6 +418,34 @@ html.dark .placement-dialog__close { color: #f1eee7; } html.dark .placement-dial
 html.dark .runway-card-admin, html.dark .runway-sheet > section { background: #20211d; }
 html.dark .runway-studio__savebar { background: rgba(26,26,26,.95); }
 html.dark .runway-studio__search { background: #20211d; }
+
+/* Dashboard → Living: misma hoja que Runway, con tipos, puntuación y destacado. */
+.living-studio__add { display: flex; flex-wrap: wrap; gap: 8px; }
+.living-card-admin { --lg-gold: #b8935a; }
+.living-card-admin .runway-card-admin__cover { aspect-ratio: 4 / 3; }
+.living-card-admin .lg-badge { z-index: 1; top: 10px; left: 10px; }
+.living-card-admin.is-featured { outline: 1px solid var(--lg-gold); outline-offset: 0; }
+.living-card-admin__rating .living-rating__marks i { border-color: var(--lg-gold); }
+.living-card-admin .runway-card-admin__actions { flex-wrap: wrap; }
+.living-card-admin .runway-card-admin__actions > .is-on { border-color: var(--lg-gold); background: var(--lg-gold); color: #161513; }
+.runway-sheet select { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 14px/1.5 var(--sans); letter-spacing: 0; text-transform: none; outline: 0; }
+.living-sheet__score > span { display: flex; align-items: center; gap: 10px; }
+.living-sheet__score input[type="range"] { flex: 1; padding: 0; border: 0; accent-color: #b8935a; }
+.living-sheet__score input[type="number"] { flex: none; width: 74px; }
+.living-sheet__overall { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--muted); font: 9px var(--mono); letter-spacing: .1em; text-transform: uppercase; --lg-gold: #b8935a; }
+.living-sheet__price { display: flex; flex-wrap: wrap; gap: 6px; }
+.living-sheet__price button { min-width: 58px; padding: 9px 12px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 12px var(--mono); cursor: pointer; }
+.living-sheet__price button.is-active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.living-sheet__image .runway-sheet__thumb { aspect-ratio: 4 / 3; }
+/* Vista previa: el lienzo es estrecho, así que todo va a una columna. */
+.lg-admin-preview { display: grid; gap: 16px; padding: 22px; color: var(--ink); box-shadow: 0 22px 44px rgba(23,23,23,.1); }
+.lg-admin-preview > .eyebrow { margin: 0; color: var(--lg-gold); }
+.lg-admin-preview .lg-cover { grid-template-columns: 1fr; gap: 18px; margin: 0; }
+.lg-admin-preview .lg-cover__body h3 { font-size: clamp(38px, 4vw, 56px); }
+.lg-admin-preview .lg-grid, .lg-admin-preview .lg-nights { grid-template-columns: minmax(0, 340px); }
+.lg-admin-preview .lg-rank { grid-template-columns: 44px 80px minmax(0, 1fr); }
+.lg-admin-preview .lg-rank__number { font-size: 38px; }
+.lg-admin-preview .lg-rank__side { grid-column: 3; justify-items: start; text-align: left; }
 html.dark .runway-tags span { background: #f1eee7; color: #171717; }
 
 /* Edition cards in the dashboard: text above, actions on their own row with real spacing. */

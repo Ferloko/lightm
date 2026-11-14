@@ -18,7 +18,6 @@ export const managedPages: Omit<ComingSoonPage, "updatedAt">[] = [
   { path: "/runway", label: "Runway", enabled: false, title: "La pasarela se está montando.", message: "Estamos ordenando la próxima temporada, firma a firma.", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1800&q=90" },
   { path: "/archivo", label: "Archivo", enabled: false, title: "El archivo vuelve a abrir pronto.", message: "Estamos afinando cada página para que vuelva a mirarse con calma.", image: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1800&q=90" },
   { path: "/sobre-moda", label: "La revista", enabled: false, title: "La revista está cambiando de página.", message: "Muy pronto podrás conocer la nueva edición de LIGHT.", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1800&q=90" },
-  { path: "/newsletter", label: "Newsletter", enabled: false, title: "Una carta en preparación.", message: "Estamos preparando la próxima correspondencia de LIGHT.", image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1800&q=90" },
 ];
 
 const KEY = "light.page-availability"; // cache only: Supabase is the source of truth

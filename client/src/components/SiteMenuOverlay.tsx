@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { Link, useLocation } from "wouter";
 import MenuThemeToggle from "./MenuThemeToggle";
 
-export const siteMenuLinks: [string, string][] = [["Inicio", "/"], ["Moda", "/moda"], ["Belleza", "/belleza"], ["Eventos", "/eventos"], ["Living", "/living"], ["Runway", "/runway"], ["Masthead", "/masthead"], ["Business", "/business"], ["La revista", "/sobre-moda"], ["About Us", "/about"], ["Archivo", "/archivo"], ["Newsletter", "/newsletter"]];
+export const siteMenuLinks: [string, string][] = [["Inicio", "/"], ["Moda", "/moda"], ["Belleza", "/belleza"], ["Eventos", "/eventos"], ["Living", "/living"], ["Runway", "/runway"], ["Masthead", "/masthead"], ["Business", "/business"], ["La revista", "/sobre-moda"], ["About Us", "/about"], ["Archivo", "/archivo"]];
 
 /** The three-line menu, identical on every public page. */
 export default function SiteMenuOverlay({ onClose, note = "Historias para mirar más de cerca." }: { onClose: () => void; note?: string }) {

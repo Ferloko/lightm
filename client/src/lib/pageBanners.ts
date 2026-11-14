@@ -6,7 +6,7 @@ import { safeImageUrl } from "./utils";
  * Cada hoja tiene su imagen original; si el equipo pone otra, se guarda aquí (site_settings)
  * y la hoja la usa al momento para todo el público.
  */
-export type BannerKey = "moda" | "belleza" | "eventos" | "sociedad" | "living" | "runway" | "archivo" | "masthead" | "business" | "about" | "sobre-moda" | "newsletter" | "privacidad" | "terminos" | "cookies" | "not-found";
+export type BannerKey = "moda" | "belleza" | "eventos" | "sociedad" | "living" | "runway" | "archivo" | "masthead" | "business" | "about" | "sobre-moda" | "privacidad" | "terminos" | "cookies" | "not-found";
 export type BannerOverride = { image: string; focus: number };          // focus: encuadre vertical 0–100 %
 export type PageBanner = { image: string; position: string; custom: boolean; ready: boolean };
 
@@ -33,7 +33,6 @@ export const bannerPages: BannerPage[] = [
   { key: "masthead", label: "Masthead", path: "/masthead", group: "La revista", image: "/images/masthead-hero-final.jpg", focus: 52 },
   { key: "about", label: "About Us", path: "/about", group: "La revista", image: "/images/GTA51.webp", focus: 25 },
   { key: "business", label: "Business", path: "/business", group: "La revista", image: unsplash("photo-1469334031218-e382a71b716b", 1400), focus: 50 },
-  { key: "newsletter", label: "Newsletter", path: "/newsletter", group: "La revista", image: "/images/GTA54.webp", focus: 30 },
   { key: "privacidad", label: "Privacidad", path: "/privacidad", group: "Legales", image: "/images/living-alentejo-field.jpg", focus: 50 },
   { key: "terminos", label: "Términos", path: "/terminos", group: "Legales", image: "/images/living-oaxaca-street.jpg", focus: 50 },
   { key: "cookies", label: "Cookies", path: "/cookies", group: "Legales", image: unsplash("photo-1522335789203-aabd1fc54bc9", 1400), focus: 50 },
