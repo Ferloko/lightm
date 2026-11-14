@@ -118,6 +118,7 @@ export default function AdminDashboard() {
   const update = (patch: Partial<EditorialArticle>) => setEditing((current) => current ? { ...current, ...patch } : current);
   const save = async (status: EditorialArticle["status"]) => {
     if (!editing?.title.trim()) { setNotice("Añade un título antes de guardar."); return; }
+    if (session.canPublish && !editing.author.trim()) { setNotice("Escribe el nombre del autor antes de guardar."); return; }
     if (!session.canPublish && editing.status === "published") { setNotice("Solo Owner y Admin pueden editar una página ya publicada."); return; }
     if (status === "published" && !session.canPublish) { setNotice("Solo Owner y Admin pueden publicar páginas."); return; }
     const stored = articles.find((article) => article.id === editing.id);
