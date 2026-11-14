@@ -3763,3 +3763,25 @@ textarea.inline-text { display: block; }
 .banners-manager__fields .admin-secondary { justify-self: start; display: inline-flex; align-items: center; gap: 6px; }
 .banners-manager__note { margin: 0; color: var(--muted); font: 11px/1.5 var(--sans); }
 @media (max-width: 1100px) { .banners-manager__layout { grid-template-columns: 1fr; } .banners-manager__panel { position: static; } }
+
+/* Modo oscuro: cabecera e introducción de las secciones (Moda, Belleza, Eventos, Sociedad).
+   Los paneles tenían fondo claro con texto claro y el título no se leía. */
+html.dark .subpage-hero--living-layout { background: #24231f; }
+html.dark .subpage-hero--living-layout .subpage-hero__copy h1 { color: #f1eee7; }
+html.dark .subpage-hero--living-layout .subpage-hero__copy p { color: #b9b4aa; }
+html.dark .subpage-hero--living-layout .story-link { color: #f1eee7; border-color: rgba(241,238,231,.55); }
+html.dark .subpage--moda .subpage-hero--living-layout { background: #1f2527; }
+html.dark .subpage--moda .subpage-hero--living-layout .subpage-hero__copy h1 em { color: #8fb3d1; }
+html.dark .subpage--belleza .subpage-hero--living-layout { background: #2a2229; }
+html.dark .subpage--belleza .subpage-hero--living-layout .subpage-hero__copy h1 { color: #ead3eb; }
+html.dark .subpage--belleza .subpage-hero--living-layout .subpage-hero__copy h1 em { color: #d4a5d6; }
+html.dark .subpage--eventos .subpage-hero--living-layout { background: #2a241f; }
+html.dark .subpage--eventos .subpage-hero--living-layout .subpage-hero__copy h1 em,
+html.dark .subpage--eventos .subpage-hero__copy .section-label,
+html.dark .subpage--eventos .subpage-hero__copy .section-label__line { color: #d9a183; }
+html.dark .subpage--eventos .subpage-story__read:hover { color: #d9a183; border-color: #d9a183; }
+html.dark .subpage-intro, html.dark .subpage--eventos .subpage-intro--events { background: #211f1c; color: #f1eee7; }
+html.dark .subpage-intro .eyebrow { color: #b9b4aa; }
+html.dark .subpage--eventos .subpage-intro--events .eyebrow { color: #d9a183; }
+html.dark .subpage--sociedad .subpage-hero--living-layout { background: #142b29; }
+html.dark .subpage--sociedad .subpage-intro { background: #112c2b; color: #edf2ec; }

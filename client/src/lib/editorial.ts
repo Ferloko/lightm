@@ -180,7 +180,7 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<Edit
   const { data: existing, error: lookupError } = await supabase.from("articles").select("id,published_at").eq("id", article.id).maybeSingle();
   if (lookupError) throw new Error(errorText(lookupError));
   // published_at is owned by the database (trigger keep_article_published_at); it is only sent on first insert.
-  const payload = { slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, reading_time_auto: article.readingTimeAuto !== false, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, updated_at: article.updatedAt };
+  const payload = { author_name: (article.author || "").trim() || undefined, slug: article.slug, eyebrow: article.eyebrow, title: article.title, category: article.category, excerpt: article.excerpt, lead: article.lead, reading_time: article.readingTime, reading_time_auto: article.readingTimeAuto !== false, date: article.date || null, body: article.body, page_blocks: article.blocks, cover_image_path: article.image || null, cover_caption: article.imageCaption || null, status: article.status, is_visible: article.isVisible, is_featured: article.isFeatured, featured_order: article.featuredOrder, updated_at: article.updatedAt };
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slug = attempt === 0 ? payload.slug : `${payload.slug}-${Math.random().toString(36).slice(2, 6)}`;
     if (existing) {
@@ -193,10 +193,10 @@ export async function saveRemoteArticle(article: EditorialArticle): Promise<Edit
     const { data: profile, error: profileError } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
     if (profileError) throw new Error(errorText(profileError));
     const publishedAt = article.status === "published" ? new Date().toISOString() : null;
-    const { error } = await supabase.from("articles").insert({ id: article.id, author_id: user.id, author_name: profile.display_name, ...payload, slug, published_at: publishedAt });
+    const { error } = await supabase.from("articles").insert({ id: article.id, author_id: user.id, ...payload, author_name: payload.author_name || profile.display_name, slug, published_at: publishedAt });
     if (isSlugConflict(error)) continue;
     if (error) throw new Error(errorText(error));
-    return { ...article, slug, authorId: user.id, author: profile.display_name, publishedAt: publishedAt || undefined };
+    return { ...article, slug, authorId: user.id, author: payload.author_name || profile.display_name, publishedAt: publishedAt || undefined };
   }
   throw new Error("Ya existe otra historia con esa URL. Cambia el título e inténtalo de nuevo.");
 }
