@@ -67,7 +67,7 @@ html.has-navigated .site-header { animation: none; } /* la cabecera no vuelve a 
 .main-nav a:hover { transform: none; }
 .main-nav a:hover::after, .main-nav a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 /* Botones de formularios y filtros: nada de girar; un leve desplazamiento elegante. */
-.filter-row button:hover, .newsletter-form button:hover, .info-form button:hover { transform: translateX(3px); }
+.filter-row button:hover, .info-form button:hover { transform: translateX(3px); }
 /* Enlaces editoriales del pie y del menú: transición suave en vez de cambio brusco. */
 .site-footer__columns a, .menu-overlay__links a, .info-links a, .trend-item, .search-results a { transition: color .3s var(--ease-soft), padding .45s var(--ease-editorial); }
 /* Las imágenes con hover usan la misma curva editorial. */

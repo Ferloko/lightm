@@ -18,12 +18,11 @@ html.dark .admin-notice--error { color: #e79a8f; }
 .admin-loading small { color: var(--muted); font: 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
 @keyframes light-pulse { 50% { opacity: .35; } }
 .admin-article-actions__link { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; color: inherit; }
-.subscriber-table__delete { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
-.subscriber-table__delete:hover { color: #b4483b; border-color: currentColor; }
-.subscriber-table__row:has(.subscriber-table__delete),
-.subscriber-table__row--head:has(span:empty) { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, .8fr) 40px; }
+
+
+
 .comments-manager__meta { display: flex; align-items: center; gap: 10px; }
-.newsletter-error { display: block; margin-top: 10px; color: #b4483b; font-size: 12px; }
+
 
 /* ---------- Próximamente: aviso para el equipo ---------- */
 .coming-soon-editor-banner { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 9px 4.6vw; background: #171717; color: #f1eee7; font: 10px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; text-align: center; }

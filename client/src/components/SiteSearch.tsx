@@ -17,7 +17,6 @@ const searchable = [
   ["Belleza", "/belleza", "Cuidado y belleza"],
   ["Eventos", "/eventos", "Crónicas y encuentros"],
   ["Sociedad", "/sociedad", "Voces y personas"],
-  ["Newsletter", "/newsletter", "Correspondencia LIGHT"],
 ] as const;
 
 // Fallback for databases without the 20261110 migration. With it, the access word of

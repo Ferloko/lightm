@@ -168,7 +168,23 @@ function vitePluginPublicPlatformConfig(): Plugin {
   };
 }
 
-const plugins = [vitePluginPublicPlatformConfig(), react(), tailwindcss(), jsxLocPlugin(), vitePluginManusDebugCollector()];
+/**
+ * Replaces %SITE_URL% in index.html with the site's absolute origin, because
+ * link previews (Discord, WhatsApp, X…) only load og:image from absolute URLs.
+ * Uses VITE_SITE_URL when set, otherwise Vercel's production domain.
+ */
+function vitePluginSiteUrl(): Plugin {
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const siteUrl = (process.env.VITE_SITE_URL || (vercelHost ? `https://${vercelHost}` : "")).replace(/\/+$/, "");
+  return {
+    name: "site-url",
+    transformIndexHtml(html) {
+      return html.replaceAll("%SITE_URL%", siteUrl);
+    },
+  };
+}
+
+const plugins = [vitePluginSiteUrl(), vitePluginPublicPlatformConfig(), react(), tailwindcss(), jsxLocPlugin(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
   plugins,
