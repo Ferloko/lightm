@@ -16,6 +16,7 @@ import { fetchPublishedArticleSummaries, type EditorialArticle } from "@/lib/edi
 import { useArchivePlacements } from "@/lib/archivePlacements";
 import { subscribeToTable } from "@/lib/supabase";
 import { safeHref } from "@/lib/utils";
+import { subscribeToNewsletter } from "@/lib/newsletter";
 import { useHomepageVoices } from "@/lib/homepageVoices";
 import { getHomepageFeature, useHomepageFeature, type HomepageFeatureContent } from "@/lib/homepageContent";
 import EditorialAccessLink from "@/components/EditorialAccessLink";
@@ -49,6 +50,10 @@ function StoryLink({ children, href = "/historias/vestirse-de-futuro" }: { child
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterError, setNewsletterError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [publishedArticles, setPublishedArticles] = useState<EditorialArticle[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
@@ -139,6 +144,17 @@ export default function Home() {
   const handleBackToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   const hero = homepageHeroArticle ? { eyebrow: `${homepageHeroArticle.category} / HOMEPAGE`, title: homepageHeroArticle.title || "Historia destacada", dek: homepageHeroArticle.excerpt || homepageHeroArticle.lead || "Una historia seleccionada por el equipo editorial.", href: `/historias/${homepageHeroArticle.slug || homepageHeroArticle.id}`, image: homepageHeroArticle.image || images.silhouette, alt: homepageHeroArticle.title || "Historia destacada", credit: homepageHeroArticle.author || "LIGHT" } : null;
 
+
+  const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!email.trim() || newsletterSubmitting) return;
+    setNewsletterSubmitting(true);
+    setNewsletterError("");
+    const result = await subscribeToNewsletter(email);
+    if (result.ok) setSubscribed(true);
+    else setNewsletterError("No pudimos guardar tu correo. Inténtalo de nuevo.");
+    setNewsletterSubmitting(false);
+  };
 
   return (
     <div className="site-shell home-page">
@@ -270,6 +286,21 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="newsletter-section" id="newsletter">
+          <div className="newsletter-section__copy"><SectionLabel>Correspondencia LIGHT</SectionLabel><h2>Lo mejor de la semana,<br /><em>en tu bandeja.</em></h2></div>
+          <div className="newsletter-section__form-wrap">
+            {subscribed ? (
+              <div className="newsletter-success"><span>Gracias por estar aquí.</span><small>Revisa tu bandeja para confirmar la suscripción.</small></div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="newsletter-form">
+                <label htmlFor="email">Tu correo electrónico</label>
+                <div><input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@correo.com" required /><button type="submit" aria-label="Suscribirme" disabled={newsletterSubmitting}><ArrowUpRight size={20} strokeWidth={1.4} /></button></div>
+                <p>Una carta editorial. Sin ruido. Puedes salir cuando quieras.</p>
+                {newsletterError && <small className="newsletter-form__error">{newsletterError}</small>}
+              </form>
+            )}
+          </div>
+        </section>
       </main>
 
       <footer className="site-footer">

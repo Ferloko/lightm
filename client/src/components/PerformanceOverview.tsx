@@ -6,6 +6,7 @@ import { fetchPageViewSeries, fetchPageViewSummary, type PageViewPoint, type Pag
 import { addDaysKey, CAMPAIGN_CHANNELS, campaignOverlaps, prorateCampaign, campaignStatus, campaignStatusLabel, sortCampaigns, summarizeCampaigns, todayKey, type Campaign, type CampaignChannel } from "@/lib/campaigns";
 import { utcTodayKey, type CalendarEvent } from "@/lib/calendar";
 import type { EditorialArticle } from "@/lib/editorial";
+import type { NewsletterSubscriber } from "@/lib/newsletter";
 
 const RANGE_KEY = "light.dashboard.range";
 const CHANNEL_KEY = "light.dashboard.channel";
@@ -32,10 +33,12 @@ function relativeTime(iso: string) {
   return new Date(time).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export type OverviewTarget = "campaigns" | "calendar" | "pages";
+export type OverviewTarget = "campaigns" | "subscribers" | "calendar" | "pages";
 
 type Props = {
   articles: EditorialArticle[];
+  subscriberCount: number;
+  subscribers: NewsletterSubscriber[];
   campaigns: Campaign[];
   calendarEvents: CalendarEvent[];
   canOpen: (target: OverviewTarget) => boolean;
@@ -45,10 +48,10 @@ type Props = {
   onNew: () => void;
 };
 
-type Kpi = { key: string; label: string; value: string; note: React.ReactNode; hint: string; tone?: "accent"; onClick?: () => void };
+type Kpi = { key: string; label: string; value: string; note: React.ReactNode; hint: string; tone?: "accent" | "newsletter"; onClick?: () => void };
 type Activity = { id: string; at: string; icon: string; tone: "acid" | "blue" | "soft"; title: string; text: string; meta: string; onClick?: () => void };
 
-export default function PerformanceOverview({ articles, campaigns, calendarEvents, canOpen, onNavigate, onOpenCampaign, onOpenArticle, onNew }: Props) {
+export default function PerformanceOverview({ articles, subscriberCount, subscribers, campaigns, calendarEvents, canOpen, onNavigate, onOpenCampaign, onOpenArticle, onNew }: Props) {
   const [range, setRange] = useState<Range>(() => readStored<Range>(RANGE_KEY, ranges, 30));
   const [channel, setChannel] = useState<ChannelFilter>(() => readStored<ChannelFilter>(CHANNEL_KEY, ["all", ...CAMPAIGN_CHANNELS.map((item) => item.id)], "all"));
   const [summary, setSummary] = useState<PageViewSummary | null>(null);
@@ -72,7 +75,9 @@ export default function PerformanceOverview({ articles, campaigns, calendarEvent
   const periodCampaigns = useMemo(() => campaigns.filter((campaign) => campaignOverlaps(campaign, from, today) && (channel === "all" || campaign.channel === channel)).map((campaign) => prorateCampaign(campaign, from, today)), [campaigns, from, today, channel]);
   const totals = useMemo(() => summarizeCampaigns(periodCampaigns), [periodCampaigns]);
   const channelTotals = useMemo(() => summarizeCampaigns(campaigns.filter((campaign) => campaignOverlaps(campaign, from, today)).map((campaign) => prorateCampaign(campaign, from, today))), [campaigns, from, today]);
-  const conversions = totals.conversions;
+  const newSubscribers = subscribers.filter((subscriber) => subscriber.subscribedAt.slice(0, 10) >= from).length;
+  const countsSubscribers = channel === "all" || channel === "email";
+  const conversions = totals.conversions + (countsSubscribers ? newSubscribers : 0);
   const hasMetrics = totals.spend + totals.impressions + totals.revenue + totals.budget > 0;
   const periodLabel = `últimos ${range} días`;
   const campaignsAction = canOpen("campaigns") ? () => onNavigate("campaigns") : undefined;
@@ -87,7 +92,8 @@ export default function PerformanceOverview({ articles, campaigns, calendarEvent
     { key: "roas", label: "ROAS", value: totals.roas === null ? "—" : `${totals.roas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`, note: <><b>{formatMoney(totals.revenue)}</b> / {formatMoney(totals.spend)} invertidos</>, hint: `${"Ingresos ÷ inversión"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
     { key: "revenue", label: "Revenue", value: formatMoney(totals.revenue), note: totals.spend ? <><b>{formatMoney(totals.revenue - totals.spend)}</b> margen sobre inversión</> : emptyNote("Ingresos atribuidos"), hint: `${"Ingresos atribuidos a campañas"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
     { key: "users", label: "Active users", value: analyticsError ? "—" : !summary ? "…" : summary.visitors === null || (summary.visitors === 0 && summary.untrackedViews > 0) ? "—" : integer.format(summary.visitors), note: analyticsError ? "No se pudieron cargar las visitas" : summary?.visitors === null ? "Requiere la migración de visitantes" : summary && summary.untrackedViews > 0 ? <><b>{integer.format(summary.untrackedViews)}</b> visitas anteriores sin identificar</> : <><b>Únicos</b> en {periodLabel}</>, hint: "Navegadores distintos que visitaron LIGHT", onClick: scrollToTraffic },
-    { key: "conversions", label: "Conversions", value: integer.format(conversions), note: <><b>{totals.count}</b> {totals.count === 1 ? "campaña en el periodo" : "campañas en el periodo"}</>, hint: `${"Conversiones registradas en las campañas"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "conversions", label: "Conversions", value: integer.format(conversions), note: <><b>{integer.format(totals.conversions)}</b> campañas{countsSubscribers ? ` · ${integer.format(newSubscribers)} suscripciones` : ""}</>, hint: `${"Conversiones de campañas + nuevas suscripciones"} · ${PRORATE_NOTE}`, onClick: campaignsAction || (canOpen("subscribers") ? () => onNavigate("subscribers") : undefined) },
+    { key: "subscribers", label: "Suscriptores", value: integer.format(subscriberCount), note: <><b>+{integer.format(newSubscribers)}</b> en {periodLabel}</>, hint: "Abrir la lista de suscriptores", tone: "newsletter", onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined },
   ];
 
   const maxImpressions = Math.max(...CAMPAIGN_CHANNELS.map((item) => channelTotals.byChannel[item.id].impressions), 0);
@@ -103,6 +109,7 @@ export default function PerformanceOverview({ articles, campaigns, calendarEvent
   const activity: Activity[] = [
     ...articles.map((article): Activity => { const isPublished = article.status === "published"; return { id: `article-${article.id}`, at: (isPublished && article.publishedAt) || article.updatedAt, icon: isPublished ? "↗" : "✎", tone: isPublished ? "acid" : "blue", title: article.title || "Sin título", text: isPublished ? "está publicada en LIGHT" : "se guardó como borrador", meta: `${article.category || "Página"} · ${article.author || "LIGHT"}`, onClick: () => onOpenArticle(article) }; }),
     ...campaigns.filter((campaign) => campaign.createdAt).map((campaign): Activity => ({ id: `campaign-${campaign.id}`, at: campaign.createdAt as string, icon: "◎", tone: "soft", title: campaign.name, text: `campaña ${campaignStatusLabel[campaignStatus(campaign)].toLowerCase()}`, meta: `Campaña · ${formatScheduleDate(campaign.startDate)} — ${formatScheduleDate(campaign.endDate)}`, onClick: canOpen("campaigns") ? () => onOpenCampaign(campaign) : undefined })),
+    ...subscribers.slice(0, 20).map((subscriber): Activity => ({ id: `subscriber-${subscriber.id}`, at: subscriber.subscribedAt, icon: "+", tone: "soft", title: "Nueva suscripción", text: "a Correspondencia LIGHT", meta: `Newsletter · ${subscriber.source}`, onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined })),
   ].filter((item) => item.at && Number.isFinite(new Date(item.at).getTime())).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5);
 
   return <section className="performance-dashboard">

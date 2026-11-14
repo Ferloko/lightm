@@ -21,6 +21,7 @@ const DynamicArticlePage = lazy(() => import("./pages/DynamicArticlePage"));
 const MagazineEditionPage = lazy(() => import("./pages/MagazineEditionPage"));
 const ArchivePage = lazy(() => import("./pages/ArchivePage"));
 const LivingPage = lazy(() => import("./pages/LivingPage"));
+const LivingItemPage = lazy(() => import("./pages/LivingItemPage"));
 const MastheadPage = lazy(() => import("./pages/MastheadPage"));
 const MastheadPersonPage = lazy(() => import("./pages/MastheadPersonPage"));
 const BusinessPage = lazy(() => import("./pages/BusinessPage"));
@@ -94,6 +95,7 @@ function Router() {
       <Route path="/cultura" component={() => <Redirect to="/eventos" />} />
       <Route path="/sociedad" component={() => <SectionPage section="sociedad" />} />
       <Route path="/living" component={() => <ComingSoonGate path="/living"><LivingPage /></ComingSoonGate>} />
+      <Route path="/living/:slug" component={() => <ComingSoonGate path="/living"><LivingItemPage /></ComingSoonGate>} />
       <Route path="/masthead" component={MastheadPage} />
       <Route path="/masthead/:slug" component={MastheadPersonPage} />
       <Route path="/business" component={BusinessPage} />

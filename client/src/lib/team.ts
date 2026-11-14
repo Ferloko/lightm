@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 import type { EditorialRole } from "./editorial";
 
-export type DashboardSection = "overview" | "editions" | "runway" | "living" | "masthead" | "homepage-feature" | "banners" | "coming-soon" | "calendar" | "campaigns" | "comments" | "deletion-requests" | "team";
+export type DashboardSection = "overview" | "editions" | "runway" | "living" | "masthead" | "homepage-feature" | "banners" | "coming-soon" | "calendar" | "campaigns" | "subscribers" | "comments" | "deletion-requests" | "team";
 export type SectionAccess = { view: boolean; edit: boolean };
 export type DashboardPermissions = Record<DashboardSection, SectionAccess>;
 export type DbRole = "owner" | "admin" | "staff_writer";
@@ -17,6 +17,7 @@ export const dashboardSections: { key: DashboardSection; label: string; help: st
   { key: "coming-soon", label: "Próximamente", help: "Cerrar o abrir secciones al público." },
   { key: "calendar", label: "Calendario", help: "Eventos compartidos." },
   { key: "campaigns", label: "Campañas", help: "Ventanas de campaña." },
+  { key: "subscribers", label: "Suscriptores", help: "Correos de quienes se suscriben desde la portada (datos personales)." },
   { key: "comments", label: "Comentarios", help: "Mensajes del formulario de Business (datos personales)." },
   { key: "deletion-requests", label: "Solicitudes", help: "Solicitudes de borrado de borradores." },
   { key: "team", label: "Equipo", help: "Cuentas, roles, bloqueos y estos permisos." },
@@ -32,7 +33,7 @@ const noAccess = (): DashboardPermissions => Object.fromEntries(dashboardSection
 function legacyPermissions(role: EditorialRole): DashboardPermissions {
   if (role !== "Staff Writer") return { ...allAccess(), team: { view: role === "Owner", edit: role === "Owner" } };
   const result = noAccess();
-  (["overview", "editions", "runway", "living", "homepage-feature", "banners", "coming-soon", "calendar", "campaigns"] as DashboardSection[]).forEach((key) => { result[key] = { view: true, edit: false }; });
+  (["overview", "editions", "runway", "living", "homepage-feature", "banners", "coming-soon", "calendar", "campaigns", "subscribers"] as DashboardSection[]).forEach((key) => { result[key] = { view: true, edit: false }; });
   return result;
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowUpRight, ImageOff, Pencil, Plus, Save, Search, Star, Trash2 } from "lucide-react";
 import { LivingCover, LivingNight, LivingRank, LivingReview, Rating } from "@/components/LivingCards";
-import { arrangeLivingGuide, blankLivingItem, livingCriteria, livingKinds, livingScoreOf, livingStatuses, saveLivingGuide, useLivingGuide, type LivingGuide, type LivingItem, type LivingKind, type LivingPrice } from "@/lib/living";
+import { arrangeLivingGuide, blankLivingItem, livingCriteria, livingHref, livingKinds, livingParagraphs, livingSlugify, uniqueLivingSlug, livingScoreOf, livingStatuses, saveLivingGuide, useLivingGuide, type LivingGuide, type LivingItem, type LivingKind, type LivingPrice } from "@/lib/living";
 import { describeError, supabase } from "@/lib/supabase";
 
 type KindFilter = "todo" | LivingKind;
@@ -25,9 +25,9 @@ function PriceInput({ value, onChange }: { value: LivingPrice; onChange: (value:
 function LivingPreview({ item, featured }: { item: LivingItem; featured: boolean }) {
   return <div className="living-guide lg-admin-preview">
     <p className="eyebrow">{kindInfo(item.kind).section}{item.kind === "resort" && (featured ? " · Destacado" : " · Tarjeta")}</p>
-    {item.kind === "resort" ? featured ? <LivingCover item={item} /> : <div className="lg-grid"><LivingReview item={item} /></div>
-      : item.kind === "mesa" ? <ol className="lg-ranking"><LivingRank item={item} position={1} /></ol>
-        : <div className="lg-nights"><LivingNight item={item} /></div>}
+    {item.kind === "resort" ? featured ? <LivingCover item={item} linked={false} /> : <div className="lg-grid"><LivingReview item={item} linked={false} /></div>
+      : item.kind === "mesa" ? <ol className="lg-ranking"><LivingRank item={item} position={1} linked={false} /></ol>
+        : <div className="lg-nights"><LivingNight item={item} linked={false} /></div>}
   </div>;
 }
 
@@ -58,7 +58,8 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
   };
   const save = async () => {
     if (!editing?.name.trim()) { setNotice("Añade un nombre."); return; }
-    const next = { ...editing, name: editing.name.trim(), updatedAt: new Date().toISOString() };
+    const named = { ...editing, name: editing.name.trim(), gallery: editing.gallery.map((url) => url.trim()).filter(Boolean) };
+    const next = { ...named, slug: uniqueLivingSlug(named, guide.items), updatedAt: new Date().toISOString() };
     const exists = guide.items.some((item) => item.id === next.id);
     setSaving(true);
     try { await persist({ ...guide, items: exists ? guide.items.map((item) => item.id === next.id ? next : item) : [...guide.items, next] }); setEditing(next); setOriginal(JSON.stringify(next)); setNotice(savedNotice("Guardado.")); }
@@ -86,7 +87,7 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
       <header className="runway-studio__head">
         <button type="button" className="runway-studio__back" onClick={close}><ArrowLeft size={15} /> Living</button>
         <div><p className="eyebrow">Living / {isNew ? `Nuevo: ${info.singular.toLowerCase()}` : info.singular}</p><h2>{editing.name || `Nuevo ${info.singular.toLowerCase()}`}</h2></div>
-        {!isNew && <a className="admin-secondary runway-studio__view" href={`/living#${editing.id}`} target="_blank" rel="noreferrer"><ArrowUpRight size={14} /> Ver en Living</a>}
+        {!isNew && <a className="admin-secondary runway-studio__view" href={livingHref(guide.items.find((item) => item.id === editing.id) || editing)} target="_blank" rel="noreferrer"><ArrowUpRight size={14} /> Ver su hoja</a>}
       </header>
       <div className="runway-studio__editor">
         <fieldset className="runway-sheet" disabled={readOnly}>
@@ -106,6 +107,14 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
             {editing.kind === "resort" ? <><div className="runway-sheet__grid">{livingCriteria.map(([key, label]) => <ScoreInput key={key} label={label} value={editing.scores[key]} onChange={(value) => update({ scores: { ...editing.scores, [key]: Math.round(value * 10) / 10 } })} />)}</div><p className="living-sheet__overall">Nota final (media): <Rating value={livingScoreOf(editing)} size="sm" /></p></>
               : <ScoreInput label="Nota LIGHT" value={editing.score} onChange={(score) => update({ score: Math.round(score * 10) / 10 })} />}
             {editing.kind !== "noche" && <label>Precio<PriceInput value={editing.price} onChange={(price) => update({ price })} /></label>}
+          </section>
+          <section><h3><span>05</span> Hoja del {info.singular.toLowerCase()}</h3>
+            <p className="living-sheet__note">Al hacer clic en la tarjeta, el público abre esta hoja con la reseña completa, la ficha y la galería.</p>
+            <label>Dirección de la hoja<span className="living-sheet__slug"><b>/living/</b><input value={editing.slug} onChange={(event) => update({ slug: event.target.value.toLowerCase().replace(/\s+/g, "-") })} placeholder={livingSlugify(editing.name) || "se-crea-con-el-nombre"} /></span><small>Se crea con el nombre si la dejas vacía. Si la cambias, los enlaces antiguos dejan de funcionar.</small></label>
+            <label>Ubicación<input value={editing.location} onChange={(event) => update({ location: event.target.value })} placeholder={editing.kind === "noche" ? "Terraza de Casa Aurelia, Costa Norte" : "Carretera de la Costa Norte, km 12"} /></label>
+            <label>{editing.kind === "noche" ? "Texto completo" : "Reseña completa"}<textarea value={editing.body} onChange={(event) => update({ body: event.target.value })} rows={10} placeholder={"Cuenta la experiencia completa.\n\nDeja una línea en blanco entre párrafos."} /><small>{livingParagraphs(editing.body).length} {livingParagraphs(editing.body).length === 1 ? "párrafo" : "párrafos"} · si la dejas vacía, la hoja muestra el veredicto.</small></label>
+            <label>Galería<textarea value={editing.gallery.join("\n")} onChange={(event) => update({ gallery: event.target.value.split("\n") })} rows={4} placeholder={"https://…/foto-1.jpg\nhttps://…/foto-2.jpg"} /><small>Una URL de imagen por línea.</small></label>
+            {editing.gallery.some((url) => url.trim()) && <div className="living-sheet__gallery">{editing.gallery.filter((url) => url.trim()).map((url, index) => <img key={`${url}-${index}`} src={url.trim()} alt="" />)}</div>}
           </section>
         </fieldset>
         <aside className="runway-studio__preview"><p className="eyebrow">Vista previa en vivo</p><LivingPreview item={editing} featured={featured} /></aside>
@@ -128,7 +137,7 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
     {visible.length ? <div className="runway-studio__grid living-studio__grid">{visible.map((item) => { const featured = isFeatured(item); return <article className={`runway-card-admin living-card-admin${featured ? " is-featured" : ""}`} key={item.id}>
       <button type="button" className="runway-card-admin__cover" onClick={() => open(item)} aria-label={`${readOnly ? "Ver" : "Editar"} ${item.name}`}>{item.image ? <img src={item.image} alt="" loading="lazy" /> : <span className="runway-card-admin__empty"><ImageOff size={20} /></span>}{featured && <span className="lg-badge">LIGHT Pick · N.º 1</span>}<span className="runway-card-admin__season">{kindInfo(item.kind).singular} · {item.kind === "noche" ? item.date || item.category : item.place || item.category}</span></button>
       <div className="runway-card-admin__body"><h3>{item.name || "Sin nombre"}</h3><div className="living-card-admin__rating"><Rating value={livingScoreOf(item)} size="sm" /></div>{item.verdict && <p>{item.verdict}</p>}</div>
-      <div className="runway-card-admin__actions"><button type="button" onClick={() => open(item)}><Pencil size={13} /> {readOnly ? "Ver" : "Editar"}</button>{!readOnly && item.kind === "resort" && <button type="button" className={guide.featuredId === item.id ? "is-on" : ""} onClick={() => void toggleFeatured(item)} title={guide.featuredId === item.id ? "Quitar destacado" : "Destacar como LIGHT Pick · N.º 1"} aria-pressed={guide.featuredId === item.id}><Star size={13} fill={guide.featuredId === item.id ? "currentColor" : "none"} /> {guide.featuredId === item.id ? "Destacado" : "Destacar"}</button>}<a href={`/living#${item.id}`} target="_blank" rel="noreferrer" aria-label={`Ver ${item.name} en Living`}><ArrowUpRight size={14} /></a>{!readOnly && <button type="button" onClick={() => void remove(item)} aria-label={`Eliminar ${item.name}`}><Trash2 size={13} /></button>}</div>
+      <div className="runway-card-admin__actions"><button type="button" onClick={() => open(item)}><Pencil size={13} /> {readOnly ? "Ver" : "Editar"}</button>{!readOnly && item.kind === "resort" && <button type="button" className={guide.featuredId === item.id ? "is-on" : ""} onClick={() => void toggleFeatured(item)} title={guide.featuredId === item.id ? "Quitar destacado" : "Destacar como LIGHT Pick · N.º 1"} aria-pressed={guide.featuredId === item.id}><Star size={13} fill={guide.featuredId === item.id ? "currentColor" : "none"} /> {guide.featuredId === item.id ? "Destacado" : "Destacar"}</button>}<a href={livingHref(item)} target="_blank" rel="noreferrer" aria-label={`Abrir la hoja de ${item.name}`}><ArrowUpRight size={14} /></a>{!readOnly && <button type="button" onClick={() => void remove(item)} aria-label={`Eliminar ${item.name}`}><Trash2 size={13} /></button>}</div>
     </article>; })}</div> : <p className="runway-studio__empty">{guide.items.length ? "Nada coincide con la búsqueda." : "Todavía no hay elementos en Living."}</p>}
   </section>;
 }
