@@ -25,11 +25,11 @@ export default function AboutPage() {
   return <EditorialPageLayout activePath="/about">
     <section className="about-hero about-hero--art">
       <div className="about-hero__copy">
-        <p className="eyebrow">{banner.kicker}</p>
-        <h1><HeroText value={banner.title} /></h1>
-        <div className="about-hero__foot"><p>{banner.dek}</p><span>About Us</span></div>
+        <p className="eyebrow" data-edit-field="kicker">{banner.kicker}</p>
+        <h1 data-edit-field="title"><HeroText value={banner.title} /></h1>
+        <div className="about-hero__foot"><p data-edit-field="dek">{banner.dek}</p><span>About Us</span></div>
       </div>
-      <HeroArt src={banner.image} position={banner.position} caption="LIGHT / Quiénes somos" />
+      <HeroArt editField="image" src={banner.image} position={banner.position} caption="LIGHT / Quiénes somos" />
     </section>
 
     <section className="about-manifesto">

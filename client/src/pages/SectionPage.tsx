@@ -61,8 +61,8 @@ export default function SectionPage({ section }: { section: SectionKey }) {
     {menuOpen && <SiteMenuOverlay onClose={() => setMenuOpen(false)} />}
     <main>
       <section className="subpage-hero subpage-hero--living-layout">
-        <div className="subpage-hero__image"><img src={banner.image} style={{ objectPosition: banner.position }} alt={`${current.label}, selección editorial LIGHT`} /><span>LIGHT / {current.label.toUpperCase()}</span></div>
-        <div className="subpage-hero__copy"><SectionLabel>{banner.kicker}</SectionLabel><h1><HeroText value={banner.title} /></h1><p>{banner.dek}</p><a className="story-link" href="#historias">Explorar historias <ArrowUpRight size={16} /></a></div>
+        <div className="subpage-hero__image" data-edit-field="image"><img src={banner.image} style={{ objectPosition: banner.position }} alt={`${current.label}, selección editorial LIGHT`} /><span>LIGHT / {current.label.toUpperCase()}</span></div>
+        <div className="subpage-hero__copy"><SectionLabel><span data-edit-field="kicker">{banner.kicker}</span></SectionLabel><h1 data-edit-field="title"><HeroText value={banner.title} /></h1><p data-edit-field="dek">{banner.dek}</p><a className="story-link" href="#historias">Explorar historias <ArrowUpRight size={16} /></a></div>
       </section>
       <section className={`subpage-intro${section === "eventos" ? " subpage-intro--events" : ""}`}><p className="eyebrow">{section === "eventos" ? "Cobertura / Encuentros" : "La edición"}</p><p>{current.intro}</p></section>
       <section className="subpage-stories" id="historias"><div className="subpage-stories__heading"><SectionLabel>{section === "eventos" ? "Historias y cobertura" : `Historias de ${current.label}`}</SectionLabel><span>{articlesLoading ? "Cargando historias" : `${articles.length} ${articles.length === 1 ? "artículo publicado" : "artículos publicados"}`}</span></div>

@@ -35,10 +35,10 @@ export default function MastheadPage() {
   const peopleCount = staffed.reduce((total, member) => total + member.people.length, 0);
 
   return <EditorialPageLayout activePath="/masthead">
-    <section className="masthead-hero" style={!banner.ready ? { backgroundImage: "none" } : banner.custom ? { backgroundImage: `url(${JSON.stringify(banner.image)})`, backgroundPosition: banner.position } : undefined}>
-      <p className="eyebrow">{banner.kicker}</p>
-      <h1><HeroText value={banner.title} /></h1>
-      <p>{banner.dek}</p>
+    <section className="masthead-hero" data-edit-field="image" style={!banner.ready ? { backgroundImage: "none" } : banner.custom ? { backgroundImage: `url(${JSON.stringify(banner.image)})`, backgroundPosition: banner.position } : undefined}>
+      <p className="eyebrow" data-edit-field="kicker">{banner.kicker}</p>
+      <h1 data-edit-field="title"><HeroText value={banner.title} /></h1>
+      <p data-edit-field="dek">{banner.dek}</p>
       <span className="masthead-hero__edition">MASTHEAD / 2026</span>
     </section>
     <section className="masthead-grid-section" aria-labelledby="masthead-roster-title">

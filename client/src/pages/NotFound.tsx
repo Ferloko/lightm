@@ -45,11 +45,11 @@ export default function NotFound() {
 
   return <EditorialPageLayout activePath="">
     <section className="not-found">
-      <div className="not-found__top"><div className="not-found__number" aria-hidden="true"><span>4</span><em>0</em><span>4</span></div><HeroArt src={banner.image} position={banner.position} caption="LIGHT / Fuera de edición" /></div>
+      <div className="not-found__top"><div className="not-found__number" aria-hidden="true"><span>4</span><em>0</em><span>4</span></div><HeroArt editField="image" src={banner.image} position={banner.position} caption="LIGHT / Fuera de edición" /></div>
       <div className="not-found__copy">
-        <p className="eyebrow">{banner.kicker}</p>
-        <h1><HeroText value={banner.title} /></h1>
-        <p>{banner.dek}</p>
+        <p className="eyebrow" data-edit-field="kicker">{banner.kicker}</p>
+        <h1 data-edit-field="title"><HeroText value={banner.title} /></h1>
+        <p data-edit-field="dek">{banner.dek}</p>
         {missingPath && <p className="not-found__path"><span>Buscabas</span><code>{missingPath}</code></p>}
         <div className="not-found__actions">
           <Link className="admin-primary not-found__home" href="/">Volver a la portada <ArrowUpRight size={15} /></Link>
