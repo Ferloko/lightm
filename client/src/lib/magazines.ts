@@ -1,3 +1,5 @@
+import type { Flipbook } from "@/lib/flipbook";
+
 export type MagazinePreviewPage = {
   label: string;
   title: string;
@@ -23,6 +25,8 @@ export type MagazineEdition = {
   /** Parte de la imagen que queda visible en el hero. */
   heroPosition?: "top" | "center" | "bottom";
   previewPages: MagazinePreviewPage[];
+  /** Lector propio (imágenes en Supabase Storage). Si existe, sustituye a Heyzine. */
+  flipbook?: Flipbook;
 };
 
 const images = {
