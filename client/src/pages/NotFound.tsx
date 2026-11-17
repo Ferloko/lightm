@@ -1,4 +1,5 @@
 import { ArrowUpRight, Search } from "lucide-react";
+import HeroText from "@/components/HeroText";
 import { usePageBanner } from "@/lib/pageBanners";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
@@ -46,9 +47,9 @@ export default function NotFound() {
     <section className="not-found">
       <div className="not-found__top"><div className="not-found__number" aria-hidden="true"><span>4</span><em>0</em><span>4</span></div><HeroArt src={banner.image} position={banner.position} caption="LIGHT / Fuera de edición" /></div>
       <div className="not-found__copy">
-        <p className="eyebrow">LIGHT / Fuera de edición</p>
-        <h1>Esta página no está <em>en ninguna edición.</em></h1>
-        <p>Puede que el enlace haya cambiado, que la historia ya no esté publicada o que hayas llegado antes que nosotros. La curiosidad nos gusta: aquí tienes por dónde seguir.</p>
+        <p className="eyebrow">{banner.kicker}</p>
+        <h1><HeroText value={banner.title} /></h1>
+        <p>{banner.dek}</p>
         {missingPath && <p className="not-found__path"><span>Buscabas</span><code>{missingPath}</code></p>}
         <div className="not-found__actions">
           <Link className="admin-primary not-found__home" href="/">Volver a la portada <ArrowUpRight size={15} /></Link>

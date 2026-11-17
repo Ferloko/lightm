@@ -1,4 +1,5 @@
 import { ArrowUpRight, MessageCircle } from "lucide-react";
+import HeroText from "@/components/HeroText";
 import { usePageBanner } from "@/lib/pageBanners";
 import ContactSubmissionForm from "@/components/ContactSubmissionForm";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
@@ -15,9 +16,9 @@ export default function BusinessPage() {
   return <EditorialPageLayout activePath="/business">
     <section className="business-hero business-hero--art">
       <div className="business-hero__copy">
-        <p className="eyebrow">LIGHT / BUSINESS</p>
-        <h1>Ideas que<br /><em>se encuentran.</em></h1>
-        <p>Colaboraciones para marcas que comparten una mirada curiosa, contemporánea y cultural.</p>
+        <p className="eyebrow">{banner.kicker}</p>
+        <h1><HeroText value={banner.title} /></h1>
+        <p>{banner.dek}</p>
         <a className="business-hero__contact" href="#colaboraciones">Conversar con LIGHT <ArrowUpRight size={16} /></a>
       </div>
       <HeroArt src={banner.image} position={banner.position} caption="Partnerships / Editorial / Experiences" />
