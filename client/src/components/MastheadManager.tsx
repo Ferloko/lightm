@@ -4,6 +4,9 @@ import { assignPersonSlugs, defaultMastheadTeam, emptyPersonDetails, fetchMasthe
 import { describeError } from "@/lib/supabase";
 import { safeImageUrl } from "@/lib/utils";
 import { ImageUrlFrame, InlineText } from "@/components/InlineEditing";
+import PagePreview from "@/components/PagePreview";
+import EditorialPageLayout from "@/components/EditorialPageLayout";
+import { MastheadPersonView } from "@/pages/MastheadPersonPage";
 
 function createId(prefix: string) {
   return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -80,10 +83,10 @@ export default function MastheadManager({ readOnly = false }: { readOnly?: boole
       </div>
     </header>
     {notice && <p className="admin-notice" role="status">{notice}</p>}
-    <p className="wysiwyg-hint">{members.length} cargos · {peopleCount} {peopleCount === 1 ? "persona" : "personas"}. Escribe sobre el nombre de un cargo para cambiarlo, pulsa un retrato para editar a esa persona o “+” para añadir a alguien.</p>
+    <p className="wysiwyg-hint">{members.length} cargos · {peopleCount} {peopleCount === 1 ? "persona" : "personas"}. {current ? `Editando a ${current.person.name || "una persona nueva"}: a la derecha ves su hoja tal como se publicará.` : "Escribe sobre el nombre de un cargo para cambiarlo, pulsa un retrato para editar a esa persona y ver su hoja, o “+” para añadir a alguien."}</p>
 
-    <div className="masthead-studio__layout" aria-busy={loading || saving}>
-      <div className="masthead-studio__roster">
+    <div className={`masthead-studio__layout${current ? " is-editing" : ""}`} aria-busy={loading || saving}>
+      {!current && <div className="masthead-studio__roster">
         {members.map((member, index) => <section className="masthead-studio__group" key={member.id}>
           <header>
             <span className="masthead-studio__index">{String(index + 1).padStart(2, "0")}</span>
@@ -103,9 +106,10 @@ export default function MastheadManager({ readOnly = false }: { readOnly?: boole
           </div>
         </section>)}
         {!readOnly && <button type="button" className="masthead-studio__add-role" onClick={addMember}><Plus size={15} /> Añadir cargo</button>}
-      </div>
+      </div>}
 
       <aside className="masthead-panel" aria-label="Ficha de la persona">
+        {current && <button type="button" className="runway-studio__back masthead-panel__back" onClick={() => setSelected(null)}><ArrowLeft size={14} /> Todo el equipo</button>}
         {current ? <fieldset className="admin-fieldset masthead-panel__body" disabled={readOnly}>
           <div className="masthead-panel__head">
             <ImageUrlFrame className="masthead-panel__portrait" src={current.person.image} onChange={(image) => updatePerson(current.member.id, current.person.id, { image })} emptyLabel="Clic para añadir el retrato (9:16)" readOnly={readOnly} />
@@ -136,6 +140,7 @@ export default function MastheadManager({ readOnly = false }: { readOnly?: boole
           <div className="masthead-panel__footer"><button type="button" className="wysiwyg-link" onClick={() => setSelected(null)}>Cerrar ficha</button>{!readOnly && <button type="button" className="masthead-panel__remove" onClick={removePerson}><Trash2 size={13} /> Quitar persona</button>}</div>
         </fieldset> : <div className="masthead-panel__empty"><UserRound size={28} strokeWidth={1} /><p>Selecciona un retrato para editar su ficha y su hoja propia.</p></div>}
       </aside>
+      {current && <div className="masthead-studio__preview"><PagePreview><EditorialPageLayout activePath="/masthead"><MastheadPersonView member={current.member} person={{ ...current.person, name: current.person.name || "Nombre y apellido" }} /></EditorialPageLayout></PagePreview></div>}
     </div>
   </section>;
 }

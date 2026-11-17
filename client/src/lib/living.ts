@@ -107,6 +107,18 @@ export function uniqueLivingSlug(item: LivingItem, items: LivingItem[]) {
 export const livingHref = (item: Pick<LivingItem, "slug" | "id">) => `/living/${item.slug || item.id}`;
 /** Los párrafos de la reseña larga. */
 export const livingParagraphs = (body: string) => body.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
+export type LivingBlock = { type: "text"; text: string } | { type: "image"; src: string; caption: string };
+/** Imagen dentro de la reseña: un párrafo con ![pie de foto](https://…) o solo la URL. */
+export const livingImageMarkup = (src: string, caption: string) => `![${caption.replace(/[\[\]\n]/g, " ").trim()}](${src.trim()})`;
+/** La reseña larga por bloques: párrafos de texto e imágenes. */
+export function livingBlocks(body: string): LivingBlock[] {
+  return livingParagraphs(body).map((part): LivingBlock => {
+    const markup = part.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (markup) return { type: "image", src: markup[2], caption: markup[1].trim() };
+    if (/^https?:\/\/\S+$/.test(part)) return { type: "image", src: part, caption: "" };
+    return { type: "text", text: part };
+  });
+}
 
 function normalizeItem(value: any): LivingItem | null {
   if (!value || typeof value !== "object" || !value.id) return null;

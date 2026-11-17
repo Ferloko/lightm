@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpRight, FolderPlus, ImageOff, Pencil, Plus, Save, Search, Settings2, Star, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpRight, FolderPlus, ImagePlus, ImageOff, Pencil, Plus, Save, Search, Settings2, Star, Trash2, X } from "lucide-react";
+import PagePreview from "@/components/PagePreview";
+import LivingHeader from "@/components/LivingHeader";
+import { LivingItemView } from "@/pages/LivingItemPage";
 import { LivingCover, LivingRank, LivingReview, Rating } from "@/components/LivingCards";
-import { blankLivingCategory, blankLivingItem, livingCategoryOf, livingCriteria, livingFormats, livingHref, livingParagraphs, livingSlugify, uniqueLivingSlug, livingScoreOf, saveLivingGuide, useLivingGuide, type LivingCategory, type LivingGuide, type LivingItem, type LivingPrice } from "@/lib/living";
+import { blankLivingCategory, blankLivingItem, livingCategoryOf, livingCriteria, livingFormats, livingBlocks, livingHref, livingImageMarkup, livingParagraphs, livingSlugify, uniqueLivingSlug, livingScoreOf, saveLivingGuide, useLivingGuide, type LivingCategory, type LivingGuide, type LivingItem, type LivingPrice } from "@/lib/living";
 import { describeError, supabase } from "@/lib/supabase";
 
 const NONE = "__none__";
@@ -22,6 +25,40 @@ function LivingPreview({ item, category, featured }: { item: LivingItem; categor
     <p className="eyebrow">{category.label}{category.format === "resort" && (featured ? " · Destacado" : " · Tarjeta")}</p>
     {category.format === "resort" ? featured ? <LivingCover item={item} linked={false} detailLabel={category.detailLabel} /> : <div className="lg-grid"><LivingReview item={item} linked={false} detailLabel={category.detailLabel} /></div>
       : <ol className="lg-ranking"><LivingRank item={item} position={1} linked={false} detailLabel={category.detailLabel} /></ol>}
+  </div>;
+}
+
+/** Reseña completa: texto por párrafos e imágenes intercaladas donde esté el cursor. */
+function ReviewEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const area = useRef<HTMLTextAreaElement>(null);
+  const [adding, setAdding] = useState(false);
+  const [url, setUrl] = useState("");
+  const [caption, setCaption] = useState("");
+  const blocks = livingBlocks(value);
+  const paragraphs = livingParagraphs(value);
+  const texts = blocks.filter((block) => block.type === "text").length;
+  const images = blocks.map((block, index) => ({ block, index })).filter((entry) => entry.block.type === "image");
+  const validUrl = /^https?:\/\/\S+$/.test(url.trim());
+  const insert = () => {
+    if (!validUrl) return;
+    const at = area.current ? area.current.selectionEnd : value.length;
+    const before = value.slice(0, at).replace(/\s+$/, ""), after = value.slice(at).replace(/^\s+/, "");
+    onChange([before, livingImageMarkup(url, caption), after].filter(Boolean).join("\n\n"));
+    setUrl(""); setCaption(""); setAdding(false);
+  };
+  const removeImage = (index: number) => onChange(paragraphs.filter((_, itemIndex) => itemIndex !== index).join("\n\n"));
+  return <div className="living-review">
+    <label>Reseña completa<textarea ref={area} value={value} onChange={(event) => onChange(event.target.value)} rows={12} placeholder={"Cuenta la experiencia completa.\n\nDeja una línea en blanco entre párrafos."} /></label>
+    <div className="living-review__tools">
+      <small>{texts} {texts === 1 ? "párrafo" : "párrafos"}{images.length ? ` · ${images.length} ${images.length === 1 ? "imagen" : "imágenes"}` : ""} · si la dejas vacía, la hoja muestra el veredicto.</small>
+      {!adding && <button type="button" className="admin-secondary" onClick={() => setAdding(true)}><ImagePlus size={13} /> Insertar imagen</button>}
+    </div>
+    {adding && <div className="living-review__insert">
+      <p>La imagen se coloca donde está el cursor en el texto, como un párrafo propio.</p>
+      <div className="runway-sheet__grid"><label>URL de la imagen<input value={url} onChange={(event) => setUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); insert(); } }} placeholder="https://…" autoFocus /></label><label>Pie de foto (opcional)<input value={caption} onChange={(event) => setCaption(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); insert(); } }} placeholder="La terraza al atardecer" /></label></div>
+      <div className="living-review__actions">{url.trim() && validUrl && <img src={url.trim()} alt="" />}<span /><button type="button" className="admin-secondary" onClick={() => { setAdding(false); setUrl(""); setCaption(""); }}>Cancelar</button><button type="button" className="admin-primary" onClick={insert} disabled={!validUrl}><ImagePlus size={13} /> Insertar</button></div>
+    </div>}
+    {images.length > 0 && <div className="living-review__images">{images.map(({ block, index }) => block.type === "image" && <figure key={`${block.src}-${index}`}><img src={block.src} alt="" /><figcaption>{block.caption || "Sin pie"}</figcaption><button type="button" onClick={() => removeImage(index)} aria-label="Quitar imagen de la reseña"><X size={12} /></button></figure>)}</div>}
   </div>;
 }
 
@@ -76,6 +113,7 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
   const [filter, setFilter] = useState<string>("todo");
   const [saving, setSaving] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"hoja" | "tarjeta">("hoja");
 
   const categoryOf = (item: LivingItem) => livingCategoryOf(guide, item);
   const coverOf = (category: LivingCategory) => { const items = guide.items.filter((item) => item.categoryId === category.id); return items.find((item) => item.id === category.featuredId) || items[0] || null; };
@@ -157,12 +195,20 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
             <p className="living-sheet__note">Al hacer clic en la tarjeta, el público abre esta hoja con la reseña completa, la ficha y la galería.</p>
             <label>Dirección de la hoja<span className="living-sheet__slug"><b>/living/</b><input value={editing.slug} onChange={(event) => update({ slug: event.target.value.toLowerCase().replace(/\s+/g, "-") })} placeholder={livingSlugify(editing.name) || "se-crea-con-el-nombre"} /></span><small>Se crea con el nombre si la dejas vacía. Si la cambias, los enlaces antiguos dejan de funcionar.</small></label>
             <label>Ubicación<input value={editing.location} onChange={(event) => update({ location: event.target.value })} placeholder="Calle del Puerto 14, Puerto Viejo" /></label>
-            <label>Reseña completa<textarea value={editing.body} onChange={(event) => update({ body: event.target.value })} rows={10} placeholder={"Cuenta la experiencia completa.\n\nDeja una línea en blanco entre párrafos."} /><small>{livingParagraphs(editing.body).length} {livingParagraphs(editing.body).length === 1 ? "párrafo" : "párrafos"} · si la dejas vacía, la hoja muestra el veredicto.</small></label>
+            <ReviewEditor value={editing.body} onChange={(body) => update({ body })} />
             <label>Galería<textarea value={editing.gallery.join("\n")} onChange={(event) => update({ gallery: event.target.value.split("\n") })} rows={4} placeholder={"https://…/foto-1.jpg\nhttps://…/foto-2.jpg"} /><small>Una URL de imagen por línea.</small></label>
             {editing.gallery.some((url) => url.trim()) && <div className="living-sheet__gallery">{editing.gallery.filter((url) => url.trim()).map((url, index) => <img key={`${url}-${index}`} src={url.trim()} alt="" />)}</div>}
           </section>
         </fieldset>
-        <aside className="runway-studio__preview"><p className="eyebrow">Vista previa en vivo</p><LivingPreview item={{ ...editing, kind: category?.format || editing.kind }} category={category} featured={featured} /></aside>
+        <aside className="runway-studio__preview">{(() => {
+          const previewItem = { ...editing, kind: category?.format || editing.kind, gallery: editing.gallery.map((url) => url.trim()).filter(Boolean) };
+          if (!category) return <LivingPreview item={previewItem} category={null} featured={false} />;
+          const previewGuide = { ...guide, items: isNew ? [...guide.items, previewItem] : guide.items.map((item) => item.id === previewItem.id ? previewItem : item) };
+          const tabs = <div className="page-preview__tabs" role="tablist" aria-label="Qué ver">{([["hoja", "Hoja del lugar"], ["tarjeta", "Tarjeta en la guía"]] as const).map(([id, label]) => <button type="button" role="tab" key={id} aria-selected={previewMode === id} className={previewMode === id ? "is-active" : ""} onClick={() => setPreviewMode(id)}>{label}</button>)}</div>;
+          return previewMode === "hoja"
+            ? <PagePreview tabs={tabs}><div className="site-shell living-page living-guide lgd"><LivingHeader /><LivingItemView guide={previewGuide} item={previewItem} category={category} /></div></PagePreview>
+            : <PagePreview tabs={tabs}><div className="site-shell living-page living-guide"><main><section className="lg-section"><LivingPreview item={previewItem} category={category} featured={featured} /></section></main></div></PagePreview>;
+        })()}</aside>
       </div>
       {!readOnly && <footer className="runway-studio__savebar"><span className={dirty ? "is-dirty" : ""}>{notice || (dirty ? "Cambios sin guardar" : "Todo guardado")}</span><div>{!isNew && detailed && <button className="admin-secondary" type="button" onClick={() => void toggleFeatured(editing)}><Star size={14} fill={category?.featuredId === editing.id ? "currentColor" : "none"} /> {category?.featuredId === editing.id ? "Quitar destacado" : "Destacar"}</button>}<button className="admin-secondary" type="button" onClick={close}>Cerrar</button><button className="admin-primary" type="button" onClick={() => void save()} disabled={saving || !dirty}><Save size={15} /> {saving ? "Guardando…" : "Guardar"}</button></div></footer>}
     </section>;
