@@ -1307,3 +1307,9 @@ create policy "Visitors and admins can read eligible articles" on public.article
     or (public.current_editorial_role() = any (array['owner'::editorial_role, 'admin'::editorial_role]))
     or (public.current_editorial_role() = 'staff_writer'::editorial_role and public.is_editorial_lead(author_id))
   );
+
+-- Cifras de Facebrowser escritas a mano por Owner/Admin (ver supabase/migrations/20261121_facebrowser_manual_entries.sql).
+grant insert on table public.facebrowser_metrics to authenticated;
+drop policy if exists "Owner and admin can add Facebrowser metrics" on public.facebrowser_metrics;
+create policy "Owner and admin can add Facebrowser metrics" on public.facebrowser_metrics
+  for insert to authenticated with check (public.current_editorial_role() in ('owner', 'admin'));

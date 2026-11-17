@@ -52,7 +52,7 @@ const nullableCount = (value: unknown) => typeof value === "number" ? value : nu
 
 /** Últimas fotos de la cuenta de LIGHT en Facebrowser, de la más reciente a la más antigua. */
 export async function fetchFacebrowserMetrics(account = "light", limit = 30): Promise<FacebrowserMetrics> {
-  if (!supabase) return { status: "not_configured" };
+  if (!supabase) { const history = readDemoSnapshots().filter((item) => item.account === account).slice(0, limit); return history.length ? { status: "ok", latest: history[0], previous: history[1] || null, history } : { status: "empty" }; }
   const { data, error } = await supabase.from("facebrowser_metrics").select("captured_at,account,followers,posts,impressions,interactions,profile_visits,source").eq("account", account).order("captured_at", { ascending: false }).limit(limit);
   if (error) {
     if (error.code === "42P01" || error.code === "PGRST205" || /does not exist|Could not find the table/i.test(error.message)) return { status: "not_configured" };
@@ -61,4 +61,19 @@ export async function fetchFacebrowserMetrics(account = "light", limit = 30): Pr
   const history: FacebrowserSnapshot[] = (data || []).map((row: Record<string, unknown>) => ({ capturedAt: String(row.captured_at), account: String(row.account), followers: nullableCount(row.followers), posts: nullableCount(row.posts), impressions: nullableCount(row.impressions), interactions: nullableCount(row.interactions), profileVisits: nullableCount(row.profile_visits), source: String(row.source || "api") }));
   if (!history.length) return { status: "empty" };
   return { status: "ok", latest: history[0], previous: history[1] || null, history };
+}
+
+/* ── Cifras escritas a mano por Owner/Admin (Dashboard → Resumen → Redes de LIGHT) ── */
+
+export type FacebrowserCounts = Pick<FacebrowserSnapshot, "followers" | "posts" | "impressions" | "interactions" | "profileVisits">;
+const DEMO_KEY = "light.demo.facebrowser-metrics";
+function readDemoSnapshots(): FacebrowserSnapshot[] { try { const value = JSON.parse(localStorage.getItem(DEMO_KEY) || "[]"); return Array.isArray(value) ? value : []; } catch { return []; } }
+
+/** Guarda una nueva foto de la cuenta con las cifras escritas a mano (fuente: "manual · Nombre"). */
+export async function saveFacebrowserSnapshot(counts: FacebrowserCounts, editor: string, account = "light") {
+  const snapshot: FacebrowserSnapshot = { ...counts, capturedAt: new Date().toISOString(), account, source: `manual · ${editor || "LIGHT"}`.slice(0, 80) };
+  if (!supabase) { try { localStorage.setItem(DEMO_KEY, JSON.stringify([snapshot, ...readDemoSnapshots()].slice(0, 200))); } catch { /* demo */ } return snapshot; }
+  const { error } = await supabase.from("facebrowser_metrics").insert({ account, followers: counts.followers, posts: counts.posts, impressions: counts.impressions, interactions: counts.interactions, profile_visits: counts.profileVisits, source: snapshot.source, raw: { manual: true, editor } });
+  if (error) throw error;
+  return snapshot;
 }
