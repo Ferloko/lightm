@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
+import HeroText from "@/components/HeroText";
 import { usePageBanner } from "@/lib/pageBanners";
 import { useEffect } from "react";
 import { Link } from "wouter";
@@ -24,9 +25,9 @@ export default function AboutPage() {
   return <EditorialPageLayout activePath="/about">
     <section className="about-hero about-hero--art">
       <div className="about-hero__copy">
-        <p className="eyebrow">LIGHT / About Us</p>
-        <h1>Antes de que esté de moda, <em>está en LIGHT.</em></h1>
-        <div className="about-hero__foot"><p>LIGHT es una revista digital sobre estilo, belleza, cultura y las ideas que mueven la conversación.</p><span>About Us</span></div>
+        <p className="eyebrow">{banner.kicker}</p>
+        <h1><HeroText value={banner.title} /></h1>
+        <div className="about-hero__foot"><p>{banner.dek}</p><span>About Us</span></div>
       </div>
       <HeroArt src={banner.image} position={banner.position} caption="LIGHT / Quiénes somos" />
     </section>

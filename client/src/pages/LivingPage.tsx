@@ -1,4 +1,5 @@
 import { usePageBanner } from "@/lib/pageBanners";
+import HeroText from "@/components/HeroText";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
@@ -34,9 +35,9 @@ export default function LivingPage() {
       <section className="lg-hero">
         <div className="lg-hero__media"><GuideImage src={banner.image} position={banner.position} alt="LIGHT Living, la guía de la ciudad" /></div>
         <div className="lg-hero__copy">
-          <p className="lg-hero__kicker">LIGHT Living · The Guide · Edición 2026</p>
-          <h1>Los mejores <em>lugares</em><br />de la ciudad,<br />elegidos <em>con calma.</em></h1>
-          <p className="lg-hero__dek">{dek.charAt(0).toUpperCase() + dek.slice(1)} Pocos lugares, elegidos con calma.</p>
+          <p className="lg-hero__kicker">{banner.kicker}</p>
+          <h1><HeroText value={banner.title} /></h1>
+          <p className="lg-hero__dek">{banner.dek || `${dek.charAt(0).toUpperCase() + dek.slice(1)} Pocos lugares, elegidos con calma.`}</p>
           {sections.length > 0 && <div className="lg-hero__index">{sections.map((section, index) => <a href={`#${livingAnchor(section.category)}`} key={section.category.id}><span>{String(index + 1).padStart(2, "0")}</span> {section.category.label}</a>)}</div>}
         </div>
       </section>

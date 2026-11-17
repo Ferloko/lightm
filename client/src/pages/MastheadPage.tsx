@@ -1,4 +1,5 @@
 import { UserRound } from "lucide-react";
+import HeroText from "@/components/HeroText";
 import { usePageBanner } from "@/lib/pageBanners";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -35,9 +36,9 @@ export default function MastheadPage() {
 
   return <EditorialPageLayout activePath="/masthead">
     <section className="masthead-hero" style={!banner.ready ? { backgroundImage: "none" } : banner.custom ? { backgroundImage: `url(${JSON.stringify(banner.image)})`, backgroundPosition: banner.position } : undefined}>
-      <p className="eyebrow">LIGHT / PEOPLE</p>
-      <h1>Las personas<br /><em>detrás de la mirada.</em></h1>
-      <p>El equipo que imagina, edita y acompaña las historias de LIGHT.</p>
+      <p className="eyebrow">{banner.kicker}</p>
+      <h1><HeroText value={banner.title} /></h1>
+      <p>{banner.dek}</p>
       <span className="masthead-hero__edition">MASTHEAD / 2026</span>
     </section>
     <section className="masthead-grid-section" aria-labelledby="masthead-roster-title">

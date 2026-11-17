@@ -7,14 +7,16 @@ import { defaultHomepageFeature, fetchHomepageFeature, getHomepageFeature, saveH
 import { safeHref } from "@/lib/utils";
 import { ImageUrlFrame, InlineText } from "@/components/InlineEditing";
 import HomepageVoicesEditor from "@/components/HomepageVoicesEditor";
+import SiteMenuEditor from "@/components/SiteMenuEditor";
 
 type Device = "desktop" | "mobile";
 const fields: (keyof HomepageFeatureContent)[] = ["eyebrow", "title", "excerpt", "author", "readingTime", "asideQuote", "image", "ctaLabel", "ctaHref"];
 
-type Block = "feature" | "voices";
+type Block = "feature" | "voices" | "menu";
 const blocks: { id: Block; label: string; hint: string }[] = [
   { id: "feature", label: "Feature", hint: "Bloque 02, bajo la portada" },
   { id: "voices", label: "Cartas de estilo", hint: "Foto en blanco y negro con cita" },
+  { id: "menu", label: "Menú lateral", hint: "Imagen del menú de tres rayas" },
 ];
 
 /** Hoja Destacado: los bloques destacados de la portada, cada uno con su editor visual. */
@@ -22,7 +24,7 @@ export default function HomepageFeatureManager({ readOnly = false }: { readOnly?
   const [block, setBlock] = useState<Block>("feature");
   return <div className="wysiwyg-blocks-wrap">
     <div className="wysiwyg-blocks" role="tablist" aria-label="Bloque destacado">{blocks.map((item) => <button type="button" role="tab" aria-selected={block === item.id} className={block === item.id ? "is-active" : ""} key={item.id} onClick={() => setBlock(item.id)}><strong>{item.label}</strong><small>{item.hint}</small></button>)}</div>
-    {block === "feature" ? <FeatureEditor readOnly={readOnly} /> : <HomepageVoicesEditor readOnly={readOnly} />}
+    {block === "feature" ? <FeatureEditor readOnly={readOnly} /> : block === "voices" ? <HomepageVoicesEditor readOnly={readOnly} /> : <SiteMenuEditor readOnly={readOnly} />}
   </div>;
 }
 

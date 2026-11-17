@@ -1,4 +1,5 @@
 import SiteMenuOverlay from "@/components/SiteMenuOverlay";
+import HeroText from "@/components/HeroText";
 import { usePageBanner } from "@/lib/pageBanners";
 import FollowLinks from "@/components/FollowLinks";
 import { ArrowUpRight, Mail, Menu, Search, X } from "lucide-react";
@@ -61,7 +62,7 @@ export default function SectionPage({ section }: { section: SectionKey }) {
     <main>
       <section className="subpage-hero subpage-hero--living-layout">
         <div className="subpage-hero__image"><img src={banner.image} style={{ objectPosition: banner.position }} alt={`${current.label}, selección editorial LIGHT`} /><span>LIGHT / {current.label.toUpperCase()}</span></div>
-        <div className="subpage-hero__copy"><SectionLabel>{current.label} / </SectionLabel><h1>{current.title}</h1><p>{current.dek}</p><a className="story-link" href="#historias">Explorar historias <ArrowUpRight size={16} /></a></div>
+        <div className="subpage-hero__copy"><SectionLabel>{banner.kicker}</SectionLabel><h1><HeroText value={banner.title} /></h1><p>{banner.dek}</p><a className="story-link" href="#historias">Explorar historias <ArrowUpRight size={16} /></a></div>
       </section>
       <section className={`subpage-intro${section === "eventos" ? " subpage-intro--events" : ""}`}><p className="eyebrow">{section === "eventos" ? "Cobertura / Encuentros" : "La edición"}</p><p>{current.intro}</p></section>
       <section className="subpage-stories" id="historias"><div className="subpage-stories__heading"><SectionLabel>{section === "eventos" ? "Historias y cobertura" : `Historias de ${current.label}`}</SectionLabel><span>{articlesLoading ? "Cargando historias" : `${articles.length} ${articles.length === 1 ? "artículo publicado" : "artículos publicados"}`}</span></div>
