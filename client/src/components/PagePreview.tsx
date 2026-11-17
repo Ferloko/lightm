@@ -60,3 +60,22 @@ export default function PagePreview({ children, width = 1280, tabs, onPick, acti
     </div>, document.body)}
   </div>;
 }
+
+/** La página a pantalla completa, sin edición: “así se verá publicada”. Se cierra con Esc. */
+export function FullscreenPreview({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onClose]);
+  return createPortal(<div className="clean-preview" role="dialog" aria-modal="true" aria-label="Vista previa a pantalla completa">
+    <div className="clean-preview__bar">
+      <span className="clean-preview__label"><i /> Vista previa · así se verá publicada</span>
+      <button type="button" className="clean-preview__close" onClick={onClose} title="Cerrar (Esc)"><X size={18} /> Volver al editor</button>
+    </div>
+    <div className="clean-preview__site page-preview__full" onClickCapture={block}>{children}</div>
+  </div>, document.body);
+}
+
+/** Dentro de un editor en su sitio, los enlaces de la página no navegan. */
+export const keepLinksInPlace = (event: SyntheticEvent) => { if ((event.target as HTMLElement).closest("a")) event.preventDefault(); };

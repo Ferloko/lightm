@@ -1,10 +1,10 @@
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ExternalLink, Plus, RotateCcw, Save, Trash2, UserRound, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ExternalLink, Eye, Plus, RotateCcw, Save, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { assignPersonSlugs, defaultMastheadTeam, emptyPersonDetails, fetchMastheadTeam, saveMastheadTeam, type MastheadMember, type MastheadPerson } from "@/lib/masthead";
 import { describeError } from "@/lib/supabase";
 import { safeImageUrl } from "@/lib/utils";
 import { ImageUrlFrame, InlineText } from "@/components/InlineEditing";
-import PagePreview from "@/components/PagePreview";
+import { FullscreenPreview, keepLinksInPlace } from "@/components/PagePreview";
 import EditorialPageLayout from "@/components/EditorialPageLayout";
 import { MastheadPersonView } from "@/pages/MastheadPersonPage";
 
@@ -15,15 +15,6 @@ const newMember = (): MastheadMember => ({ id: createId("masthead"), role: "Nuev
 const newPerson = (): MastheadPerson => ({ ...emptyPersonDetails(), id: createId("person"), name: "", image: "" });
 type Selection = { memberId: string; personId: string } | null;
 
-/** Galería de la hoja propia: miniaturas con su URL, quitar y añadir. */
-function GalleryEditor({ images, onChange, readOnly }: { images: string[]; onChange: (images: string[]) => void; readOnly: boolean }) {
-  const [draft, setDraft] = useState("");
-  const add = () => { const url = draft.trim(); if (!url) return; onChange([...images, url]); setDraft(""); };
-  return <div className="masthead-panel__gallery">
-    <div className="masthead-panel__gallery-grid">{images.map((src, index) => <figure key={`${src}-${index}`}>{safeImageUrl(src) ? <img src={safeImageUrl(src)} alt="" /> : <span>URL no válida</span>}{!readOnly && <button type="button" onClick={() => onChange(images.filter((_, itemIndex) => itemIndex !== index))} aria-label="Quitar imagen"><X size={12} /></button>}</figure>)}</div>
-    {!readOnly && <div className="masthead-panel__inline-add"><input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); add(); } }} placeholder="Pega la URL de una imagen y pulsa Enter" /><button type="button" onClick={add} aria-label="Añadir imagen"><Plus size={14} /></button></div>}
-  </div>;
-}
 
 export default function MastheadManager({ readOnly = false }: { readOnly?: boolean }) {
   const [members, setMembers] = useState<MastheadMember[]>(defaultMastheadTeam);
@@ -32,6 +23,7 @@ export default function MastheadManager({ readOnly = false }: { readOnly?: boole
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [cleanPreview, setCleanPreview] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -108,39 +100,21 @@ export default function MastheadManager({ readOnly = false }: { readOnly?: boole
         {!readOnly && <button type="button" className="masthead-studio__add-role" onClick={addMember}><Plus size={15} /> Añadir cargo</button>}
       </div>}
 
-      <aside className="masthead-panel" aria-label="Ficha de la persona">
-        {current && <button type="button" className="runway-studio__back masthead-panel__back" onClick={() => setSelected(null)}><ArrowLeft size={14} /> Todo el equipo</button>}
-        {current ? <fieldset className="admin-fieldset masthead-panel__body" disabled={readOnly}>
-          <div className="masthead-panel__head">
-            <ImageUrlFrame className="masthead-panel__portrait" src={current.person.image} onChange={(image) => updatePerson(current.member.id, current.person.id, { image })} emptyLabel="Clic para añadir el retrato (9:16)" readOnly={readOnly} />
-            <div>
-              <p className="eyebrow">Ficha</p>
-              <h3><InlineText multiline value={current.person.name} onChange={(name) => updatePerson(current.member.id, current.person.id, { name })} placeholder="Nombre y apellido" readOnly={readOnly} ariaLabel="Nombre y apellido" /></h3>
-              <label>Cargo<select value={current.member.id} onChange={(event) => changeRole(event.target.value)}>{members.map((member) => <option key={member.id} value={member.id}>{member.role || "Sin nombre"}</option>)}</select></label>
-              <div className="masthead-panel__order"><button type="button" onClick={() => movePersonWithin(-1)} disabled={current.index === 0} aria-label="Mover antes"><ArrowLeft size={13} /></button><span>{current.index + 1} de {current.member.people.length}</span><button type="button" onClick={() => movePersonWithin(1)} disabled={current.index === current.member.people.length - 1} aria-label="Mover después"><ArrowRight size={13} /></button></div>
-            </div>
-          </div>
-
-          <p className="masthead-panel__section">Hoja propia {current.person.slug ? <a href={`/masthead/${current.person.slug}`} target="_blank" rel="noreferrer">/masthead/{current.person.slug} <ExternalLink size={11} /></a> : <small>La URL se crea al guardar</small>}</p>
-          <label>Frase bajo el nombre<input value={current.person.tagline} onChange={(event) => updatePerson(current.member.id, current.person.id, { tagline: event.target.value })} placeholder="Modelo de pasarela en San Andreas" /></label>
-          <label>Biografía<textarea rows={6} value={current.person.bio} onChange={(event) => updatePerson(current.member.id, current.person.id, { bio: event.target.value })} placeholder="Separa los párrafos con una línea en blanco" /></label>
-          <div className="masthead-panel__row"><label>Ciudad / base<input value={current.person.location} onChange={(event) => updatePerson(current.member.id, current.person.id, { location: event.target.value })} placeholder="San Andreas" /></label><label>Agencia<input value={current.person.agency} onChange={(event) => updatePerson(current.member.id, current.person.id, { agency: event.target.value })} placeholder="LIGHT Talent" /></label></div>
-          <label>Facebrowser<input value={current.person.facebrowser} onChange={(event) => updatePerson(current.member.id, current.person.id, { facebrowser: event.target.value })} placeholder="@usuario o URL del perfil" /></label>
-
-          <p className="masthead-panel__section">Imagen principal de la hoja <small>Si no hay, se usa el retrato</small></p>
-          <ImageUrlFrame className="masthead-panel__cover" src={current.person.coverImage} onChange={(coverImage) => updatePerson(current.member.id, current.person.id, { coverImage })} emptyLabel="Clic para añadir la imagen principal" readOnly={readOnly} />
-
-          <p className="masthead-panel__section">Datos <small>Altura, ojos, temporadas…</small></p>
-          <div className="masthead-panel__facts">{current.person.facts.map((fact, index) => <div className="masthead-panel__fact" key={index}><input aria-label="Dato" value={fact.label} onChange={(event) => updatePerson(current.member.id, current.person.id, { facts: current.person.facts.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item) })} placeholder="Altura" /><input aria-label="Valor" value={fact.value} onChange={(event) => updatePerson(current.member.id, current.person.id, { facts: current.person.facts.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item) })} placeholder="1,78 m" /><button type="button" onClick={() => updatePerson(current.member.id, current.person.id, { facts: current.person.facts.filter((_, itemIndex) => itemIndex !== index) })} aria-label="Quitar dato"><X size={13} /></button></div>)}
-            {!readOnly && <button type="button" className="masthead-panel__add" onClick={() => updatePerson(current.member.id, current.person.id, { facts: [...current.person.facts, { label: "", value: "" }] })}><Plus size={13} /> Añadir dato</button>}</div>
-
-          <p className="masthead-panel__section">Galería / book</p>
-          <GalleryEditor images={current.person.gallery} onChange={(gallery) => updatePerson(current.member.id, current.person.id, { gallery })} readOnly={readOnly} />
-
-          <div className="masthead-panel__footer"><button type="button" className="wysiwyg-link" onClick={() => setSelected(null)}>Cerrar ficha</button>{!readOnly && <button type="button" className="masthead-panel__remove" onClick={removePerson}><Trash2 size={13} /> Quitar persona</button>}</div>
-        </fieldset> : <div className="masthead-panel__empty"><UserRound size={28} strokeWidth={1} /><p>Selecciona un retrato para editar su ficha y su hoja propia.</p></div>}
-      </aside>
-      {current && <div className="masthead-studio__preview"><PagePreview><EditorialPageLayout activePath="/masthead"><MastheadPersonView member={current.member} person={{ ...current.person, name: current.person.name || "Nombre y apellido" }} /></EditorialPageLayout></PagePreview></div>}
+      {!current && <aside className="masthead-panel" aria-label="Ficha de la persona"><div className="masthead-panel__empty"><UserRound size={28} strokeWidth={1} /><p>Pulsa un retrato para abrir su hoja y editarla ahí mismo.</p></div></aside>}
+      {current && <div className="place-editor masthead-place">
+        <div className="place-editor__controls">
+          <fieldset className="admin-fieldset place-editor__fields" disabled={readOnly}>
+            <button type="button" className="runway-studio__back" onClick={() => setSelected(null)}><ArrowLeft size={14} /> Todo el equipo</button>
+            <div className="place-editor__portrait"><ImageUrlFrame className="masthead-place__portrait" src={current.person.image} onChange={(image) => updatePerson(current.member.id, current.person.id, { image })} emptyLabel="Retrato" readOnly={readOnly} /><label>Retrato<small>9:16 · el del Masthead</small></label></div>
+            <label>Cargo<select value={current.member.id} onChange={(event) => changeRole(event.target.value)}>{members.map((member) => <option key={member.id} value={member.id}>{member.role || "Sin nombre"}</option>)}</select></label>
+            <label>Orden<span className="masthead-panel__order"><button type="button" onClick={() => movePersonWithin(-1)} disabled={current.index === 0} aria-label="Mover antes"><ArrowLeft size={13} /></button><span>{current.index + 1} de {current.member.people.length}</span><button type="button" onClick={() => movePersonWithin(1)} disabled={current.index === current.member.people.length - 1} aria-label="Mover después"><ArrowRight size={13} /></button></span></label>
+          </fieldset>
+          <div className="masthead-place__actions">{current.person.slug ? <a className="admin-secondary place-editor__preview" href={`/masthead/${current.person.slug}`} target="_blank" rel="noreferrer"><ExternalLink size={13} /> /masthead/{current.person.slug}</a> : <small>La URL se crea al guardar</small>}<button type="button" className="admin-secondary place-editor__preview" onClick={() => setCleanPreview(true)}><Eye size={14} /> Vista previa limpia</button>{!readOnly && <button type="button" className="masthead-panel__remove" onClick={removePerson}><Trash2 size={13} /> Quitar persona</button>}</div>
+        </div>
+        <p className="place-editor__hint">{readOnly ? "Solo lectura." : "Haz clic en el nombre, la frase, los datos, la biografía o las imágenes para cambiarlos ahí mismo."}</p>
+        <div className="place-editor__paper" onClickCapture={keepLinksInPlace}><div className="site-shell editorial-page"><MastheadPersonView member={current.member} person={current.person} edit={readOnly ? undefined : (patch) => updatePerson(current.member.id, current.person.id, patch)} /></div></div>
+      </div>}
+      {current && cleanPreview && <FullscreenPreview onClose={() => setCleanPreview(false)}><EditorialPageLayout activePath="/masthead"><MastheadPersonView member={current.member} person={{ ...current.person, name: current.person.name || "Nombre y apellido" }} /></EditorialPageLayout></FullscreenPreview>}
     </div>
   </section>;
 }

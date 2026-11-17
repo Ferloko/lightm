@@ -107,17 +107,30 @@ export function uniqueLivingSlug(item: LivingItem, items: LivingItem[]) {
 export const livingHref = (item: Pick<LivingItem, "slug" | "id">) => `/living/${item.slug || item.id}`;
 /** Los párrafos de la reseña larga. */
 export const livingParagraphs = (body: string) => body.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
-export type LivingBlock = { type: "text"; text: string } | { type: "image"; src: string; caption: string };
+export type LivingBlock = { type: "text"; text: string } | { type: "heading"; text: string } | { type: "quote"; text: string } | { type: "image"; src: string; caption: string };
 /** Imagen dentro de la reseña: un párrafo con ![pie de foto](https://…) o solo la URL. */
 export const livingImageMarkup = (src: string, caption: string) => `![${caption.replace(/[\[\]\n]/g, " ").trim()}](${src.trim()})`;
-/** La reseña larga por bloques: párrafos de texto e imágenes. */
+/**
+ * La reseña larga por bloques, guardada como texto: párrafos separados por una línea en blanco,
+ * “## ” para un subtítulo, “> ” para una cita y ![pie](url) para una imagen.
+ */
 export function livingBlocks(body: string): LivingBlock[] {
   return livingParagraphs(body).map((part): LivingBlock => {
-    const markup = part.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
+    const markup = part.match(/^!\[([^\]]*)\]\(([^)\s]*)\)$/);
     if (markup) return { type: "image", src: markup[2], caption: markup[1].trim() };
     if (/^https?:\/\/\S+$/.test(part)) return { type: "image", src: part, caption: "" };
+    if (part.startsWith("## ")) return { type: "heading", text: part.slice(3).trim() };
+    if (part.startsWith("> ")) return { type: "quote", text: part.slice(2).trim() };
     return { type: "text", text: part };
   });
+}
+/** De bloques a texto (lo inverso de livingBlocks). Los bloques vacíos no se guardan. */
+export function livingBody(blocks: LivingBlock[]) {
+  return blocks.filter((block) => block.type === "image" ? block.src.trim() : block.text.trim()).map((block) => {
+    if (block.type === "image") return livingImageMarkup(block.src, block.caption);
+    const text = block.text.replace(/\n\s*\n/g, "\n");
+    return block.type === "heading" ? `## ${text.trim()}` : block.type === "quote" ? `> ${text.trim()}` : text.trim();
+  }).join("\n\n");
 }
 
 function normalizeItem(value: any): LivingItem | null {
