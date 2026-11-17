@@ -3934,3 +3934,47 @@ html.dark .traffic-chart .traffic-chart__bar.is-active i { background: #f1eee7; 
 .facebrowser-history tr:hover td { background: rgba(127,127,127,.06); }
 @media (max-width: 900px) { .facebrowser-edit__grid { grid-template-columns: 1fr 1fr; } .facebrowser-panel__foot { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .performance-kpis .performance-kpi, .activity-list > button, .channel-bar i { animation: none; } .traffic-chart__bar i { transform: none; transition: none; } }
+
+/* Resumen en móvil: nada puede ensanchar la página. Los hijos de rejillas y flex pueden encoger. */
+.performance-panel, .performance-grid > *, .traffic-wrap, .traffic-wrap > * { min-width: 0; }
+.traffic-chart { overflow: hidden; }
+.campaign-table { min-width: 0; overflow-x: auto; }
+@media (max-width: 760px) {
+  .traffic-chart { gap: 2px; padding-top: 30px; }
+  .traffic-chart__bar { flex: 1 1 0; }
+  .traffic-chart__bar i { width: 100%; }
+  .traffic-readout strong { font-size: 24px; }
+  .traffic-readout span, .traffic-readout em { flex-basis: 100%; }
+  .budget-donut-svg { width: min(170px, 100%); }
+  .facebrowser-panel__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facebrowser-panel__actions { justify-content: flex-start; }
+  .facebrowser-history table { min-width: 560px; }
+  .facebrowser-history { overflow-x: auto; }
+  .activity-filters { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .activity-filters button { flex: none; }
+}
+@media (max-width: 520px) {
+  .performance-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .performance-kpi { min-height: 108px; padding: 14px; gap: 6px; }
+  .performance-kpi strong { font-size: 30px; }
+  .performance-kpi small { font-size: 9px; line-height: 1.35; }
+  .performance-kpi i { right: 10px; top: 10px; font-size: 14px; }
+}
+
+/* Área de dibujo de cada barra: la línea discontinua marca la media a su altura exacta. */
+.traffic-chart__plot { position: relative; display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 96px; }
+.traffic-chart__plot::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: var(--avg); border-top: 1px dashed rgba(127,127,127,.55); pointer-events: none; }
+.traffic-chart__plot i { max-height: 100%; }
+.traffic-chart__avg { display: none; }
+.traffic-chart--dense .traffic-chart__bar.is-active span { visibility: visible; color: var(--ink); }
+.traffic-readout { min-height: 58px; align-content: flex-start; }
+@media (max-width: 760px) { .traffic-readout { min-height: 86px; } }
+/* La regla de fechas del gráfico denso solo debe ocultar las etiquetas, nunca el área de la barra. */
+.traffic-chart .traffic-chart__bar .traffic-chart__plot { visibility: visible; }
+.traffic-chart .traffic-chart__bar .traffic-chart__plot { transform: none; white-space: normal; font-size: inherit; }
+.traffic-chart { padding-bottom: 34px; }
+.article-stats__periods button { transition: background .2s, color .2s; }
+.article-stats__periods button:hover:not(.is-active) { color: var(--ink); background: rgba(127,127,127,.08); }
+.article-stats__since { flex-basis: 100%; margin: 0; color: var(--muted); font: 11px/1.5 var(--sans); text-align: right; }
+.article-stats.is-loading .article-stats__kpis, .article-stats.is-loading .article-stats__table { opacity: .45; transition: opacity .2s; }
+@media (max-width: 760px) { .article-stats__since { text-align: left; } .article-stats__periods { width: 100%; } .article-stats__periods button { flex: 1; } }

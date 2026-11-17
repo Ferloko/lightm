@@ -267,7 +267,9 @@ export async function fetchArticleStats(articles: { id: string; slug: string }[]
 }
 
 export function useArticleStats(articles: { id: string; slug: string }[], days: number, enabled: boolean) {
-  const [result, setResult] = useState<ArticleStatsResult | null>(null);
+  const [state, setState] = useState<{ result: ArticleStatsResult | null; days: number }>({ result: null, days });
+  const result = state.result;
+  const setResult = (value: ArticleStatsResult | null) => setState({ result: value, days });
   const signature = articles.map((article) => `${article.id}:${article.slug}`).join(",");
   useEffect(() => {
     if (!enabled) { setResult(null); return; }
@@ -275,7 +277,8 @@ export function useArticleStats(articles: { id: string; slug: string }[], days: 
     void fetchArticleStats(articles, days).then((value) => { if (active) setResult(value); });
     return () => { active = false; };
   }, [signature, days, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
-  return result;
+  // `loading`: el periodo pedido aún no ha llegado; mientras, se siguen mostrando los datos anteriores (atenuados).
+  return { result, loading: enabled && (state.days !== days || !result) };
 }
 
 /** Porcentaje legible (o "—" si no hay base). */
