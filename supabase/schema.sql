@@ -1296,8 +1296,9 @@ create or replace function public.is_editorial_lead(p_user uuid)
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.profiles where id = p_user and role in ('owner', 'admin'))
 $$;
-revoke all on function public.is_editorial_lead(uuid) from public, anon;
-grant execute on function public.is_editorial_lead(uuid) to authenticated;
+revoke all on function public.is_editorial_lead(uuid) from public;
+-- anon también: la política de lectura de artículos la evalúa para los visitantes.
+grant execute on function public.is_editorial_lead(uuid) to anon, authenticated;
 
 drop policy if exists "Visitors and admins can read eligible articles" on public.articles;
 create policy "Visitors and admins can read eligible articles" on public.articles for select
@@ -1352,3 +1353,8 @@ returns text language sql immutable set search_path = public as $$
     else 'team'
   end
 $$;
+
+-- 20261124: los visitantes anónimos pueden evaluar la política de artículos
+-- La política de lectura de artículos llama a is_editorial_lead(); sin este permiso la consulta
+-- de los visitantes anónimos falla entera y no ven ningún artículo publicado.
+grant execute on function public.is_editorial_lead(uuid) to anon, authenticated;
