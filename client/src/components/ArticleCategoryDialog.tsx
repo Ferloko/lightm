@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, X } from "lucide-react";
 
-const categories = ["Moda", "Belleza", "Eventos", "Living", "Sociedad", "Archivo"];
+/** Secciones en las que puede vivir un artículo. Los de Living salen en su propio bloque de la hoja Living, separados de la guía de lugares. */
+const categories = ["Moda", "Belleza", "Eventos", "Living"];
 export default function ArticleCategoryDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (category: string) => void }) {
   const [category, setCategory] = useState("Moda");
   useEffect(() => { const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onClose]);

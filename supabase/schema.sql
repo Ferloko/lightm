@@ -1289,3 +1289,27 @@ drop policy if exists "Anyone can subscribe to newsletter" on public.newsletter_
 create policy "Anyone can subscribe to newsletter" on public.newsletter_subscribers for insert to anon, authenticated
   with check (char_length(email) between 3 and 254 and email ~* '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$');
 grant insert on table public.newsletter_subscribers to anon, authenticated;
+
+-- Staff Writers leen los borradores de Owner/Admin (ver supabase/migrations/20261120_staff_read_lead_drafts.sql).
+
+create or replace function public.is_editorial_lead(p_user uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.profiles where id = p_user and role in ('owner', 'admin'))
+$$;
+revoke all on function public.is_editorial_lead(uuid) from public, anon;
+grant execute on function public.is_editorial_lead(uuid) to authenticated;
+
+drop policy if exists "Visitors and admins can read eligible articles" on public.articles;
+create policy "Visitors and admins can read eligible articles" on public.articles for select
+  using (
+    ((status = 'published'::article_status) and (is_visible = true))
+    or (author_id = auth.uid())
+    or (public.current_editorial_role() = any (array['owner'::editorial_role, 'admin'::editorial_role]))
+    or (public.current_editorial_role() = 'staff_writer'::editorial_role and public.is_editorial_lead(author_id))
+  );
+
+-- Cifras de Facebrowser escritas a mano por Owner/Admin (ver supabase/migrations/20261121_facebrowser_manual_entries.sql).
+grant insert on table public.facebrowser_metrics to authenticated;
+drop policy if exists "Owner and admin can add Facebrowser metrics" on public.facebrowser_metrics;
+create policy "Owner and admin can add Facebrowser metrics" on public.facebrowser_metrics
+  for insert to authenticated with check (public.current_editorial_role() in ('owner', 'admin'));

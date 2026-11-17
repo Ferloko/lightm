@@ -2,6 +2,7 @@ import { ArrowUpRight, Plus } from "lucide-react";
 import UtcTime from "@/components/UtcTime";
 import FacebrowserPanel from "@/components/FacebrowserPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { fetchPageViewSeries, fetchPageViewSummary, type PageViewPoint, type PageViewSummary } from "@/lib/analytics";
 import { addDaysKey, CAMPAIGN_CHANNELS, campaignOverlaps, prorateCampaign, campaignStatus, campaignStatusLabel, sortCampaigns, summarizeCampaigns, todayKey, type Campaign, type CampaignChannel } from "@/lib/campaigns";
 import { utcTodayKey, type CalendarEvent } from "@/lib/calendar";
@@ -46,12 +47,16 @@ type Props = {
   onOpenCampaign: (campaign: Campaign | null) => void;
   onOpenArticle: (article: EditorialArticle) => void;
   onNew: () => void;
+  /** Owner/Admin: pueden escribir las cifras de Redes de LIGHT. */
+  canEditSocial?: boolean;
+  editorName?: string;
 };
 
 type Kpi = { key: string; label: string; value: string; note: React.ReactNode; hint: string; tone?: "accent" | "newsletter"; onClick?: () => void };
-type Activity = { id: string; at: string; icon: string; tone: "acid" | "blue" | "soft"; title: string; text: string; meta: string; onClick?: () => void };
+type ActivityKind = "articles" | "campaigns" | "subscribers" | "calendar";
+type Activity = { id: string; kind: ActivityKind; at: string; icon: string; tone: "acid" | "blue" | "soft"; title: string; text: string; meta: string; onClick?: () => void };
 
-export default function PerformanceOverview({ articles, subscriberCount, subscribers, campaigns, calendarEvents, canOpen, onNavigate, onOpenCampaign, onOpenArticle, onNew }: Props) {
+export default function PerformanceOverview({ articles, subscriberCount, subscribers, campaigns, calendarEvents, canOpen, onNavigate, onOpenCampaign, onOpenArticle, onNew, canEditSocial = false, editorName = "" }: Props) {
   const [range, setRange] = useState<Range>(() => readStored<Range>(RANGE_KEY, ranges, 30));
   const [channel, setChannel] = useState<ChannelFilter>(() => readStored<ChannelFilter>(CHANNEL_KEY, ["all", ...CAMPAIGN_CHANNELS.map((item) => item.id)], "all"));
   const [summary, setSummary] = useState<PageViewSummary | null>(null);
@@ -100,17 +105,22 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
   const axisMax = maxImpressions ? niceCeil(maxImpressions) : 0;
   const budgetTotal = channelTotals.budget;
   const donutColors: Record<CampaignChannel, string> = { social: "var(--acid)", search: "#58708a", email: "#c9c2b8", other: "#8f8a80" };
-  let cursor = 0;
-  const donutStops = CAMPAIGN_CHANNELS.filter((item) => channelTotals.byChannel[item.id].budget > 0).map((item) => { const share = channelTotals.byChannel[item.id].budget / budgetTotal * 100; const stop = `${donutColors[item.id]} ${cursor}% ${cursor + share}%`; cursor += share; return stop; });
 
   const visibleCampaigns = sortCampaigns(campaigns.filter((campaign) => campaign.endDate >= today && matchesChannel(campaign)));
   const upcomingEvents = calendarEvents.filter((event) => event.startAt.slice(0, 10) >= utcTodayKey()).sort((a, b) => a.startAt.localeCompare(b.startAt)).slice(0, 4);
 
   const activity: Activity[] = [
-    ...articles.map((article): Activity => { const isPublished = article.status === "published"; return { id: `article-${article.id}`, at: (isPublished && article.publishedAt) || article.updatedAt, icon: isPublished ? "↗" : "✎", tone: isPublished ? "acid" : "blue", title: article.title || "Sin título", text: isPublished ? "está publicada en LIGHT" : "se guardó como borrador", meta: `${article.category || "Página"} · ${article.author || "LIGHT"}`, onClick: () => onOpenArticle(article) }; }),
-    ...campaigns.filter((campaign) => campaign.createdAt).map((campaign): Activity => ({ id: `campaign-${campaign.id}`, at: campaign.createdAt as string, icon: "◎", tone: "soft", title: campaign.name, text: `campaña ${campaignStatusLabel[campaignStatus(campaign)].toLowerCase()}`, meta: `Campaña · ${formatScheduleDate(campaign.startDate)} — ${formatScheduleDate(campaign.endDate)}`, onClick: canOpen("campaigns") ? () => onOpenCampaign(campaign) : undefined })),
-    ...subscribers.slice(0, 20).map((subscriber): Activity => ({ id: `subscriber-${subscriber.id}`, at: subscriber.subscribedAt, icon: "+", tone: "soft", title: "Nueva suscripción", text: "a Correspondencia LIGHT", meta: `Newsletter · ${subscriber.source}`, onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined })),
-  ].filter((item) => item.at && Number.isFinite(new Date(item.at).getTime())).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5);
+    ...articles.map((article): Activity => {
+      const isPublished = article.status === "published";
+      const edited = isPublished && article.publishedAt && article.updatedAt && new Date(article.updatedAt).getTime() - new Date(article.publishedAt).getTime() > 60000;
+      return { id: `article-${article.id}`, kind: "articles", at: edited ? article.updatedAt : (isPublished && article.publishedAt) || article.updatedAt, icon: isPublished ? (edited ? "✎" : "↗") : "✎", tone: isPublished ? "acid" : "blue", title: article.title || "Sin título",
+        text: isPublished ? (edited ? "se editó (ya publicada)" : "se publicó") : "se guardó como borrador",
+        meta: [article.category || "Página", `por ${article.author || "LIGHT"}`, isPublished ? (article.isVisible === false ? "oculta" : article.isFeatured ? "destacada" : "visible") : "", article.readingTime].filter(Boolean).join(" · "), onClick: () => onOpenArticle(article) };
+    }),
+    ...campaigns.filter((campaign) => campaign.createdAt).map((campaign): Activity => ({ id: `campaign-${campaign.id}`, kind: "campaigns", at: campaign.createdAt as string, icon: "◎", tone: "soft", title: campaign.name, text: `campaña creada · ${campaignStatusLabel[campaignStatus(campaign)].toLowerCase()}`, meta: [`${formatScheduleDate(campaign.startDate)} — ${formatScheduleDate(campaign.endDate)}`, CAMPAIGN_CHANNELS.find((item) => item.id === campaign.channel)?.label || "", campaign.budget ? `presupuesto ${formatMoney(campaign.budget)}` : ""].filter(Boolean).join(" · "), onClick: canOpen("campaigns") ? () => onOpenCampaign(campaign) : undefined })),
+    ...subscribers.slice(0, 60).map((subscriber): Activity => ({ id: `subscriber-${subscriber.id}`, kind: "subscribers", at: subscriber.subscribedAt, icon: "+", tone: "soft", title: "Nueva suscripción", text: "a Correspondencia LIGHT", meta: `Formulario: ${subscriber.source || "web"}`, onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined })),
+    ...calendarEvents.filter((event) => event.startAt).map((event): Activity => ({ id: `event-${event.id}`, kind: "calendar", at: `${event.startAt.slice(0, 10) >= utcTodayKey() ? "0000" : event.startAt.slice(0, 16)}`, icon: "◷", tone: "blue", title: event.title || "Evento", text: event.startAt.slice(0, 10) >= utcTodayKey() ? "en el calendario" : "pasó por el calendario", meta: `${formatScheduleDate(event.startAt)}${event.allDay ? " · todo el día" : ` · ${event.startAt.slice(11, 16)} UTC`}${event.endAt && event.endAt.slice(0, 10) !== event.startAt.slice(0, 10) ? ` → ${formatScheduleDate(event.endAt)}` : ""}`, onClick: canOpen("calendar") ? () => onNavigate("calendar") : undefined })).filter((item) => item.at !== "0000"),
+  ].filter((item) => item.at && Number.isFinite(new Date(item.at).getTime())).sort((a, b) => b.at.localeCompare(a.at));
 
   return <section className="performance-dashboard">
     <div className="performance-heading">
@@ -126,23 +136,23 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
     </div>
     {hasMetrics && <p className="performance-footnote">Las métricas de campaña se reparten por días: el periodo solo suma la parte de cada campaña que cae dentro de él.</p>}
 
-    <article className="performance-panel performance-panel--traffic" ref={trafficRef}><div className="performance-panel__head"><div><p className="eyebrow">Audiencia LIGHT</p><h2>Visitas de los últimos {series.length || Math.min(range, 30)} días.</h2></div><span className="performance-panel__metric">{integer.format(series.reduce((total, point) => total + point.count, 0))} <small>visitas</small></span></div>{analyticsError && <p className="campaign-table__empty" role="alert">No se pudieron cargar las visitas. Recarga la página para intentarlo de nuevo.</p>}<div className={`traffic-chart${series.length > 15 ? " traffic-chart--dense" : ""}`} aria-label="Visitas diarias">{series.map((point) => { const max = Math.max(...series.map((item) => item.count), 1); return <div className="traffic-chart__bar" key={point.date} title={`${point.label}: ${point.count} visitas`}><i style={{ height: `${Math.max(5, (point.count / max) * 100)}%` }} /><span>{point.label}</span></div>; })}</div></article>
+    <article className="performance-panel performance-panel--traffic" ref={trafficRef}><div className="performance-panel__head"><div><p className="eyebrow">Audiencia LIGHT</p><h2>Visitas de los últimos {series.length || Math.min(range, 30)} días.</h2></div><span className="performance-panel__metric">{integer.format(series.reduce((total, point) => total + point.count, 0))} <small>visitas</small></span></div>{analyticsError && <p className="campaign-table__empty" role="alert">No se pudieron cargar las visitas. Recarga la página para intentarlo de nuevo.</p>}<TrafficChart series={series} /></article>
 
-    <FacebrowserPanel />
+    <FacebrowserPanel canEdit={canEditSocial} editorName={editorName} />
     <div className="performance-grid performance-grid--charts">
       <article className="performance-panel performance-panel--chart"><div className="performance-panel__head"><div><p className="eyebrow">Canales · {periodLabel}</p><h2>Rendimiento por canal.</h2></div><span className="performance-panel__metric">{formatCompact(channelTotals.impressions)} <small>impresiones</small></span></div>
         {maxImpressions ? <><div className="channel-chart">{CAMPAIGN_CHANNELS.filter((item) => item.id !== "other" || channelTotals.byChannel.other.impressions > 0).map((item) => { const value = channelTotals.byChannel[item.id].impressions; return <button type="button" className={`channel-row channel-row--${item.id}${channel !== "all" && channel !== item.id ? " is-dimmed" : ""}${channel === item.id ? " is-selected" : ""}`} key={item.id} onClick={() => { const next = channel === item.id ? "all" : item.id; setChannel(next); store(CHANNEL_KEY, next); }} title={`${integer.format(value)} impresiones · clic para filtrar`}><div><span>{item.label}</span><small>{item.detail}</small></div><div className="channel-bar"><i style={{ width: `${(value / axisMax) * 100}%` }} /></div><strong>{percent(channelTotals.impressions ? value / channelTotals.impressions : 0, 0)}</strong></button>; })}</div><div className="performance-chart-axis">{[0, 1, 2, 3].map((step) => <span key={step}>{formatCompact(axisMax / 3 * step)}</span>)}</div></>
           : <PanelEmpty text="Aún no hay impresiones registradas en campañas de este periodo." action={canOpen("campaigns") ? () => onOpenCampaign(null) : undefined} label="Registrar campaña" />}
       </article>
       <article className="performance-panel performance-panel--allocation"><div className="performance-panel__head"><div><p className="eyebrow">Inversión</p><h2>Asignación de presupuesto.</h2></div><span className="performance-panel__metric">{formatMoney(budgetTotal)} <small>total</small></span></div>
-        {budgetTotal ? <div className="donut-wrap"><div className="budget-donut" style={{ background: `conic-gradient(${donutStops.join(", ")})` }}><div><strong>{percent(channelTotals.spend / budgetTotal, 0)}</strong><span>invertido</span></div></div><div className="budget-legend">{CAMPAIGN_CHANNELS.filter((item) => channelTotals.byChannel[item.id].budget > 0).map((item) => <span key={item.id}><i className="dot" style={{ background: donutColors[item.id] }} /> {item.label} <b>{formatMoney(channelTotals.byChannel[item.id].budget)}</b></span>)}</div></div>
+        {budgetTotal ? <div className="donut-wrap"><BudgetDonut segments={CAMPAIGN_CHANNELS.filter((item) => channelTotals.byChannel[item.id].budget > 0).map((item) => ({ id: item.id, label: item.label, value: channelTotals.byChannel[item.id].budget, spend: channelTotals.byChannel[item.id].spend, color: donutColors[item.id] }))} total={budgetTotal} spent={channelTotals.spend} /></div>
           : <PanelEmpty text="Define el presupuesto de cada campaña para ver su reparto por canal." action={canOpen("campaigns") ? () => onNavigate("campaigns") : undefined} label="Ir a campañas" />}
       </article>
     </div>
 
     <div className="performance-grid performance-grid--lower">
       <article className="performance-panel performance-panel--table"><div className="performance-panel__head"><div><p className="eyebrow">Planificación editorial</p><h2>Comparativa de campañas.</h2></div>{canOpen("calendar") && <button className="performance-link" type="button" onClick={() => onNavigate("calendar")}>Ver calendario <ArrowUpRight size={14} /></button>}</div><div className="campaign-table"><div className="campaign-table__row campaign-table__row--head"><span>Campaña / evento</span><span>Estado</span><span>Inicio</span><span>Final</span><span>Canal · ROAS</span></div>{visibleCampaigns.map((campaign) => { const status = campaignStatus(campaign); return <button type="button" className="campaign-table__row" key={`campaign-${campaign.id}`} onClick={() => onOpenCampaign(campaign)} disabled={!canOpen("campaigns")}><strong>{campaign.name}</strong><span className={`campaign-status ${status === "active" ? "campaign-status--live" : "campaign-status--draft"}`}><i /> {campaignStatusLabel[status]}</span><span>{formatScheduleDate(campaign.startDate)}</span><span>{formatScheduleDate(campaign.endDate)}</span><span>{CAMPAIGN_CHANNELS.find((item) => item.id === campaign.channel)?.label} · {campaign.spend ? `${(campaign.revenue / campaign.spend).toLocaleString("es-ES", { maximumFractionDigits: 1 })}×` : "—"}</span></button>; })}{upcomingEvents.map((event) => <button type="button" className="campaign-table__row campaign-table__row--event" key={`event-${event.id}`} onClick={() => onNavigate("calendar")} disabled={!canOpen("calendar")}><strong>{event.title}</strong><span className="campaign-status campaign-status--paused"><i /> Por venir</span><span>{formatScheduleDate(event.startAt)}{!event.allDay && <> · <UtcTime value={event.startAt} showUtcBadge /></>}</span><span>{event.endAt ? formatScheduleDate(event.endAt) : "—"}</span><span>Evento</span></button>)}{!visibleCampaigns.length && !upcomingEvents.length && <div className="campaign-table__empty">No hay campañas ni eventos próximos.{canOpen("campaigns") && <button type="button" className="performance-link" onClick={() => onOpenCampaign(null)}><Plus size={13} /> Nueva campaña</button>}</div>}</div></article>
-      <article className="performance-panel performance-panel--activity"><div className="performance-panel__head"><div><p className="eyebrow">Actividad reciente</p><h2>Últimos movimientos.</h2></div></div><div className="activity-list">{activity.length ? activity.map((item) => <button type="button" key={item.id} onClick={item.onClick} disabled={!item.onClick}><span className={`activity-icon activity-icon--${item.tone}`}>{item.icon}</span><p><strong>{item.title}</strong> {item.text}<small>{relativeTime(item.at)} · {item.meta}</small></p></button>) : <p className="campaign-table__empty">Todavía no hay movimientos.</p>}</div></article>
+      <article className="performance-panel performance-panel--activity"><div className="performance-panel__head"><div><p className="eyebrow">Actividad reciente</p><h2>Últimos movimientos.</h2></div></div><ActivityFeed items={activity} /></article>
     </div>
 
     <div className="performance-footer-actions"><p>{visibleCampaigns.length} campañas y {upcomingEvents.length} eventos en la planificación visible.</p><div><button className="admin-secondary" onClick={() => onNavigate("pages")} type="button">Ver páginas <ArrowUpRight size={14} /></button><button className="admin-primary" onClick={onNew} type="button"><Plus size={14} /> Crear página</button></div></div>
@@ -154,3 +164,62 @@ function PanelEmpty({ text, action, label }: { text: string; action?: () => void
 }
 
 function niceCeil(value: number) { const magnitude = 10 ** Math.floor(Math.log10(value)); const scaled = value / magnitude; const step = scaled <= 1.5 ? 1.5 : scaled <= 3 ? 3 : scaled <= 6 ? 6 : scaled <= 9 ? 9 : 12; return step * magnitude; }
+
+const dayNames = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
+
+/** Visitas diarias: las barras crecen al cargar; al pasar el ratón, cada día muestra sus visitas y su diferencia con la media. */
+function TrafficChart({ series }: { series: PageViewPoint[] }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(false); const frame = window.requestAnimationFrame(() => setReady(true)); return () => window.cancelAnimationFrame(frame); }, [series]);
+  if (!series.length) return null;
+  const max = Math.max(...series.map((item) => item.count), 1);
+  const average = series.reduce((total, item) => total + item.count, 0) / series.length;
+  const peak = series.reduce((best, item, index) => item.count > series[best].count ? index : best, 0);
+  const active = hover !== null ? series[hover] : null;
+  const diff = active ? active.count - average : 0;
+  return <div className="traffic-wrap" onMouseLeave={() => setHover(null)}>
+    <div className="traffic-readout" aria-live="polite">{active ? <><strong>{integer.format(active.count)}</strong><span>{active.count === 1 ? "visita" : "visitas"} · {dayNames.format(new Date(`${active.date}T12:00:00`))}</span><em className={diff >= 0 ? "is-up" : "is-down"}>{diff >= 0 ? "▲" : "▼"} {Math.abs(Math.round(diff)).toLocaleString("es-ES")} {diff >= 0 ? "sobre" : "bajo"} la media</em></>
+      : <><strong>{Math.round(average).toLocaleString("es-ES")}</strong><span>visitas de media al día · pico el {dayNames.format(new Date(`${series[peak].date}T12:00:00`))} ({integer.format(series[peak].count)})</span><em>Pasa el ratón por las barras</em></>}</div>
+    <div className={`traffic-chart${series.length > 15 ? " traffic-chart--dense" : ""}${ready ? " is-ready" : ""}${hover !== null ? " is-hovering" : ""}`} aria-label="Visitas diarias" style={{ "--avg": `${(average / max) * 100}%` } as CSSProperties}>
+      <span className="traffic-chart__avg" aria-hidden="true"><b>media</b></span>
+      {series.map((point, index) => <button type="button" className={`traffic-chart__bar${hover === index ? " is-active" : ""}${index === peak ? " is-peak" : ""}`} key={point.date} onMouseEnter={() => setHover(index)} onFocus={() => setHover(index)} aria-label={`${point.label}: ${point.count} visitas`} style={{ "--delay": `${index * 18}ms` } as CSSProperties}><i style={{ height: `${Math.max(5, (point.count / max) * 100)}%` }}><b>{integer.format(point.count)}</b></i><span>{point.label}</span></button>)}
+    </div>
+  </div>;
+}
+
+/** Donut de presupuesto en SVG: cada canal se resalta al pasar el ratón (también desde la leyenda). */
+function BudgetDonut({ segments, total, spent }: { segments: { id: string; label: string; value: number; spend: number; color: string }[]; total: number; spent: number }) {
+  const [hover, setHover] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => { const frame = window.requestAnimationFrame(() => setReady(true)); return () => window.cancelAnimationFrame(frame); }, []);
+  const radius = 42, circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const active = segments.find((segment) => segment.id === hover) || null;
+  return <>
+    <div className={`budget-donut-svg${ready ? " is-ready" : ""}`} onMouseLeave={() => setHover(null)}>
+      <svg viewBox="0 0 100 100" role="img" aria-label="Reparto del presupuesto por canal">
+        <circle cx="50" cy="50" r={radius} className="budget-donut-svg__track" />
+        {segments.map((segment) => { const length = (segment.value / total) * circumference; const dash = `${ready ? Math.max(0, length - 0.6) : 0} ${circumference}`; const node = <circle key={segment.id} cx="50" cy="50" r={radius} stroke={segment.color} strokeDasharray={dash} strokeDashoffset={-offset} className={hover && hover !== segment.id ? "is-dim" : hover === segment.id ? "is-active" : ""} onMouseEnter={() => setHover(segment.id)} />; offset += length; return node; })}
+      </svg>
+      <div className="budget-donut-svg__center">{active ? <><strong>{percent(active.value / total, 0)}</strong><span>{active.label}</span><small>{formatMoney(active.value)} · {percent(active.value ? active.spend / active.value : 0, 0)} invertido</small></> : <><strong>{percent(total ? spent / total : 0, 0)}</strong><span>invertido</span><small>{formatMoney(spent)} de {formatMoney(total)}</small></>}</div>
+    </div>
+    <div className="budget-legend">{segments.map((segment) => <button type="button" key={segment.id} className={hover === segment.id ? "is-active" : ""} onMouseEnter={() => setHover(segment.id)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(segment.id)} onBlur={() => setHover(null)}><i className="dot" style={{ background: segment.color }} /> {segment.label} <b>{formatMoney(segment.value)}</b><small>{percent(segment.value / total, 0)}</small></button>)}</div>
+  </>;
+}
+
+const activityFilters: [ActivityKind | "all", string][] = [["all", "Todo"], ["articles", "Artículos"], ["campaigns", "Campañas"], ["subscribers", "Suscripciones"], ["calendar", "Calendario"]];
+const exactTime = (iso: string) => new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/** Historial de movimientos: filtros por tipo y “Ver más” (antes se mostraban solo 5). */
+function ActivityFeed({ items }: { items: Activity[] }) {
+  const [filter, setFilter] = useState<ActivityKind | "all">("all");
+  const [limit, setLimit] = useState(12);
+  const filtered = filter === "all" ? items : items.filter((item) => item.kind === filter);
+  const counts = useMemo(() => { const result: Record<string, number> = { all: items.length }; items.forEach((item) => { result[item.kind] = (result[item.kind] || 0) + 1; }); return result; }, [items]);
+  return <>
+    <div className="activity-filters" role="tablist" aria-label="Tipo de movimiento">{activityFilters.filter(([id]) => id === "all" || counts[id]).map(([id, label]) => <button type="button" role="tab" key={id} aria-selected={filter === id} className={filter === id ? "is-active" : ""} onClick={() => { setFilter(id); setLimit(12); }}>{label} <small>{counts[id] || 0}</small></button>)}</div>
+    <div className="activity-list">{filtered.length ? filtered.slice(0, limit).map((item, index) => <button type="button" key={item.id} onClick={item.onClick} disabled={!item.onClick} style={{ "--delay": `${Math.min(index, 12) * 30}ms` } as CSSProperties}><span className={`activity-icon activity-icon--${item.tone}`}>{item.icon}</span><p><strong>{item.title}</strong> {item.text}<small title={exactTime(item.at)}>{relativeTime(item.at)} · {exactTime(item.at)}</small><small>{item.meta}</small></p></button>) : <p className="campaign-table__empty">Todavía no hay movimientos.</p>}</div>
+    {filtered.length > limit && <button type="button" className="performance-link activity-more" onClick={() => setLimit((value) => value + 12)}>Ver más · quedan {filtered.length - limit}</button>}
+  </>;
+}

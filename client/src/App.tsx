@@ -93,7 +93,7 @@ function Router() {
       <Route path="/belleza" component={() => <ComingSoonGate path="/belleza"><SectionPage section="belleza" /></ComingSoonGate>} />
       <Route path="/eventos" component={() => <ComingSoonGate path="/eventos"><SectionPage section="eventos" /></ComingSoonGate>} />
       <Route path="/cultura" component={() => <Redirect to="/eventos" />} />
-      <Route path="/sociedad" component={() => <SectionPage section="sociedad" />} />
+      <Route path="/sociedad" component={() => <Redirect to="/archivo" />} />
       <Route path="/living" component={() => <ComingSoonGate path="/living"><LivingPage /></ComingSoonGate>} />
       <Route path="/living/:slug" component={() => <ComingSoonGate path="/living"><LivingItemPage /></ComingSoonGate>} />
       <Route path="/masthead" component={MastheadPage} />

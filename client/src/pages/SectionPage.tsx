@@ -13,14 +13,12 @@ const images = {
   moda: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1500&q=90",
   belleza: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1500&q=90",
   eventos: "https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=1500&q=90",
-  sociedad: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1500&q=90",
 };
 
 const sections = {
   moda: { label: "Moda", title: "La forma que viene.", dek: "Diseñadores, prendas e ideas que dibujan otra manera de vestir el presente.", intro: "Historias de moda, autoría y oficio: una selección editorial para mirar de cerca las siluetas que están cambiando.", image: images.moda },
   belleza: { label: "Belleza", title: "Habitar la piel.", dek: "Rituales, texturas y voces que imaginan una belleza más propia y sin reglas prestadas.", intro: "Una mirada a la belleza desde el cuidado, la expresión y los gestos cotidianos que nos devuelven a nosotros mismos.", image: images.belleza },
   eventos: { label: "Eventos", title: "La ciudad nos convoca.", dek: "Encuentros, aperturas y acontecimientos para mirar el presente desde otro lugar.", intro: "Crónicas, conversaciones y cobertura de los eventos que reúnen ideas, personas y escenas. Cada historia abre un espacio para contar qué ocurrió, quiénes estuvieron y por qué merece recordarse.", image: images.eventos },
-  sociedad: { label: "Sociedad", title: "El gesto propio.", dek: "Las voces que abren conversaciones nuevas y construyen comunidad desde la diferencia.", intro: "Personas, ideas y conversaciones para entender cómo se transforma la vida en común.", image: images.sociedad },
 } as const;
 
 type SectionKey = keyof typeof sections;

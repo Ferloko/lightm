@@ -13,7 +13,7 @@ import EditorialAccessLink from "@/components/EditorialAccessLink";
 import PublicArticleView from "@/components/PublicArticleView";
 import { articleKeyFromPath, useArticleReadTracking } from "@/lib/articleAnalytics";
 
-const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Sociedad", "Runway", "La revista", "Archivo"];
+const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Living", "Runway", "La revista", "Archivo"];
 
 export default function DynamicArticlePage() {
   const [, params] = useRoute<{ slug: string }>("/historias/:slug");
