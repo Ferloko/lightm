@@ -5,6 +5,8 @@ import { createMagazineEdition, saveMagazineEditions } from "@/lib/magazineCatal
 import type { MagazineEdition } from "@/lib/magazines";
 import { ImageUrlButton, ImageUrlFrame, InlineText } from "@/components/InlineEditing";
 import { safeImageUrl } from "@/lib/utils";
+import FlipbookUploader from "@/components/FlipbookUploader";
+import { hasFlipbook } from "@/lib/flipbook";
 
 type Device = "desktop" | "mobile";
 type Page = MagazineEdition["previewPages"][number];
@@ -62,7 +64,7 @@ export default function MagazineManager({ editions, onChange, readOnly = false }
         const pagesWithImage = edition.previewPages.filter((page) => page.image).length;
         return <article className="edition-shelf__item" key={edition.number}>
           <button type="button" className="edition-shelf__cover" onClick={() => open(edition)} aria-label={`${readOnly ? "Ver" : "Editar"} ${edition.title}`}>{cover ? <img src={cover} alt="" /> : <span className="edition-shelf__no-cover"><BookOpen size={22} strokeWidth={1.3} />Sin portada</span>}<b>{edition.number}</b></button>
-          <div className="edition-shelf__meta"><p className="eyebrow">{edition.date || "Sin fecha"}</p><h3>{edition.title}</h3><small>{pagesWithImage}/12 páginas con imagen · {edition.heroImage ? "con banner" : "sin banner"} · {edition.iframe || edition.src || edition.embedHtml ? "lector listo" : "sin lector"}</small></div>
+          <div className="edition-shelf__meta"><p className="eyebrow">{edition.date || "Sin fecha"}</p><h3>{edition.title}</h3><small>{pagesWithImage}/12 páginas con imagen · {edition.heroImage ? "con banner" : "sin banner"} · {hasFlipbook(edition) ? "lector propio" : edition.iframe || edition.src || edition.embedHtml ? "lector Heyzine" : "sin lector"}</small></div>
           <div className="edition-shelf__actions"><button type="button" onClick={() => open(edition)}>{readOnly ? "Ver" : "Editar"}</button><a href={`/revista/${edition.number}`} target="_blank" rel="noreferrer">Abrir <ArrowUpRight size={12} /></a>{!readOnly && <button type="button" onClick={() => void remove(edition.number)} aria-label={`Eliminar edición ${edition.number}`}><Trash2 size={13} /></button>}</div>
         </article>;
       })}
@@ -131,6 +133,8 @@ export default function MagazineManager({ editions, onChange, readOnly = false }
           <label>Imagen del banner<input value={editing.heroImage || ""} onChange={(event) => update({ heroImage: event.target.value })} placeholder="https://… (vacío = cabecera solo con texto)" /></label>
           <label>Encuadre<select value={editing.heroPosition || "center"} onChange={(event) => update({ heroPosition: event.target.value as "top" | "center" | "bottom" })}><option value="top">Parte superior</option><option value="center">Centro</option><option value="bottom">Parte inferior</option></select></label>
         </fieldset>
+
+        <FlipbookUploader value={editing.flipbook} editionNumber={editing.number} savedNumber={originalNumber} onChange={(flipbook) => update({ flipbook })} readOnly={readOnly} />
 
         <fieldset className="edition-panel__group" disabled={readOnly}>
           <legend>Lector completo (Heyzine)</legend>
