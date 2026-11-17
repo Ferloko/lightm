@@ -24,17 +24,17 @@ export function ArticleRowStats({ stats }: { stats?: ArticleStats }) {
   return <span className="article-row-stats"><BarChart3 size={12} /> {fmt(stats.views)} visitas · {fmt(stats.visitors)} lectores · {fmt(stats.impressions)} impresiones · CTR {rate(stats.clicks, stats.impressions)} · ♥ {fmt(stats.likes)}</span>;
 }
 
-export default function ArticleStatsPanel({ articles, result, days, onDaysChange }: { articles: EditorialArticle[]; result: ArticleStatsResult | null; days: number; onDaysChange: (days: number) => void }) {
+export default function ArticleStatsPanel({ articles, result, loading = false, days, onDaysChange }: { articles: EditorialArticle[]; result: ArticleStatsResult | null; loading?: boolean; days: number; onDaysChange: (days: number) => void }) {
   const [sort, setSort] = useState<SortKey>("views");
   const [open, setOpen] = useState<string | null>(null);
   const stats = result?.status === "ok" ? result.stats : {};
   const rows = useMemo(() => articles.map((article) => ({ article, stats: stats[article.id] })).filter((row): row is { article: EditorialArticle; stats: ArticleStats } => Boolean(row.stats)).sort((a, b) => sortValue(b.stats, sort) - sortValue(a.stats, sort)), [articles, stats, sort]);
   const totals = rows.reduce((sum, { stats: item }) => ({ impressions: sum.impressions + item.impressions, clicks: sum.clicks + item.clicks, views: sum.views + item.views, visitors: sum.visitors + item.visitors, reads100: sum.reads100 + item.reads100, seconds: sum.seconds + item.avgSeconds * item.views, shares: sum.shares + item.shares }), { impressions: 0, clicks: 0, views: 0, visitors: 0, reads100: 0, seconds: 0, shares: 0 });
 
-  return <section className="article-stats" aria-label="Rendimiento de los artículos">
+  return <section className={`article-stats${loading && result ? " is-loading" : ""}`} aria-label="Rendimiento de los artículos" aria-busy={loading}>
     <div className="article-stats__head">
       <div><p className="eyebrow">Rendimiento</p><h3>Cómo se leen tus artículos.</h3></div>
-      <div className="article-stats__periods" role="group" aria-label="Periodo">{PERIODS.map((value) => <button key={value} type="button" className={days === value ? "is-active" : ""} onClick={() => onDaysChange(value)}>{value} días</button>)}</div>
+      <div className="article-stats__periods" role="group" aria-label="Periodo">{PERIODS.map((value) => <button key={value} type="button" className={days === value ? "is-active" : ""} onClick={() => onDaysChange(value)}>{value} días</button>)}</div><p className="article-stats__since">{loading && result ? "Actualizando…" : `Mostrando los últimos ${days} días.`} Las impresiones, clics y lecturas se registran desde el 10 nov 2026; las visitas, desde antes.</p>
     </div>
     {!result ? <p className="article-stats__note">Cargando estadísticas…</p>
       : result.status === "not_configured" ? <p className="article-stats__note">Falta aplicar la migración <code>20261114_article_analytics.sql</code> en Supabase para ver estas estadísticas.</p>
