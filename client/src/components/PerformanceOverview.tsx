@@ -7,6 +7,7 @@ import { fetchPageViewSeries, fetchPageViewSummary, type PageViewPoint, type Pag
 import { addDaysKey, CAMPAIGN_CHANNELS, campaignOverlaps, prorateCampaign, campaignStatus, campaignStatusLabel, sortCampaigns, summarizeCampaigns, todayKey, type Campaign, type CampaignChannel } from "@/lib/campaigns";
 import { utcTodayKey, type CalendarEvent } from "@/lib/calendar";
 import type { EditorialArticle } from "@/lib/editorial";
+import { useArticleStats } from "@/lib/articleAnalytics";
 import type { NewsletterSubscriber } from "@/lib/newsletter";
 
 const RANGE_KEY = "light.dashboard.range";
@@ -63,6 +64,11 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
   const [series, setSeries] = useState<PageViewPoint[]>([]);
   const [analyticsError, setAnalyticsError] = useState(false);
   const trafficRef = useRef<HTMLElement>(null);
+  const articlesRef = useRef<HTMLElement>(null);
+  const [showAllArticles, setShowAllArticles] = useState(false);
+  // Impresiones, clics y visitas de cada artículo: se registran solos en la web (article_stats).
+  const published = useMemo(() => articles.filter((article) => article.status === "published"), [articles]);
+  const { result: articleStats, loading: articleStatsLoading } = useArticleStats(published, range, published.length > 0);
 
   useEffect(() => {
     let active = true;
@@ -89,11 +95,21 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
   const scrollToTraffic = () => trafficRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const emptyNote = (text: string) => hasMetrics ? text : canOpen("campaigns") ? "Registra métricas en Campañas" : "Sin métricas en el periodo";
 
+  const articleRows = useMemo(() => {
+    if (articleStats?.status !== "ok") return [];
+    return published.map((article) => { const stats = articleStats.stats[article.id]; const impressions = stats?.impressions || 0, clicks = stats?.clicks || 0, views = stats?.views || 0; return { article, impressions, clicks, views, ctr: impressions ? clicks / impressions : null }; })
+      .sort((a, b) => b.impressions - a.impressions || b.views - a.views || b.clicks - a.clicks);
+  }, [articleStats, published]);
+  const articleTotals = articleRows.reduce((total, row) => ({ impressions: total.impressions + row.impressions, clicks: total.clicks + row.clicks, views: total.views + row.views }), { impressions: 0, clicks: 0, views: 0 });
+  const articleCtr = articleTotals.impressions ? articleTotals.clicks / articleTotals.impressions : null;
+  const maxArticleImpressions = Math.max(0, ...articleRows.map((row) => row.impressions));
+  const scrollToArticles = () => articlesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const statsPending = !articleStats && published.length > 0;
+
   const kpis: Kpi[] = [
     { key: "visits", label: "Visitas hoy", value: analyticsError ? "—" : summary ? integer.format(summary.todayViews) : "…", note: analyticsError ? "No se pudieron cargar las visitas" : <><b>{summary ? integer.format(summary.views) : "…"}</b> en {periodLabel}</>, hint: "Ver la evolución diaria de visitas", tone: "accent", onClick: scrollToTraffic },
     { key: "spend", label: "Ad spend", value: formatMoney(totals.spend), note: totals.budget ? <><b>{percent(totals.spend / totals.budget, 0)}</b> de {formatMoney(totals.budget)} presupuesto</> : emptyNote(`${totals.count} campañas en el periodo`), hint: `${"Inversión registrada en las campañas del periodo"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
-    { key: "impressions", label: "Impressions", value: formatCompact(totals.impressions), note: <><b>{totals.count}</b> {emptyNote(totals.count === 1 ? "campaña en el periodo" : "campañas en el periodo")}</>, hint: `${"Impresiones registradas en las campañas"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
-    { key: "ctr", label: "CTR", value: percent(totals.ctr, 2), note: <><b>{integer.format(totals.clicks)}</b> clics / {formatCompact(totals.impressions)} impresiones</>, hint: `${"Clics ÷ impresiones"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
+    { key: "ctr", label: "CTR", value: statsPending ? "…" : percent(articleCtr, 2), note: articleStats?.status === "ok" ? <><b>{integer.format(articleTotals.clicks)}</b> clics / {formatCompact(articleTotals.impressions)} impresiones</> : statsPending ? "Calculando…" : "Sin datos de artículos", hint: "Clics ÷ impresiones de los artículos en el periodo (se calculan solos en la web)", onClick: scrollToArticles },
     { key: "roas", label: "ROAS", value: totals.roas === null ? "—" : `${totals.roas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`, note: <><b>{formatMoney(totals.revenue)}</b> / {formatMoney(totals.spend)} invertidos</>, hint: `${"Ingresos ÷ inversión"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
     { key: "revenue", label: "Revenue", value: formatMoney(totals.revenue), note: totals.spend ? <><b>{formatMoney(totals.revenue - totals.spend)}</b> margen sobre inversión</> : emptyNote("Ingresos atribuidos"), hint: `${"Ingresos atribuidos a campañas"} · ${PRORATE_NOTE}`, onClick: campaignsAction },
     { key: "users", label: "Active users", value: analyticsError ? "—" : !summary ? "…" : summary.visitors === null || (summary.visitors === 0 && summary.untrackedViews > 0) ? "—" : integer.format(summary.visitors), note: analyticsError ? "No se pudieron cargar las visitas" : summary?.visitors === null ? "Requiere la migración de visitantes" : summary && summary.untrackedViews > 0 ? <><b>{integer.format(summary.untrackedViews)}</b> visitas anteriores sin identificar</> : <><b>Únicos</b> en {periodLabel}</>, hint: "Navegadores distintos que visitaron LIGHT", onClick: scrollToTraffic },
@@ -101,8 +117,6 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
     { key: "subscribers", label: "Suscriptores", value: integer.format(subscriberCount), note: <><b>+{integer.format(newSubscribers)}</b> en {periodLabel}</>, hint: "Abrir la lista de suscriptores", tone: "newsletter", onClick: canOpen("subscribers") ? () => onNavigate("subscribers") : undefined },
   ];
 
-  const maxImpressions = Math.max(...CAMPAIGN_CHANNELS.map((item) => channelTotals.byChannel[item.id].impressions), 0);
-  const axisMax = maxImpressions ? niceCeil(maxImpressions) : 0;
   const budgetTotal = channelTotals.budget;
   const donutColors: Record<CampaignChannel, string> = { social: "var(--acid)", search: "#58708a", email: "#c9c2b8", other: "#8f8a80" };
 
@@ -140,9 +154,21 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
 
     <FacebrowserPanel canEdit={canEditSocial} editorName={editorName} />
     <div className="performance-grid performance-grid--charts">
-      <article className="performance-panel performance-panel--chart"><div className="performance-panel__head"><div><p className="eyebrow">Canales · {periodLabel}</p><h2>Rendimiento por canal.</h2></div><span className="performance-panel__metric">{formatCompact(channelTotals.impressions)} <small>impresiones</small></span></div>
-        {maxImpressions ? <><div className="channel-chart">{CAMPAIGN_CHANNELS.filter((item) => item.id !== "other" || channelTotals.byChannel.other.impressions > 0).map((item) => { const value = channelTotals.byChannel[item.id].impressions; return <button type="button" className={`channel-row channel-row--${item.id}${channel !== "all" && channel !== item.id ? " is-dimmed" : ""}${channel === item.id ? " is-selected" : ""}`} key={item.id} onClick={() => { const next = channel === item.id ? "all" : item.id; setChannel(next); store(CHANNEL_KEY, next); }} title={`${integer.format(value)} impresiones · clic para filtrar`}><div><span>{item.label}</span><small>{item.detail}</small></div><div className="channel-bar"><i style={{ width: `${(value / axisMax) * 100}%` }} /></div><strong>{percent(channelTotals.impressions ? value / channelTotals.impressions : 0, 0)}</strong></button>; })}</div><div className="performance-chart-axis">{[0, 1, 2, 3].map((step) => <span key={step}>{formatCompact(axisMax / 3 * step)}</span>)}</div></>
-          : <PanelEmpty text="Aún no hay impresiones registradas en campañas de este periodo." action={canOpen("campaigns") ? () => onOpenCampaign(null) : undefined} label="Registrar campaña" />}
+      <article className={`performance-panel performance-panel--chart performance-panel--articles${articleStatsLoading ? " is-loading" : ""}`} ref={articlesRef}><div className="performance-panel__head"><div><p className="eyebrow">Artículos · {periodLabel}</p><h2>Rendimiento por artículo.</h2></div><span className="performance-panel__metric">{formatCompact(articleTotals.impressions)} <small>impresiones</small></span></div>
+        {articleStats?.status === "not_configured" ? <PanelEmpty text="Las estadísticas de artículos necesitan la migración de analítica en Supabase." label="" />
+          : articleStats?.status === "error" ? <PanelEmpty text={`No se pudieron cargar las estadísticas: ${articleStats.message}`} label="" />
+          : !published.length ? <PanelEmpty text="Aún no hay artículos publicados." action={onNew} label="Crear página" />
+          : statsPending ? <p className="article-perf__loading">Calculando…</p>
+          : <div className="article-perf" role="table" aria-label="Rendimiento por artículo">
+            <div className="article-perf__row article-perf__row--head" role="row"><span role="columnheader">Artículo</span><span role="columnheader">Clics</span><span role="columnheader">Impresiones</span><span role="columnheader">Visitas</span><span role="columnheader">CTR</span></div>
+            {(showAllArticles ? articleRows : articleRows.slice(0, 6)).map((row) => <button type="button" role="row" className="article-perf__row" key={row.article.id} onClick={() => onOpenArticle(row.article)} title={`${row.article.title} · abrir`}>
+              <span className="article-perf__title" role="cell"><strong>{row.article.title || "Sin título"}</strong><small>{row.article.category}</small><i style={{ width: `${maxArticleImpressions ? (row.impressions / maxArticleImpressions) * 100 : 0}%` }} /></span>
+              <span role="cell">{integer.format(row.clicks)}</span><span role="cell">{integer.format(row.impressions)}</span><span role="cell">{integer.format(row.views)}</span><span role="cell">{percent(row.ctr, 1)}</span>
+            </button>)}
+            <div className="article-perf__row article-perf__row--total" role="row"><span role="cell">Total · {articleRows.length} {articleRows.length === 1 ? "artículo" : "artículos"}</span><span role="cell">{integer.format(articleTotals.clicks)}</span><span role="cell">{integer.format(articleTotals.impressions)}</span><span role="cell">{integer.format(articleTotals.views)}</span><span role="cell">{percent(articleCtr, 1)}</span></div>
+            {articleRows.length > 6 && <button type="button" className="performance-link article-perf__more" onClick={() => setShowAllArticles((value) => !value)}>{showAllArticles ? "Ver menos" : `Ver los ${articleRows.length}`}</button>}
+            <p className="article-perf__note">Se calculan solos: una impresión es cada vez que el artículo aparece en pantalla; un clic, cada vez que alguien lo abre desde la web; las visitas, las veces que se lee su página.</p>
+          </div>}
       </article>
       <article className="performance-panel performance-panel--allocation"><div className="performance-panel__head"><div><p className="eyebrow">Inversión</p><h2>Asignación de presupuesto.</h2></div><span className="performance-panel__metric">{formatMoney(budgetTotal)} <small>total</small></span></div>
         {budgetTotal ? <div className="donut-wrap"><BudgetDonut segments={CAMPAIGN_CHANNELS.filter((item) => channelTotals.byChannel[item.id].budget > 0).map((item) => ({ id: item.id, label: item.label, value: channelTotals.byChannel[item.id].budget, spend: channelTotals.byChannel[item.id].spend, color: donutColors[item.id] }))} total={budgetTotal} spent={channelTotals.spend} /></div>
@@ -163,7 +189,6 @@ function PanelEmpty({ text, action, label }: { text: string; action?: () => void
   return <div className="performance-empty"><p>{text}</p>{action && <button type="button" className="performance-link" onClick={action}>{label} <ArrowUpRight size={14} /></button>}</div>;
 }
 
-function niceCeil(value: number) { const magnitude = 10 ** Math.floor(Math.log10(value)); const scaled = value / magnitude; const step = scaled <= 1.5 ? 1.5 : scaled <= 3 ? 3 : scaled <= 6 ? 6 : scaled <= 9 ? 9 : 12; return step * magnitude; }
 
 const dayNames = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
 
