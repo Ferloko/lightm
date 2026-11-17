@@ -1,21 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpRight, Eye, FolderPlus, ImageOff, Menu, Pencil, Plus, Save, Search, Settings2, Trash2, X } from "lucide-react";
-import PagePreview from "@/components/PagePreview";
+import { FullscreenPreview, keepLinksInPlace } from "@/components/PagePreview";
 import { BrandView } from "@/pages/BrandPage";
 import { blankRunwayCategory, deleteRemoteRunwayBrand, saveRemoteRunwayBrand, saveRunwayCategories, useRunwayCategories, type RunwayBrand, type RunwayCategory } from "@/lib/runway";
 import { describeError, supabase } from "@/lib/supabase";
 
 const blank = (categoryId: string): RunwayBrand => ({ id: crypto.randomUUID(), slug: "", categoryId, brand: "", city: "Paris", image: "", season: "Spring 2027 Ready-to-Wear", deck: "", text: "", tags: [], updatedAt: new Date().toISOString() });
 const slugify = (value: string) => value.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "marca";
-const DECK_LIMIT = 160;
 const ALL = "todas", NONE = "__none__";
 
-/** La hoja pública de la firma, con su cabecera, para la vista previa en vivo. */
-function RunwayPagePreview({ brand, category }: { brand: RunwayBrand; category: RunwayCategory | null }) {
-  return <PagePreview><div className="site-shell brand-page">
+/** La hoja pública de la firma, con su cabecera, para la vista previa limpia. */
+function RunwayPage({ brand, category }: { brand: RunwayBrand; category: RunwayCategory | null }) {
+  return <div className="site-shell brand-page">
     <header className="site-header"><div className="topline"><span className="header-action"><Menu size={20} /><span>Menú</span></span><p>Antes de que esté de moda, está en LIGHT</p><span className="header-action"><Search size={19} strokeWidth={1.4} /><span>Buscar</span></span></div><div className="brand-row"><span className="wordmark">LIGHT</span></div><nav className="main-nav"><span>Moda</span><span>Belleza</span><span>Eventos</span><span>Living</span><span className="nav-active">Runway</span><span>La revista</span></nav></header>
-    <BrandView brand={{ ...brand, brand: brand.brand || "Nombre de la firma", deck: brand.deck || "La bajada editorial aparecerá aquí.", text: brand.text || "El texto editorial aparecerá aquí." }} category={category} />
-  </div></PagePreview>;
+    <BrandView brand={brand} category={category} />
+  </div>;
 }
 
 /** Crear, renombrar, ordenar y borrar las categorías de Runway. */
@@ -56,12 +55,6 @@ function RunwayCategoriesPanel({ categories, brands, readOnly, onClose }: { cate
   </section>;
 }
 
-/** Tags as chips: Enter or comma adds one, × removes it. */
-function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
-  const [value, setValue] = useState("");
-  const add = () => { const next = value.split(",").map((tag) => tag.trim()).filter(Boolean).filter((tag) => !tags.some((current) => current.toLowerCase() === tag.toLowerCase())); if (next.length) onChange([...tags, ...next]); setValue(""); };
-  return <div className="runway-tags">{tags.map((tag) => <span key={tag}>{tag}<button type="button" onClick={() => onChange(tags.filter((item) => item !== tag))} aria-label={`Quitar ${tag}`}><X size={11} /></button></span>)}<input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === ",") { event.preventDefault(); add(); } else if (event.key === "Backspace" && !value && tags.length) onChange(tags.slice(0, -1)); }} onBlur={add} placeholder={tags.length ? "Añadir…" : "Paris, Tailoring, Night…"} aria-label="Añadir etiqueta" /></div>;
-}
 
 export default function RunwayManager({ brands, onChange, readOnly = false }: { brands: RunwayBrand[]; onChange: (brands: RunwayBrand[]) => void; readOnly?: boolean }) {
   const [editing, setEditing] = useState<RunwayBrand | null>(null);
@@ -73,6 +66,7 @@ export default function RunwayManager({ brands, onChange, readOnly = false }: { 
   const [saving, setSaving] = useState(false);
   const [categories] = useRunwayCategories();
   const [showCategories, setShowCategories] = useState(false);
+  const [cleanPreview, setCleanPreview] = useState(false);
   const categoryOf = (brand: RunwayBrand) => categories.find((category) => category.id === brand.categoryId) || null;
   const counts = useMemo(() => { const result: Record<string, number> = {}; brands.forEach((brand) => { const key = categories.some((category) => category.id === brand.categoryId) ? brand.categoryId : NONE; result[key] = (result[key] || 0) + 1; }); return result; }, [brands, categories]);
   useEffect(() => { if (filter !== ALL && filter !== NONE && !categories.some((category) => category.id === filter)) setFilter(ALL); }, [categories, filter]);
@@ -104,15 +98,19 @@ export default function RunwayManager({ brands, onChange, readOnly = false }: { 
       <div><p className="eyebrow">Runway / {categoryOf(editing)?.label || "Sin categoría"} / {brands.some((item) => item.id === editing.id) ? "Ficha de la firma" : "Nueva firma"}</p><h2>{editing.brand || "Nueva firma"}</h2></div>
       {editing.slug && <a className="admin-secondary runway-studio__view" href={`/runway/${editing.slug}`} target="_blank" rel="noreferrer"><Eye size={14} /> Ver publicada</a>}
     </header>
-    <div className="runway-studio__editor">
-      <fieldset className="runway-sheet" disabled={readOnly}>
-        <section><h3><span>01</span> Identidad</h3><div className="runway-sheet__grid"><label className="runway-sheet__wide">Nombre de la firma<input value={editing.brand} onChange={(event) => update({ brand: event.target.value })} placeholder="Maison…" autoFocus={!editing.brand} /></label><label className="runway-sheet__wide">Categoría<select value={categoryOf(editing) ? editing.categoryId : NONE} onChange={(event) => update({ categoryId: event.target.value === NONE ? "" : event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}<option value={NONE}>Sin categoría (solo en “Todas”)</option></select></label><label>Ciudad<input value={editing.city} onChange={(event) => update({ city: event.target.value })} placeholder="Paris" list="runway-cities" /></label><label>Temporada<input value={editing.season} onChange={(event) => update({ season: event.target.value })} placeholder="Spring 2027 Ready-to-Wear" /></label></div><datalist id="runway-cities">{cities.filter((item) => item !== "Todas").map((item) => <option value={item} key={item} />)}</datalist></section>
-        <section><h3><span>02</span> Imagen de pasarela</h3><div className="runway-sheet__image"><div className="runway-sheet__thumb">{editing.image ? <img src={editing.image} alt="" /> : <ImageOff size={20} />}</div><label>URL de la imagen<input value={editing.image} onChange={(event) => update({ image: event.target.value })} placeholder="https://…" /><small>Usa una foto vertical de la colección (3:4 o 4:5).</small></label></div></section>
-        <section><h3><span>03</span> Texto</h3><label>Bajada<textarea value={editing.deck} maxLength={DECK_LIMIT * 2} onChange={(event) => update({ deck: event.target.value })} rows={3} placeholder="Una frase que resume la colección." /><small className={editing.deck.length > DECK_LIMIT ? "is-over" : ""}>{editing.deck.length} / {DECK_LIMIT} recomendados</small></label><label>La mirada LIGHT<textarea value={editing.text} onChange={(event) => update({ text: event.target.value })} rows={6} placeholder="Qué propone la colección, cómo se mueve, qué la hace distinta." /></label></section>
-        <section><h3><span>04</span> Etiquetas</h3><TagInput tags={editing.tags} onChange={(tags) => update({ tags })} /></section>
-      </fieldset>
-      <aside className="runway-studio__preview"><RunwayPagePreview brand={editing} category={categoryOf(editing)} /></aside>
+    <div className="place-editor">
+      <div className="place-editor__controls">
+        <fieldset className="admin-fieldset place-editor__fields" disabled={readOnly}>
+          <label>Categoría<select value={categoryOf(editing) ? editing.categoryId : NONE} onChange={(event) => update({ categoryId: event.target.value === NONE ? "" : event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}<option value={NONE}>Sin categoría (solo en “Todas”)</option></select></label>
+          <label>Ciudad<input value={editing.city} onChange={(event) => update({ city: event.target.value })} placeholder="Paris" list="runway-cities" /></label>
+          <datalist id="runway-cities">{cities.filter((item) => item !== "Todas").map((item) => <option value={item} key={item} />)}</datalist>
+        </fieldset>
+        <button type="button" className="admin-secondary place-editor__preview" onClick={() => setCleanPreview(true)}><Eye size={14} /> Vista previa limpia</button>
+      </div>
+      <p className="place-editor__hint">{readOnly ? "Solo lectura." : "Haz clic en el nombre, la bajada, el texto, las etiquetas o la foto para cambiarlos. Enter o coma añade una etiqueta."}</p>
+      <div className="place-editor__paper" onClickCapture={keepLinksInPlace}><div className="site-shell brand-page"><BrandView brand={editing} category={categoryOf(editing)} edit={readOnly ? undefined : update} /></div></div>
     </div>
+    {cleanPreview && <FullscreenPreview onClose={() => setCleanPreview(false)}><RunwayPage brand={editing} category={categoryOf(editing)} /></FullscreenPreview>}
     {!readOnly && <footer className="runway-studio__savebar"><span className={dirty ? "is-dirty" : ""}>{notice || (dirty ? "Cambios sin guardar" : "Todo guardado")}</span><div><button className="admin-secondary" type="button" onClick={close}>Cerrar</button><button className="admin-primary" type="button" onClick={() => void save()} disabled={saving || !dirty}><Save size={15} /> {saving ? "Guardando…" : "Guardar firma"}</button></div></footer>}
   </section>;
 

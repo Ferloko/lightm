@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
  * Editorial image for heroes: reveals with a clip, then drifts slowly (a quiet Ken Burns) and shifts
  * a little with the scroll. With reduced motion it simply fades in.
  */
-export default function HeroArt({ src, alt = "", caption, className = "", position = "center" }: { src: string; alt?: string; caption?: string; className?: string; position?: string }) {
+export default function HeroArt({ src, alt = "", caption, className = "", position = "center", editField }: { src: string; alt?: string; caption?: string; className?: string; position?: string; editField?: string }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -21,7 +21,7 @@ export default function HeroArt({ src, alt = "", caption, className = "", positi
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { window.removeEventListener("scroll", onScroll); if (frame) window.cancelAnimationFrame(frame); };
   }, []);
-  return <figure ref={ref} className={`hero-art ${className}`.trim()}>
+  return <figure ref={ref} className={`hero-art ${className}`.trim()} data-edit-field={editField}>
     <span className="hero-art__frame"><img src={src} alt={alt} style={{ objectPosition: position }} /></span>
     {caption && <figcaption>{caption}</figcaption>}
   </figure>;

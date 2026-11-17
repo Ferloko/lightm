@@ -1,66 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpRight, FolderPlus, ImagePlus, ImageOff, Pencil, Plus, Save, Search, Settings2, Star, Trash2, X } from "lucide-react";
-import PagePreview from "@/components/PagePreview";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpRight, Eye, FolderPlus, Heading, ImagePlus, ImageOff, Pencil, Plus, Quote, Save, Search, Settings2, Star, Trash2, Type } from "lucide-react";
+import { FullscreenPreview, keepLinksInPlace } from "@/components/PagePreview";
 import LivingHeader from "@/components/LivingHeader";
 import { LivingItemView } from "@/pages/LivingItemPage";
 import { LivingCover, LivingRank, LivingReview, Rating } from "@/components/LivingCards";
-import { blankLivingCategory, blankLivingItem, livingCategoryOf, livingCriteria, livingFormats, livingBlocks, livingHref, livingImageMarkup, livingParagraphs, livingSlugify, uniqueLivingSlug, livingScoreOf, saveLivingGuide, useLivingGuide, type LivingCategory, type LivingGuide, type LivingItem, type LivingPrice } from "@/lib/living";
+import { blankLivingCategory, blankLivingItem, livingCategoryOf, livingCriteria, livingFormats, livingBlocks, livingBody, livingHref, livingSlugify, uniqueLivingSlug, livingScoreOf, saveLivingGuide, useLivingGuide, type LivingBlock, type LivingCategory, type LivingGuide, type LivingItem, type LivingPrice } from "@/lib/living";
 import { describeError, supabase } from "@/lib/supabase";
 
 const NONE = "__none__";
-const VERDICT_LIMIT = 180;
-
-function ScoreInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
-  return <label className="living-sheet__score">{label}<span><input type="range" min={0} max={5} step={0.1} value={value} onChange={(event) => onChange(Number(event.target.value))} aria-label={label} /><input type="number" min={0} max={5} step={0.1} value={value} onChange={(event) => onChange(Math.max(0, Math.min(5, Number(event.target.value) || 0)))} aria-label={`${label} (número)`} /></span></label>;
-}
-
-function PriceInput({ value, onChange }: { value: LivingPrice; onChange: (value: LivingPrice) => void }) {
-  return <div className="living-sheet__price" role="radiogroup" aria-label="Precio">{([1, 2, 3, 4] as LivingPrice[]).map((level) => <button type="button" role="radio" aria-checked={value === level} className={value === level ? "is-active" : ""} key={level} onClick={() => onChange(level)}>{"$".repeat(level)}</button>)}</div>;
-}
-
-/** Vista previa con las mismas piezas (y clases) que la página pública. */
-function LivingPreview({ item, category, featured }: { item: LivingItem; category: LivingCategory | null; featured: boolean }) {
-  if (!category) return <p className="living-sheet__note">Sin categoría: este lugar no se publica en la guía hasta que le asignes una.</p>;
-  return <div className="living-guide lg-admin-preview">
-    <p className="eyebrow">{category.label}{category.format === "resort" && (featured ? " · Destacado" : " · Tarjeta")}</p>
-    {category.format === "resort" ? featured ? <LivingCover item={item} linked={false} detailLabel={category.detailLabel} /> : <div className="lg-grid"><LivingReview item={item} linked={false} detailLabel={category.detailLabel} /></div>
-      : <ol className="lg-ranking"><LivingRank item={item} position={1} linked={false} detailLabel={category.detailLabel} /></ol>}
-  </div>;
-}
-
-/** Reseña completa: texto por párrafos e imágenes intercaladas donde esté el cursor. */
-function ReviewEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const area = useRef<HTMLTextAreaElement>(null);
-  const [adding, setAdding] = useState(false);
-  const [url, setUrl] = useState("");
-  const [caption, setCaption] = useState("");
-  const blocks = livingBlocks(value);
-  const paragraphs = livingParagraphs(value);
-  const texts = blocks.filter((block) => block.type === "text").length;
-  const images = blocks.map((block, index) => ({ block, index })).filter((entry) => entry.block.type === "image");
-  const validUrl = /^https?:\/\/\S+$/.test(url.trim());
-  const insert = () => {
-    if (!validUrl) return;
-    const at = area.current ? area.current.selectionEnd : value.length;
-    const before = value.slice(0, at).replace(/\s+$/, ""), after = value.slice(at).replace(/^\s+/, "");
-    onChange([before, livingImageMarkup(url, caption), after].filter(Boolean).join("\n\n"));
-    setUrl(""); setCaption(""); setAdding(false);
-  };
-  const removeImage = (index: number) => onChange(paragraphs.filter((_, itemIndex) => itemIndex !== index).join("\n\n"));
-  return <div className="living-review">
-    <label>Reseña completa<textarea ref={area} value={value} onChange={(event) => onChange(event.target.value)} rows={12} placeholder={"Cuenta la experiencia completa.\n\nDeja una línea en blanco entre párrafos."} /></label>
-    <div className="living-review__tools">
-      <small>{texts} {texts === 1 ? "párrafo" : "párrafos"}{images.length ? ` · ${images.length} ${images.length === 1 ? "imagen" : "imágenes"}` : ""} · si la dejas vacía, la hoja muestra el veredicto.</small>
-      {!adding && <button type="button" className="admin-secondary" onClick={() => setAdding(true)}><ImagePlus size={13} /> Insertar imagen</button>}
-    </div>
-    {adding && <div className="living-review__insert">
-      <p>La imagen se coloca donde está el cursor en el texto, como un párrafo propio.</p>
-      <div className="runway-sheet__grid"><label>URL de la imagen<input value={url} onChange={(event) => setUrl(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); insert(); } }} placeholder="https://…" autoFocus /></label><label>Pie de foto (opcional)<input value={caption} onChange={(event) => setCaption(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); insert(); } }} placeholder="La terraza al atardecer" /></label></div>
-      <div className="living-review__actions">{url.trim() && validUrl && <img src={url.trim()} alt="" />}<span /><button type="button" className="admin-secondary" onClick={() => { setAdding(false); setUrl(""); setCaption(""); }}>Cancelar</button><button type="button" className="admin-primary" onClick={insert} disabled={!validUrl}><ImagePlus size={13} /> Insertar</button></div>
-    </div>}
-    {images.length > 0 && <div className="living-review__images">{images.map(({ block, index }) => block.type === "image" && <figure key={`${block.src}-${index}`}><img src={block.src} alt="" /><figcaption>{block.caption || "Sin pie"}</figcaption><button type="button" onClick={() => removeImage(index)} aria-label="Quitar imagen de la reseña"><X size={12} /></button></figure>)}</div>}
-  </div>;
-}
 
 /** Crear, renombrar, ordenar y borrar las categorías de la guía. */
 function CategoriesPanel({ guide, readOnly, onSave, onClose }: { guide: LivingGuide; readOnly: boolean; onSave: (categories: LivingCategory[]) => Promise<void>; onClose: () => void }) {
@@ -113,7 +60,9 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
   const [filter, setFilter] = useState<string>("todo");
   const [saving, setSaving] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
-  const [previewMode, setPreviewMode] = useState<"hoja" | "tarjeta">("hoja");
+  const [blocks, setBlockState] = useState<LivingBlock[]>([]);
+  const [cleanPreview, setCleanPreview] = useState(false);
+  const paperRef = useRef<HTMLDivElement>(null);
 
   const categoryOf = (item: LivingItem) => livingCategoryOf(guide, item);
   const coverOf = (category: LivingCategory) => { const items = guide.items.filter((item) => item.categoryId === category.id); return items.find((item) => item.id === category.featuredId) || items[0] || null; };
@@ -121,10 +70,17 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
   const counts = useMemo(() => { const result: Record<string, number> = {}; guide.items.forEach((item) => { const key = item.categoryId && guide.categories.some((category) => category.id === item.categoryId) ? item.categoryId : NONE; result[key] = (result[key] || 0) + 1; }); return result; }, [guide]);
   useEffect(() => { if (filter !== "todo" && filter !== NONE && !guide.categories.some((category) => category.id === filter)) setFilter("todo"); }, [filter, guide.categories]);
   const visible = guide.items.filter((item) => (filter === "todo" || (filter === NONE ? !categoryOf(item) : item.categoryId === filter)) && `${item.name} ${item.category} ${item.place} ${item.verdict}`.toLowerCase().includes(query.trim().toLowerCase()));
-  const open = (item: LivingItem) => { setEditing(item); setOriginal(JSON.stringify(item)); setNotice(""); };
+  const open = (item: LivingItem) => { const normalized = { ...item, body: livingBody(livingBlocks(item.body)) }; setEditing(normalized); setOriginal(JSON.stringify(normalized)); setBlockState(livingBlocks(item.body)); setNotice(""); };
   const dirty = editing ? JSON.stringify(editing) !== original : false;
   const close = () => { if (dirty && !readOnly && !window.confirm("Hay cambios sin guardar en este lugar. ¿Salir de todos modos?")) return; setEditing(null); setNotice(""); };
   const update = (patch: Partial<LivingItem>) => setEditing((current) => current ? { ...current, ...patch } : current);
+  const setBlocks = (next: LivingBlock[]) => { setBlockState(next); update({ body: livingBody(next) }); };
+  /** Añade un bloque al final de la reseña y lo lleva a la vista con el cursor dentro. */
+  const addBlock = (block: LivingBlock) => {
+    const index = blocks.length;
+    setBlocks([...blocks, block]);
+    window.requestAnimationFrame(() => { const element = paperRef.current?.querySelector<HTMLElement>(`[data-block-index="${index}"]`); element?.scrollIntoView({ behavior: "smooth", block: "center" }); (element?.querySelector("textarea, input") as HTMLElement | null)?.focus({ preventScroll: true }); element?.querySelector<HTMLButtonElement>(".image-url-frame__trigger")?.click(); });
+  };
   const savedNotice = (what: string) => supabase ? `${what} Ya lo ve todo el equipo y el público.` : `${what} (guardado en este navegador de demostración).`;
 
   const persist = async (next: LivingGuide) => { await saveLivingGuide(next); setGuide(next); };
@@ -138,7 +94,7 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
   const save = async () => {
     if (!editing?.name.trim()) { setNotice("Añade un nombre."); return; }
     const category = categoryOf(editing);
-    const named = { ...editing, name: editing.name.trim(), kind: category?.format || editing.kind, gallery: editing.gallery.map((url) => url.trim()).filter(Boolean) };
+    const named = { ...editing, name: editing.name.trim(), kind: category?.format || editing.kind, body: livingBody(blocks), gallery: editing.gallery.map((url) => url.trim()).filter(Boolean) };
     const next = { ...named, slug: uniqueLivingSlug(named, guide.items), updatedAt: new Date().toISOString() };
     const exists = guide.items.some((item) => item.id === next.id);
     setSaving(true);
@@ -166,50 +122,30 @@ export default function LivingManager({ readOnly = false }: { readOnly?: boolean
     const isNew = !guide.items.some((item) => item.id === editing.id);
     const featured = isFeatured(editing) || (isNew && detailed && !guide.items.some((item) => item.categoryId === editing.categoryId));
     const singular = category?.singular || "lugar";
-    return <section className="runway-studio runway-studio--edit">
+    const editItem = { ...editing, kind: category?.format || editing.kind };
+    const editGuide = { ...guide, items: isNew ? [...guide.items, editItem] : guide.items.map((item) => item.id === editItem.id ? editItem : item) };
+    const editCategory: LivingCategory = category || { id: "", label: "Sin categoría", singular: "Lugar", title: "", format: editing.kind === "resort" ? "resort" : "mesa", detailLabel: editing.kind === "resort" ? "Ideal para" : "Lo imprescindible", featuredId: "" };
+    return <section className="runway-studio runway-studio--edit place-studio">
       <header className="runway-studio__head">
         <button type="button" className="runway-studio__back" onClick={close}><ArrowLeft size={15} /> Living</button>
         <div><p className="eyebrow">Living / {category?.label || "Sin categoría"}</p><h2>{editing.name || `Nuevo: ${singular.toLowerCase()}`}</h2></div>
         {!isNew && category && <a className="admin-secondary runway-studio__view" href={livingHref(guide.items.find((item) => item.id === editing.id) || editing)} target="_blank" rel="noreferrer"><ArrowUpRight size={14} /> Ver su hoja</a>}
       </header>
-      <div className="runway-studio__editor">
-        <fieldset className="runway-sheet" disabled={readOnly}>
-          <section><h3><span>01</span> Identidad</h3><div className="runway-sheet__grid">
-            <label className="runway-sheet__wide">Nombre<input value={editing.name} onChange={(event) => update({ name: event.target.value })} placeholder="Osteria Lume" autoFocus={!editing.name} /></label>
+      <div className="place-editor">
+        <div className="place-editor__controls">
+          <fieldset className="admin-fieldset place-editor__fields" disabled={readOnly}>
             <label>Categoría<select value={category ? editing.categoryId : NONE} onChange={(event) => { const next = guide.categories.find((entry) => entry.id === event.target.value); update({ categoryId: next?.id || "", kind: next?.format || editing.kind }); }}>{guide.categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}<option value={NONE}>Sin categoría (no se publica)</option></select></label>
-            <label>Tipo<input value={editing.category} onChange={(event) => update({ category: event.target.value })} placeholder={detailed ? "Resort & Spa" : "Italiana de autor, barbería…"} /></label>
-            <label className="runway-sheet__wide">Zona<input value={editing.place} onChange={(event) => update({ place: event.target.value })} placeholder="Puerto Viejo" /></label>
-          </div></section>
-          <section><h3><span>02</span> Imagen</h3><div className="runway-sheet__image living-sheet__image"><div className="runway-sheet__thumb">{editing.image ? <img src={editing.image} alt="" /> : <ImageOff size={20} />}</div><label>URL de la imagen<input value={editing.image} onChange={(event) => update({ image: event.target.value })} placeholder="https://…" /><small>Una foto horizontal (4:3 o 5:4){detailed ? ": es la que se ve grande cuando el lugar está destacado." : "."}</small></label></div></section>
-          <section><h3><span>03</span> Texto</h3><label>Veredicto LIGHT<textarea value={editing.verdict} maxLength={VERDICT_LIMIT * 2} onChange={(event) => update({ verdict: event.target.value })} rows={3} placeholder="Qué hace especial a este lugar, en una o dos frases." /><small className={editing.verdict.length > VERDICT_LIMIT ? "is-over" : ""}>{editing.verdict.length} / {VERDICT_LIMIT} recomendados</small></label>
-            {category && (detailed
-              ? <label>{category.detailLabel}<input value={editing.idealFor} onChange={(event) => update({ idealFor: event.target.value })} placeholder="Escapadas largas en pareja" /></label>
-              : <label>{category.detailLabel}<input value={editing.signature} onChange={(event) => update({ signature: event.target.value })} placeholder="Tagliolini al limón, corte a navaja…" /></label>)}
-          </section>
-          <section><h3><span>04</span> Puntuación y precio</h3>
-            {detailed ? <><div className="runway-sheet__grid">{livingCriteria.map(([key, label]) => <ScoreInput key={key} label={label} value={editing.scores[key]} onChange={(value) => update({ scores: { ...editing.scores, [key]: Math.round(value * 10) / 10 } })} />)}</div><p className="living-sheet__overall">Nota final (media): <Rating value={livingScoreOf({ ...editing, kind: "resort" })} size="sm" /></p></>
-              : <ScoreInput label="Nota LIGHT" value={editing.score} onChange={(score) => update({ score: Math.round(score * 10) / 10 })} />}
-            <label>Precio<PriceInput value={editing.price} onChange={(price) => update({ price })} /></label>
-          </section>
-          <section><h3><span>05</span> Hoja del lugar</h3>
-            <p className="living-sheet__note">Al hacer clic en la tarjeta, el público abre esta hoja con la reseña completa, la ficha y la galería.</p>
-            <label>Dirección de la hoja<span className="living-sheet__slug"><b>/living/</b><input value={editing.slug} onChange={(event) => update({ slug: event.target.value.toLowerCase().replace(/\s+/g, "-") })} placeholder={livingSlugify(editing.name) || "se-crea-con-el-nombre"} /></span><small>Se crea con el nombre si la dejas vacía. Si la cambias, los enlaces antiguos dejan de funcionar.</small></label>
-            <label>Ubicación<input value={editing.location} onChange={(event) => update({ location: event.target.value })} placeholder="Calle del Puerto 14, Puerto Viejo" /></label>
-            <ReviewEditor value={editing.body} onChange={(body) => update({ body })} />
-            <label>Galería<textarea value={editing.gallery.join("\n")} onChange={(event) => update({ gallery: event.target.value.split("\n") })} rows={4} placeholder={"https://…/foto-1.jpg\nhttps://…/foto-2.jpg"} /><small>Una URL de imagen por línea.</small></label>
-            {editing.gallery.some((url) => url.trim()) && <div className="living-sheet__gallery">{editing.gallery.filter((url) => url.trim()).map((url, index) => <img key={`${url}-${index}`} src={url.trim()} alt="" />)}</div>}
-          </section>
-        </fieldset>
-        <aside className="runway-studio__preview">{(() => {
-          const previewItem = { ...editing, kind: category?.format || editing.kind, gallery: editing.gallery.map((url) => url.trim()).filter(Boolean) };
-          if (!category) return <LivingPreview item={previewItem} category={null} featured={false} />;
-          const previewGuide = { ...guide, items: isNew ? [...guide.items, previewItem] : guide.items.map((item) => item.id === previewItem.id ? previewItem : item) };
-          const tabs = <div className="page-preview__tabs" role="tablist" aria-label="Qué ver">{([["hoja", "Hoja del lugar"], ["tarjeta", "Tarjeta en la guía"]] as const).map(([id, label]) => <button type="button" role="tab" key={id} aria-selected={previewMode === id} className={previewMode === id ? "is-active" : ""} onClick={() => setPreviewMode(id)}>{label}</button>)}</div>;
-          return previewMode === "hoja"
-            ? <PagePreview tabs={tabs}><div className="site-shell living-page living-guide lgd"><LivingHeader /><LivingItemView guide={previewGuide} item={previewItem} category={category} /></div></PagePreview>
-            : <PagePreview tabs={tabs}><div className="site-shell living-page living-guide"><main><section className="lg-section"><LivingPreview item={previewItem} category={category} featured={featured} /></section></main></div></PagePreview>;
-        })()}</aside>
+            <label>Dirección<span className="living-sheet__slug"><b>/living/</b><input value={editing.slug} onChange={(event) => update({ slug: event.target.value.toLowerCase().replace(/\s+/g, "-") })} placeholder={livingSlugify(editing.name) || "con-el-nombre"} /></span></label>
+            <div className="place-editor__add"><span>Añadir a la reseña</span><div><button type="button" onClick={() => addBlock({ type: "text", text: "" })}><Type size={14} /> Párrafo</button><button type="button" onClick={() => addBlock({ type: "heading", text: "" })}><Heading size={14} /> Subtítulo</button><button type="button" onClick={() => addBlock({ type: "image", src: "", caption: "" })}><ImagePlus size={14} /> Imagen</button><button type="button" onClick={() => addBlock({ type: "quote", text: "" })}><Quote size={14} /> Cita</button></div></div>
+          </fieldset>
+          {category ? <button type="button" className="admin-secondary place-editor__preview" onClick={() => setCleanPreview(true)}><Eye size={14} /> Vista previa limpia</button> : <p className="living-sheet__note">Sin categoría: no se publica hasta que le asignes una.</p>}
+        </div>
+        <p className="place-editor__hint">{readOnly ? "Solo lectura." : "Haz clic en cualquier texto o imagen de la hoja para cambiarlo. Los bloques de la reseña se suben, bajan o quitan con la barra que aparece al pasar el ratón."}</p>
+        <div className="place-editor__paper" onClickCapture={keepLinksInPlace} ref={paperRef}>
+          <div className="site-shell living-page living-guide lgd"><LivingItemView guide={editGuide} item={editItem} category={editCategory} edit={readOnly ? undefined : { update, blocks, setBlocks }} /></div>
+        </div>
       </div>
+      {cleanPreview && category && <FullscreenPreview onClose={() => setCleanPreview(false)}><div className="site-shell living-page living-guide lgd"><LivingHeader /><LivingItemView guide={editGuide} item={editItem} category={category} /></div></FullscreenPreview>}
       {!readOnly && <footer className="runway-studio__savebar"><span className={dirty ? "is-dirty" : ""}>{notice || (dirty ? "Cambios sin guardar" : "Todo guardado")}</span><div>{!isNew && detailed && <button className="admin-secondary" type="button" onClick={() => void toggleFeatured(editing)}><Star size={14} fill={category?.featuredId === editing.id ? "currentColor" : "none"} /> {category?.featuredId === editing.id ? "Quitar destacado" : "Destacar"}</button>}<button className="admin-secondary" type="button" onClick={close}>Cerrar</button><button className="admin-primary" type="button" onClick={() => void save()} disabled={saving || !dirty}><Save size={15} /> {saving ? "Guardando…" : "Guardar"}</button></div></footer>}
     </section>;
   }

@@ -35,9 +35,9 @@ export function SiteMenuPanel({ menu, closeRef, onClose, isCurrent = () => false
       <div className="light-menu__inner">
         <p className="eyebrow">Explora la revista</p>
         <nav className="light-menu__links" aria-label="Secciones">{siteMenuLinks.map(([label, href], index) => <Link href={href} key={href} onClick={onClose} aria-current={isCurrent(href) ? "page" : undefined} style={{ "--i": index } as CSSProperties}><span>{String(index + 1).padStart(2, "0")}</span>{label}<ArrowUpRight size={22} strokeWidth={1.2} /></Link>)}</nav>
-        {menu.note && <p className="light-menu__note">{menu.note}</p>}
+        {(menu.note || preview) && <p className="light-menu__note" data-edit-field="note">{menu.note || "Añade una frase"}</p>}
       </div>
-      <figure className="light-menu__campaign"><div><img src={image} alt="" style={{ objectPosition: `center ${menu.focus}%` }} /></div>{menu.caption && <figcaption>{menu.caption}</figcaption>}</figure>
+      <figure className="light-menu__campaign"><div data-edit-field="image"><img src={image} alt="" style={{ objectPosition: `center ${menu.focus}%` }} /></div>{(menu.caption || preview) && <figcaption data-edit-field="caption">{menu.caption || "Añade un pie"}</figcaption>}</figure>
     </div>
   </div>;
 }
