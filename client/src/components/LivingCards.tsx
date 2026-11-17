@@ -22,41 +22,42 @@ const meta = livingMeta;
 function ItemLink({ item, linked, className, children, label }: { item: LivingItem; linked: boolean; className?: string; children: ReactNode; label?: string }) {
   return linked ? <Link className={className} href={livingHref(item)} aria-label={label}>{children}</Link> : <span className={className}>{children}</span>;
 }
-type CardProps = { item: LivingItem; linked?: boolean };
+/** detailLabel: el “dato estrella” que define cada categoría (Ideal para, Qué pedir, Servicio estrella…). */
+type CardProps = { item: LivingItem; linked?: boolean; detailLabel?: string };
 
 /** El resort destacado: “LIGHT Pick · N.º 1”. */
-export function LivingCover({ item, linked = true }: CardProps) {
+export function LivingCover({ item, linked = true, detailLabel = "Ideal para" }: CardProps) {
   return <article className="lg-cover" id={item.id}>
     <ItemLink item={item} linked={linked} className="lg-cover__media" label={`Abrir ${item.name}`}><GuideImage src={item.image} alt={item.name} /><span className="lg-badge">LIGHT Pick · N.º 1</span></ItemLink>
     <div className="lg-cover__body">
       <p className="lg-meta">{meta(item.category, item.place)}</p>
-      <h3><ItemLink item={item} linked={linked}>{item.name || "Nombre del resort"}</ItemLink></h3>
+      <h3><ItemLink item={item} linked={linked}>{item.name || "Nombre del lugar"}</ItemLink></h3>
       <Rating value={livingOverall(item.scores)} size="lg" />
       {item.verdict && <blockquote>“{item.verdict}”</blockquote>}
       <dl className="lg-scores">{livingCriteria.map(([key, label]) => <div key={key}><dt>{label}</dt><dd><span><i style={{ width: `${(item.scores[key] / 5) * 100}%` }} /></span><b>{fmtScore(item.scores[key])}</b></dd></div>)}</dl>
-      <div className="lg-cover__foot">{item.idealFor && <span><small>Ideal para</small>{item.idealFor}</span>}<span><small>Precio</small><Price level={item.price} /></span></div>
+      <div className="lg-cover__foot">{item.idealFor && <span><small>{detailLabel}</small>{item.idealFor}</span>}<span><small>Precio</small><Price level={item.price} /></span></div>
       <ItemLink item={item} linked={linked} className="lg-more">Leer la reseña completa <ArrowUpRight size={14} /></ItemLink>
     </div>
   </article>;
 }
 
-export function LivingReview({ item, linked = true }: CardProps) {
+export function LivingReview({ item, linked = true, detailLabel = "Ideal para" }: CardProps) {
   return <article className="lg-review" id={item.id}>
     <ItemLink item={item} linked={linked} className="lg-review__media" label={`Abrir ${item.name}`}><GuideImage src={item.image} alt={item.name} /><span className="lg-review__score"><Rating value={livingOverall(item.scores)} size="sm" /></span></ItemLink>
     <p className="lg-meta">{meta(item.category, item.place)}</p>
-    <h3><ItemLink item={item} linked={linked}>{item.name || "Nombre del resort"}</ItemLink></h3>
+    <h3><ItemLink item={item} linked={linked}>{item.name || "Nombre del lugar"}</ItemLink></h3>
     <p className="lg-review__verdict">{item.verdict}</p>
     <dl className="lg-scores lg-scores--compact">{livingCriteria.map(([key, label]) => <div key={key}><dt>{label}</dt><dd><span><i style={{ width: `${(item.scores[key] / 5) * 100}%` }} /></span></dd></div>)}</dl>
-    <div className="lg-review__foot"><span>{item.idealFor}</span><Price level={item.price} /></div>
+    <div className="lg-review__foot"><span title={detailLabel}>{item.idealFor}</span><Price level={item.price} /></div>
   </article>;
 }
 
-export function LivingRank({ item, position, linked = true }: CardProps & { position: number }) {
+export function LivingRank({ item, position, linked = true, detailLabel = "Qué pedir" }: CardProps & { position: number }) {
   return <li className="lg-rank" id={item.id}>
     <span className="lg-rank__number">{String(position).padStart(2, "0")}</span>
     <ItemLink item={item} linked={linked} className="lg-rank__media" label={`Abrir ${item.name}`}><GuideImage src={item.image} alt={item.name} /></ItemLink>
-    <div className="lg-rank__main"><h3><ItemLink item={item} linked={linked}>{item.name || "Nombre del restaurante"}</ItemLink></h3><p className="lg-meta">{meta(item.category, item.place)}</p><p className="lg-rank__verdict">{item.verdict}</p></div>
-    <div className="lg-rank__side"><Rating value={item.score} /><Price level={item.price} />{item.signature && <small>Pedir: {item.signature}</small>}</div>
+    <div className="lg-rank__main"><h3><ItemLink item={item} linked={linked}>{item.name || "Nombre del lugar"}</ItemLink></h3><p className="lg-meta">{meta(item.category, item.place)}</p><p className="lg-rank__verdict">{item.verdict}</p></div>
+    <div className="lg-rank__side"><Rating value={item.score} /><Price level={item.price} />{item.signature && <small>{detailLabel}: {item.signature}</small>}</div>
   </li>;
 }
 

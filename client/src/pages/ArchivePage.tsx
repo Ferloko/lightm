@@ -8,7 +8,7 @@ import { useArchivePlacements } from "@/lib/archivePlacements";
 import { subscribeToTable } from "@/lib/supabase";
 import EditorialAccessLink from "@/components/EditorialAccessLink";
 
-const categories = ["Todo", "Moda", "Belleza", "Eventos", "Sociedad"];
+const categories = ["Todo", "Moda", "Belleza", "Eventos", "Living"];
 
 function localViewsFor(article: EditorialArticle) {
   try {

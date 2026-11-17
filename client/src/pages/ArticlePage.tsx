@@ -9,7 +9,7 @@ import EditorialAccessLink from "@/components/EditorialAccessLink";
 
 const hero = "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=90";
 const detail = "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=90";
-const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Sociedad", "Runway", "La revista", "Archivo"];
+const menuItems = ["Inicio", "Moda", "Belleza", "Eventos", "Living", "Runway", "La revista", "Archivo"];
 
 export default function ArticlePage() {
   const [heroImageWide, setHeroImageWide] = useState<boolean | null>(null);

@@ -3812,3 +3812,26 @@ html.dark .subpage-intro .eyebrow { color: #b9b4aa; }
 html.dark .subpage--eventos .subpage-intro--events .eyebrow { color: #d9a183; }
 html.dark .subpage--sociedad .subpage-hero--living-layout { background: #142b29; }
 html.dark .subpage--sociedad .subpage-intro { background: #112c2b; color: #edf2ec; }
+
+/* Dashboard → Living: panel de categorías de la guía. */
+.living-categories { margin: 0 0 22px; padding: 18px; border: 1px solid var(--ink); background: var(--paper); }
+.living-categories > header { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.living-categories > header h3 { margin: 4px 0 4px; font: 500 28px/1 var(--serif); letter-spacing: -.03em; }
+.living-categories > header p:not(.eyebrow) { margin: 0; max-width: 60ch; color: var(--muted); font: 12px/1.5 var(--sans); }
+.living-categories__list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.living-categories__list > li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line); }
+.living-categories__index { padding-top: 22px; color: var(--muted); font: 10px var(--mono); }
+.living-categories__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.living-categories__fields label { display: grid; gap: 5px; color: var(--muted); font: 9px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.living-categories__fields small { color: var(--muted); font: 10px/1.35 var(--sans); text-transform: none; letter-spacing: 0; }
+.living-categories__fields input, .living-categories__fields select { width: 100%; padding: 8px 9px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 13px var(--sans); text-transform: none; letter-spacing: 0; outline: 0; }
+.living-categories__fields input:focus, .living-categories__fields select:focus { border-color: var(--acid); }
+.living-categories__wide { grid-column: span 1; }
+.living-categories__actions { display: flex; align-items: center; gap: 4px; padding-top: 20px; }
+.living-categories__actions span { margin-right: 6px; color: var(--muted); font: 10px var(--mono); white-space: nowrap; }
+.living-categories__actions button { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.living-categories__actions button:disabled { opacity: .3; cursor: default; }
+.living-categories__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.living-categories__foot span { flex: 1; color: #9b3f35; font: 12px var(--sans); }
+.living-card-admin.is-unpublished { opacity: .6; }
+@media (max-width: 900px) { .living-categories__fields { grid-template-columns: 1fr; } .living-categories__list > li { grid-template-columns: 1fr; } .living-categories__index, .living-categories__actions { padding-top: 0; } }

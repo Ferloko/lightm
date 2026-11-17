@@ -6,7 +6,7 @@ import { safeImageUrl } from "./utils";
  * Cada hoja tiene su imagen original; si el equipo pone otra, se guarda aquí (site_settings)
  * y la hoja la usa al momento para todo el público.
  */
-export type BannerKey = "moda" | "belleza" | "eventos" | "sociedad" | "living" | "runway" | "archivo" | "masthead" | "business" | "about" | "sobre-moda" | "privacidad" | "terminos" | "cookies" | "not-found";
+export type BannerKey = "moda" | "belleza" | "eventos" | "living" | "runway" | "archivo" | "masthead" | "business" | "about" | "sobre-moda" | "privacidad" | "terminos" | "cookies" | "not-found";
 export type BannerOverride = { image: string; focus: number };          // focus: encuadre vertical 0–100 %
 export type PageBanner = { image: string; position: string; custom: boolean; ready: boolean };
 
@@ -25,7 +25,6 @@ export const bannerPages: BannerPage[] = [
   { key: "moda", label: "Moda", path: "/moda", group: "Secciones", image: unsplash("photo-1529139574466-a303027c1d8b", 1500), focus: 50 },
   { key: "belleza", label: "Belleza", path: "/belleza", group: "Secciones", image: unsplash("photo-1522335789203-aabd1fc54bc9", 1500), focus: 50 },
   { key: "eventos", label: "Eventos", path: "/eventos", group: "Secciones", image: unsplash("photo-1511818966892-d7d671e672a2", 1500), focus: 50 },
-  { key: "sociedad", label: "Sociedad", path: "/sociedad", group: "Secciones", image: unsplash("photo-1539109136881-3be0616acf4b", 1500), focus: 50 },
   { key: "living", label: "Living", path: "/living", group: "Secciones", image: unsplash("photo-1566073771259-6a8506099945", 2200), focus: 50 },
   { key: "runway", label: "Runway", path: "/runway", group: "Secciones", image: unsplash("photo-1509631179647-0177331693ae", 2000), focus: 35 },
   { key: "archivo", label: "Archivo", path: "/archivo", group: "La revista", image: "/images/GTA54.webp", focus: 50 },
