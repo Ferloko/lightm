@@ -1,7 +1,7 @@
 import { CalendarDays, Pencil, Plus, Target, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { describeError, supabase } from "@/lib/supabase";
-import { addDaysKey, CAMPAIGN_CHANNELS, campaignCtr, campaignMetricsAvailable, campaignProgress, campaignRoas, campaignStatus, campaignStatusLabel, deleteCampaign, emptyMetrics, saveCampaign, sortCampaigns, todayKey, type Campaign, type CampaignMetrics, type CampaignStatus } from "@/lib/campaigns";
+import { addDaysKey, CAMPAIGN_CHANNELS, campaignMetricsAvailable, campaignProgress, campaignRoas, campaignStatus, campaignStatusLabel, deleteCampaign, emptyMetrics, saveCampaign, sortCampaigns, todayKey, type Campaign, type CampaignMetrics, type CampaignStatus } from "@/lib/campaigns";
 
 const colors = ["acid", "blue", "soft"];
 type Filter = CampaignStatus | "all";
@@ -12,7 +12,6 @@ const money = (value: number) => `$${integer.format(Math.round(value))}`;
 const metricFields: { key: keyof CampaignMetrics; label: string; prefix?: string; step: string }[] = [
   { key: "budget", label: "Presupuesto", prefix: "$", step: "0.01" },
   { key: "spend", label: "Invertido (ad spend)", prefix: "$", step: "0.01" },
-  { key: "impressions", label: "Impresiones", step: "1" },
   { key: "clicks", label: "Clics", step: "1" },
   { key: "conversions", label: "Conversiones", step: "1" },
   { key: "revenue", label: "Ingresos (revenue)", prefix: "$", step: "0.01" },
@@ -45,10 +44,9 @@ export default function CampaignBoard({ campaigns, onChange, readOnly = false, f
   const save = async () => {
     if (readOnly || !draft?.name?.trim() || !draft.startDate || !draft.endDate) return;
     if (draft.endDate < draft.startDate) { setError("La fecha final no puede ser anterior al inicio."); return; }
-    if ((draft.clicks || 0) > (draft.impressions || 0) && (draft.impressions || 0) > 0) { setError("Los clics no pueden superar las impresiones."); return; }
     setError(""); setSaving(true);
     try {
-      const saved = await saveCampaign({ id: draft.id, name: draft.name.trim(), description: draft.description || "", startDate: draft.startDate, endDate: draft.endDate, color: draft.color || "acid", channel: draft.channel || "social", createdAt: draft.createdAt, ...Object.fromEntries(metricFields.map(({ key }) => [key, Number(draft[key]) || 0])) as CampaignMetrics });
+      const saved = await saveCampaign({ id: draft.id, name: draft.name.trim(), description: draft.description || "", startDate: draft.startDate, endDate: draft.endDate, color: draft.color || "acid", channel: draft.channel || "social", createdAt: draft.createdAt, impressions: Number(draft.impressions) || 0, ...Object.fromEntries(metricFields.map(({ key }) => [key, Number(draft[key]) || 0])) as Omit<CampaignMetrics, "impressions"> });
       onChange(sortCampaigns([...campaigns.filter((item) => item.id !== saved.id && item.id !== draft.id), saved]));
       setDraft(null);
       if (supabase && !campaignMetricsAvailable) setError("La campaña se guardó, pero las métricas necesitan la migración 20261111_campaign_metrics_and_visitors.sql en Supabase.");
@@ -57,7 +55,6 @@ export default function CampaignBoard({ campaigns, onChange, readOnly = false, f
   };
   const removeCampaign = async (campaign: Partial<Campaign> | null) => { if (readOnly || !campaign?.id || !window.confirm(`¿Eliminar la campaña “${campaign.name || ""}”?`)) return; try { await deleteCampaign(campaign.id); onChange(campaigns.filter((item) => item.id !== campaign.id)); setDraft(null); } catch (cause) { setError(`No se pudo eliminar: ${describeError(cause)}`); } };
 
-  const draftCtr = draft?.impressions ? (Number(draft.clicks) || 0) / draft.impressions : null;
   const draftRoas = draft?.spend ? (Number(draft.revenue) || 0) / draft.spend : null;
   const filters: { id: Filter; label: string; count: number }[] = [{ id: "all", label: "Todas", count: sorted.length }, { id: "active", label: "Activas", count: counts.active }, { id: "scheduled", label: "Programadas", count: counts.scheduled }, { id: "ended", label: "Finalizadas", count: counts.ended }];
 
@@ -68,14 +65,14 @@ export default function CampaignBoard({ campaigns, onChange, readOnly = false, f
     <div className="campaign-list">
       {sorted.length === 0 ? <div className="admin-empty"><Target size={24} /><p className="eyebrow">Todavía no hay campañas</p><h2>La primera empieza aquí.</h2>{!readOnly && <button className="admin-primary" type="button" onClick={openNew}>Crear campaña <Plus size={15} /></button>}</div>
         : visible.length === 0 ? <p className="campaign-table__empty">No hay campañas {filters.find((item) => item.id === filter)?.label.toLowerCase()}.</p>
-        : visible.map((campaign) => { const status = campaignStatus(campaign); const ctr = campaignCtr(campaign); const roas = campaignRoas(campaign); return <article className={`campaign-card campaign-card--${campaign.color} campaign-card--${status}`} key={campaign.id} onClick={() => openCampaign(campaign)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") openCampaign(campaign); }}>
+        : visible.map((campaign) => { const status = campaignStatus(campaign); const roas = campaignRoas(campaign); return <article className={`campaign-card campaign-card--${campaign.color} campaign-card--${status}`} key={campaign.id} onClick={() => openCampaign(campaign)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") openCampaign(campaign); }}>
           <div className="campaign-card__mark"><Target size={19} /></div>
           <div className="campaign-card__copy">
             <div><span className={`campaign-state campaign-state--${status}`}>{status === "active" ? "Activa ahora" : campaignStatusLabel[status]} · {CAMPAIGN_CHANNELS.find((item) => item.id === campaign.channel)?.label}</span><h3>{campaign.name}</h3></div>
             <p>{campaign.description || "Sin descripción."}</p>
             <small><CalendarDays size={13} /> {shortDate(campaign.startDate)} — {shortDate(campaign.endDate)}</small>
             <div className="campaign-progress" aria-label={`${Math.round(campaignProgress(campaign) * 100)}% del periodo transcurrido`}><i style={{ width: `${campaignProgress(campaign) * 100}%` }} /></div>
-            <dl className="campaign-metrics"><div><dt>Invertido</dt><dd>{money(campaign.spend)}{campaign.budget ? <small> / {money(campaign.budget)}</small> : null}</dd></div><div><dt>Impresiones</dt><dd>{integer.format(campaign.impressions)}</dd></div><div><dt>CTR</dt><dd>{ctr === null ? "—" : `${(ctr * 100).toLocaleString("es-ES", { maximumFractionDigits: 2 })}%`}</dd></div><div><dt>Conversiones</dt><dd>{integer.format(campaign.conversions)}</dd></div><div><dt>ROAS</dt><dd>{roas === null ? "—" : `${roas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`}</dd></div></dl>
+            <dl className="campaign-metrics"><div><dt>Invertido</dt><dd>{money(campaign.spend)}{campaign.budget ? <small> / {money(campaign.budget)}</small> : null}</dd></div><div><dt>Clics</dt><dd>{integer.format(campaign.clicks)}</dd></div><div><dt>Conversiones</dt><dd>{integer.format(campaign.conversions)}</dd></div><div><dt>ROAS</dt><dd>{roas === null ? "—" : `${roas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`}</dd></div></dl>
           </div>
           {!readOnly && <div className="campaign-card__actions"><button type="button" onClick={(event) => { event.stopPropagation(); openCampaign(campaign); }} aria-label="Editar campaña"><Pencil size={15} /></button><button type="button" onClick={(event) => { event.stopPropagation(); void removeCampaign(campaign); }} aria-label="Eliminar campaña"><Trash2 size={15} /></button></div>}
         </article>; })}
@@ -91,7 +88,7 @@ export default function CampaignBoard({ campaigns, onChange, readOnly = false, f
         <div className="campaign-modal__dates"><label>Canal<select value={draft.channel || "social"} onChange={(event) => setDraft({ ...draft, channel: event.target.value as Campaign["channel"] })}>{CAMPAIGN_CHANNELS.map((item) => <option key={item.id} value={item.id}>{item.label} · {item.detail}</option>)}</select></label><div className="calendar-modal__colors"><span>Color</span>{colors.map((color) => <button type="button" key={color} className={`calendar-color calendar-color--${color} ${draft.color === color ? "is-active" : ""}`} onClick={() => setDraft({ ...draft, color })} aria-label={`Color ${color}`} />)}</div></div>
         <p className="campaign-modal__section">Métricas · alimentan el Resumen</p>
         <div className="campaign-modal__metrics">{metricFields.map((field) => <label key={field.key}>{field.label}<span className="campaign-input">{field.prefix && <em>{field.prefix}</em>}<input type="number" inputMode="decimal" min="0" step={field.step} value={draft[field.key] ? String(draft[field.key]) : ""} placeholder="0" onChange={(event) => setDraft({ ...draft, [field.key]: Math.max(0, Number(event.target.value) || 0) })} /></span></label>)}</div>
-        <p className="campaign-modal__derived">CTR <b>{draftCtr === null ? "—" : `${(draftCtr * 100).toLocaleString("es-ES", { maximumFractionDigits: 2 })}%`}</b> · ROAS <b>{draftRoas === null ? "—" : `${draftRoas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`}</b>{draft.budget ? <> · Presupuesto usado <b>{Math.round(((Number(draft.spend) || 0) / draft.budget) * 100)}%</b></> : null}</p>
+        <p className="campaign-modal__derived">ROAS <b>{draftRoas === null ? "—" : `${draftRoas.toLocaleString("es-ES", { maximumFractionDigits: 2 })}×`}</b>{draft.budget ? <> · Presupuesto usado <b>{Math.round(((Number(draft.spend) || 0) / draft.budget) * 100)}%</b></> : null}</p>
       </fieldset>
       <div className="campaign-modal__actions">{draft.id && !readOnly && <button className="admin-secondary campaign-delete" type="button" onClick={() => void removeCampaign(draft)}><Trash2 size={14} /> Eliminar</button>}<button className="admin-secondary" type="button" onClick={() => setDraft(null)}>{readOnly ? "Cerrar" : "Cancelar"}</button>{!readOnly && <button className="admin-primary" type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar campaña"}</button>}</div>
     </form></div>}

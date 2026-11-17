@@ -1076,3 +1076,21 @@ html.dark .edit-popover { border-color: rgba(241,238,231,.3); background: #20211
 .place-editor__paper .brand-hero { gap: clamp(28px, 4vw, 64px); padding: clamp(36px, 4vw, 64px) clamp(24px, 3vw, 48px); }
 .place-editor__paper .brand-hero h1 { font-size: clamp(48px, 5.4vw, 92px); }
 .place-editor__paper .inline-text { overflow-wrap: normal; word-break: normal; }
+
+/* Resumen: rendimiento por artículo */
+.article-perf { display: grid; }
+.article-perf__row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 72px) 58px; align-items: center; gap: 10px; width: 100%; padding: 11px 4px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font: 13px var(--sans); font-variant-numeric: tabular-nums; }
+.article-perf__row > span:not(:first-child) { text-align: right; }
+button.article-perf__row { cursor: pointer; transition: background .15s; }
+button.article-perf__row:hover { background: rgba(127,127,127,.07); }
+.article-perf__row--head { padding-top: 0; color: var(--muted); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.article-perf__row--total { border-bottom: 0; border-top: 1px solid var(--ink); font-weight: 600; }
+.article-perf__title { position: relative; display: grid; gap: 3px; min-width: 0; padding-bottom: 5px; }
+.article-perf__title strong { overflow: hidden; font: 500 15px/1.2 var(--serif); text-overflow: ellipsis; white-space: nowrap; }
+.article-perf__title small { color: var(--muted); font: 9px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.article-perf__title i { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--acid); transition: width .4s ease; }
+.article-perf__more { justify-self: start; margin-top: 10px; }
+.article-perf__note { margin: 12px 0 0; color: var(--muted); font: 11px/1.5 var(--sans); }
+.article-perf__loading { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+.performance-panel--articles.is-loading .article-perf { opacity: .55; transition: opacity .2s; }
+@media (max-width: 560px) { .article-perf__row { grid-template-columns: minmax(0, 1fr) repeat(4, 44px); gap: 6px; font-size: 12px; } .article-perf__row--head { font-size: 8px; } }
