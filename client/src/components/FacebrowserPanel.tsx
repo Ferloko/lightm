@@ -11,7 +11,9 @@ const fields: { key: CountKey; label: string }[] = [
   { key: "interactions", label: "Interacciones" },
   { key: "profileVisits", label: "Visitas al perfil" },
 ];
-const kpis = fields.slice(0, 4);
+// Impresiones e interacciones ya no se escriben a mano: se suman de los artículos publicados.
+const editableFields = fields.filter(({ key }) => key !== "impressions" && key !== "interactions");
+const historyFields = editableFields;
 const formatNumber = (value: number) => value.toLocaleString("es-ES");
 const formatWhen = (iso: string) => new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -39,7 +41,9 @@ function FollowersSpark({ history }: { history: FacebrowserSnapshot[] }) {
  * Redes de LIGHT en el Resumen. Las cifras llegan de la API (Edge Function facebrowser-ingest) o las
  * escriben a mano Owner/Admin con “Actualizar cifras”; cada actualización queda en el historial.
  */
-export default function FacebrowserPanel({ canEdit = false, editorName = "" }: { canEdit?: boolean; editorName?: string }) {
+export type ArticleSocialTotals = { impressions: number; clicks: number } | null;
+
+export default function FacebrowserPanel({ canEdit = false, editorName = "", articleTotals = null, articlesPending = false }: { canEdit?: boolean; editorName?: string; articleTotals?: ArticleSocialTotals; articlesPending?: boolean }) {
   const [metrics, setMetrics] = useState<FacebrowserMetrics | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<CountKey, string>>({ followers: "", posts: "", impressions: "", interactions: "", profileVisits: "" });
@@ -52,23 +56,29 @@ export default function FacebrowserPanel({ canEdit = false, editorName = "" }: {
   const latest = metrics?.status === "ok" ? metrics.latest : null;
   const previous = metrics?.status === "ok" ? metrics.previous : null;
   const history = useMemo(() => metrics?.status === "ok" ? metrics.history : [], [metrics]);
-  const startEdit = () => { setDraft(Object.fromEntries(fields.map(({ key }) => [key, latest?.[key] === null || latest?.[key] === undefined ? "" : String(latest[key])])) as Record<CountKey, string>); setError(""); setEditing(true); };
+  const startEdit = () => { setDraft(Object.fromEntries(editableFields.map(({ key }) => [key, latest?.[key] === null || latest?.[key] === undefined ? "" : String(latest[key])])) as Record<CountKey, string>); setError(""); setEditing(true); };
   const save = async () => {
-    const counts = {} as FacebrowserCounts;
-    for (const { key, label } of fields) {
+    const counts = { followers: null, posts: null, impressions: null, interactions: null, profileVisits: null } as FacebrowserCounts;
+    for (const { key, label } of editableFields) {
       const raw = draft[key].replace(/[.\s]/g, "").trim();
       if (raw === "") { counts[key] = null; continue; }
       const value = Number(raw);
       if (!Number.isInteger(value) || value < 0) { setError(`“${label}” debe ser un número entero sin signo.`); return; }
       counts[key] = value;
     }
-    if (fields.every(({ key }) => counts[key] === null)) { setError("Escribe al menos una cifra."); return; }
+    if (editableFields.every(({ key }) => counts[key] === null)) { setError("Escribe al menos una cifra."); return; }
     setSaving(true); setError("");
     try { await saveFacebrowserSnapshot(counts, editorName); await load(); setEditing(false); }
     catch (cause) { setError(`No se pudo guardar: ${describeError(cause)}`); }
     finally { setSaving(false); }
   };
 
+  const kpiList: { key: CountKey; label: string; derived?: (totals: NonNullable<ArticleSocialTotals>) => number }[] = [
+    { key: "followers", label: "Seguidores" },
+    { key: "posts", label: "Publicaciones" },
+    { key: "impressions", label: "Impresiones", derived: (totals) => totals.impressions },
+    { key: "interactions", label: "Interacciones", derived: (totals) => totals.clicks },
+  ];
   const head = <div className="performance-panel__head"><div><p className="eyebrow">Facebrowser · GTA World</p><h2>Redes de LIGHT.</h2></div><div className="facebrowser-panel__actions">
     <span className="facebrowser-panel__badge"><Globe size={14} /> {latest ? `Actualizado ${formatWhen(latest.capturedAt)}` : "Sin datos"}</span>
     {history.length > 1 && <button type="button" className="performance-link" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory}><History size={13} /> Historial · {history.length}</button>}
@@ -79,12 +89,13 @@ export default function FacebrowserPanel({ canEdit = false, editorName = "" }: {
 
   return <article className="performance-panel facebrowser-panel">{head}
     {editing ? <form className="facebrowser-edit" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-      <p className="facebrowser-panel__note">Escribe las cifras actuales de la página de LIGHT en Facebrowser. Se guardan con la fecha de hoy y tu nombre; las anteriores quedan en el historial. Deja vacío lo que no sepas.</p>
-      <div className="facebrowser-edit__grid">{fields.map(({ key, label }) => <label key={key}>{label}<input inputMode="numeric" value={draft[key]} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} placeholder={latest?.[key] !== null && latest?.[key] !== undefined ? formatNumber(latest[key] as number) : "0"} /></label>)}</div>
+      <p className="facebrowser-panel__note">Escribe las cifras actuales de la página de LIGHT en Facebrowser. Se guardan con la fecha de hoy y tu nombre; las anteriores quedan en el historial. Impresiones e interacciones se calculan solas con los artículos. Deja vacío lo que no sepas.</p>
+      <div className="facebrowser-edit__grid">{editableFields.map(({ key, label }) => <label key={key}>{label}<input inputMode="numeric" value={draft[key]} onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))} placeholder={latest?.[key] !== null && latest?.[key] !== undefined ? formatNumber(latest[key] as number) : "0"} /></label>)}</div>
       {error && <p className="facebrowser-edit__error" role="alert">{error}</p>}
       <div className="facebrowser-edit__actions"><button type="button" className="admin-secondary" onClick={() => setEditing(false)}><X size={13} /> Cancelar</button><button type="submit" className="admin-primary" disabled={saving}><Save size={13} /> {saving ? "Guardando…" : "Guardar cifras"}</button></div>
     </form> : <>
-      <div className={`facebrowser-panel__kpis${latest ? "" : " is-pending"}`}>{kpis.map((kpi) => {
+      <div className={`facebrowser-panel__kpis${latest ? "" : " is-pending"}`}>{kpiList.map((kpi) => {
+        if (kpi.derived) return <div key={kpi.key} title="Suma de los artículos publicados en el periodo del Resumen"><span>{kpi.label}</span><strong>{articlesPending ? "…" : articleTotals ? formatNumber(kpi.derived(articleTotals)) : "—"}</strong><small>de los artículos</small></div>;
         const value = latest?.[kpi.key] ?? null;
         const before = previous?.[kpi.key];
         const delta = value !== null && before !== null && before !== undefined ? value - before : null;
@@ -93,6 +104,6 @@ export default function FacebrowserPanel({ canEdit = false, editorName = "" }: {
       {latest ? <div className="facebrowser-panel__foot"><FollowersSpark history={history} /><p className="facebrowser-panel__note">{latest.profileVisits !== null && <>{formatNumber(latest.profileVisits)} visitas al perfil · </>}Fuente: {latest.source}</p></div>
         : <p className="facebrowser-panel__note">{metrics.status === "error" ? `No se pudieron leer los datos de Facebrowser: ${metrics.message}` : canEdit ? "Aún no hay cifras. Pulsa “Actualizar cifras” para escribir las de la página de LIGHT en Facebrowser." : "Aún no hay cifras de Facebrowser."}</p>}
     </>}
-    {showHistory && !editing && <div className="facebrowser-history"><table><thead><tr><th>Fecha</th>{fields.map(({ key, label }) => <th key={key}>{label}</th>)}<th>Fuente</th></tr></thead><tbody>{history.map((item) => <tr key={`${item.capturedAt}-${item.source}`}><td>{formatWhen(item.capturedAt)}</td>{fields.map(({ key }) => <td key={key}>{item[key] === null ? "—" : formatNumber(item[key] as number)}</td>)}<td>{item.source}</td></tr>)}</tbody></table></div>}
+    {showHistory && !editing && <div className="facebrowser-history"><table><thead><tr><th>Fecha</th>{historyFields.map(({ key, label }) => <th key={key}>{label}</th>)}<th>Fuente</th></tr></thead><tbody>{history.map((item) => <tr key={`${item.capturedAt}-${item.source}`}><td>{formatWhen(item.capturedAt)}</td>{historyFields.map(({ key }) => <td key={key}>{item[key] === null ? "—" : formatNumber(item[key] as number)}</td>)}<td>{item.source}</td></tr>)}</tbody></table></div>}
   </article>;
 }

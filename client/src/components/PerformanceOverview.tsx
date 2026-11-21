@@ -152,7 +152,7 @@ export default function PerformanceOverview({ articles, subscriberCount, subscri
 
     <article className="performance-panel performance-panel--traffic" ref={trafficRef}><div className="performance-panel__head"><div><p className="eyebrow">Audiencia LIGHT</p><h2>Visitas de los últimos {series.length || Math.min(range, 30)} días.</h2></div><span className="performance-panel__metric">{integer.format(series.reduce((total, point) => total + point.count, 0))} <small>visitas</small></span></div>{analyticsError && <p className="campaign-table__empty" role="alert">No se pudieron cargar las visitas. Recarga la página para intentarlo de nuevo.</p>}<TrafficChart series={series} /></article>
 
-    <FacebrowserPanel canEdit={canEditSocial} editorName={editorName} />
+    <FacebrowserPanel canEdit={canEditSocial} editorName={editorName} articleTotals={articleStats?.status === "ok" ? articleTotals : null} articlesPending={statsPending || articleStatsLoading} />
     <div className="performance-grid performance-grid--charts">
       <article className={`performance-panel performance-panel--chart performance-panel--articles${articleStatsLoading ? " is-loading" : ""}`} ref={articlesRef}><div className="performance-panel__head"><div><p className="eyebrow">Artículos · {periodLabel}</p><h2>Rendimiento por artículo.</h2></div><span className="performance-panel__metric">{formatCompact(articleTotals.impressions)} <small>impresiones</small></span></div>
         {articleStats?.status === "not_configured" ? <PanelEmpty text="Las estadísticas de artículos necesitan la migración de analítica en Supabase." label="" />
