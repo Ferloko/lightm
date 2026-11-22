@@ -1,4 +1,5 @@
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Toaster } from "@/components/ui/sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { trackPageView } from "@/lib/analytics";
@@ -119,5 +120,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><PageTransition><Suspense fallback={<div className="min-h-screen" aria-busy="true" />}><Router /></Suspense></PageTransition></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Analytics mode="production" /><SpeedInsights /><Toaster /><PageViewTracker /><GlobalSearchLayer /><ScrollAnimations /><PageTransition><Suspense fallback={<div className="min-h-screen" aria-busy="true" />}><Router /></Suspense></PageTransition></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }
